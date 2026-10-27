@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DatosSolicitanteController;
 use App\Http\Controllers\SeleccionCertificacionController;
 use App\Http\Controllers\FormacionAcademicaController;
+use App\Http\Controllers\PanelController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -25,9 +26,9 @@ Route::post('/logout', [LoginController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-Route::get('/panel', function () {
-    return view('panel');
-})->middleware('auth')->name('panel');
+Route::get('/panel', [PanelController::class, 'index'])
+    ->middleware('auth')
+    ->name('panel');
 
 Route::view('/registro', 'registro.create')
     ->name('registro.create');

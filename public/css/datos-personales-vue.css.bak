@@ -1,0 +1,140 @@
+
+/* ANFECA - Datos Personales con Vue */
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+}
+
+.pagina-anfeca {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.contenido {
+    flex: 1;
+    width: 100%;
+    padding: 30px 5% 25px;
+}
+
+.formulario {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.datos-vue {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.secciones-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+
+.seccion-datos h2 {
+    font-size: 19px;
+    font-weight: 700;
+    text-align: center;
+    border-bottom: 1px solid #888;
+    padding-bottom: 8px;
+    margin-bottom: 22px;
+}
+
+.campo-datos {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+}
+
+.campo-datos label {
+    font-size: 14px;
+    margin-bottom: 7px;
+    text-align: center;
+}
+
+.campo-datos input {
+    width: 80%;
+    max-width: 440px;
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid #888;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+}
+
+    .contenido {
+        padding: 25px 20px;
+    }
+
+    .campo-datos input {
+        width: 100%;
+        max-width: 440px;
+    }
+}
+/* Tres secciones horizontales */
+.secciones-datos {
+    display: grid;
+    grid-template-columns: 1.15fr 1.15fr 0.9fr;
+    gap: 24px;
+    align-items: start;
+    width: 100%;
+}
+
+/* Dos columnas de campos dentro de cada sección */
+.dos-columnas-datos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 12px;
+    row-gap: 18px;
+    width: 100%;
+}
+
+.seccion-datos {
+    min-width: 0;
+}
+
+.campo-datos {
+    min-width: 0;
+    align-items: stretch;
+}
+
+.campo-datos input {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.campo-datos label {
+    min-height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: end;
+}
+
+/* Pantallas medianas: secciones apiladas,
+   conservando dos columnas internas */
+@media (max-width: 1100px) {
+    .secciones-datos {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Celulares: una columna de campos */
+@media (max-width: 600px) {
+    .dos-columnas-datos {
+        grid-template-columns: 1fr;
+    }
+}

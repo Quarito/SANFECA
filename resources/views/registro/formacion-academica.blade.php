@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+@vite(['resources/css/app.css', 'resources/js/app.js'])
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
@@ -65,209 +66,30 @@
             </div>
         @endif
 
-        <form method="POST"
+	<form method="POST"
               action="{{ route('registro.formacion.guardar') }}"
               enctype="multipart/form-data"
               class="formulario">
             @csrf
 
-            <!-- DOS COLUMNAS SUPERIORES -->
-            <div class="columnas columnas-formacion">
 
-                <!-- FORMACIÓN ACADÉMICA DE ORIGEN -->
-                <section class="seccion">
-                    <h2>Formación Académica de Origen</h2>
+<!-- CAMPOS ACADÉMICOS E INSTITUCIÓN CON VUE 3 -->
+<div
+    id="vue-formacion-academica"
+    data-instituciones="{{ $instituciones->toJson() }}"
+	    
+	data-formacion="{{ json_encode([
+	    'titulo_origen' => old('titulo_origen', $formacion?->titulo_origen),
+	    'nivel_ultimo_grado' => old('nivel_ultimo_grado', $formacion?->nivel_ultimo_grado),
+	    'titulo_ultimo_grado' => old('titulo_ultimo_grado', $formacion?->titulo_ultimo_grado),
+	    'institucion_afiliada_id' => old('institucion_afiliada_id', $formacion?->institucion_afiliada_id),
+	    'titulo_origen_archivo' => $formacion?->titulo_origen_archivo,
+	    'cedula_origen_archivo' => $formacion?->cedula_origen_archivo,
+	    'titulo_ultimo_grado_archivo' => $formacion?->titulo_ultimo_grado_archivo,
+	    'cedula_ultimo_grado_archivo' => $formacion?->cedula_ultimo_grado_archivo
+	]) }}"
 
-                    <div class="campo">
-                        <label for="nivel_origen_visible">
-                            Nivel
-                        </label>
-
-                        <select id="nivel_origen_visible" disabled>
-                            <option selected>Licenciatura</option>
-                        </select>
-
-                        <input type="hidden"
-                               name="nivel_origen"
-                               value="Licenciatura">
-                    </div>
-
-                    <div class="campo">
-                        <label for="titulo_origen">
-                            Nombre del Título o Grado
-                        </label>
-
-                        <select id="titulo_origen"
-                                name="titulo_origen"
-                                required>
-
-                            <option value="">
-                                Seleccione una opción
-                            </option>
-
-                            @foreach([
-                                'Informática',
-                                'Administración',
-                                'Negocios Internacionales'
-                            ] as $titulo)
-                                <option value="{{ $titulo }}"
-                                    @selected(
-                                        old('titulo_origen', $formacion?->titulo_origen) === $titulo
-                                    )>
-                                    {{ $titulo }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="campo campo-documento">
-                        <label for="titulo_origen_archivo">
-                            Adjuntar Título Profesional
-                        </label>
-
-                        <input type="file"
-                               id="titulo_origen_archivo"
-                               name="titulo_origen_archivo"
-                               accept=".pdf,.jpg,.jpeg,.png"
-                               @if(!$formacion?->titulo_origen_archivo) required @endif>
-
-                        <small>PDF, JPG o PNG. Máximo 5 MB.</small>
-
-                        @if($formacion?->titulo_origen_archivo)
-                            <span class="documento-guardado">
-                                Título previamente cargado
-                            </span>
-                        @endif
-                    </div>
-
-                    <div class="campo campo-documento">
-                        <label for="cedula_origen_archivo">
-                            Adjuntar Cédula Profesional
-                        </label>
-
-                        <input type="file"
-                               id="cedula_origen_archivo"
-                               name="cedula_origen_archivo"
-                               accept=".pdf,.jpg,.jpeg,.png"
-                               @if(!$formacion?->cedula_origen_archivo) required @endif>
-
-                        <small>PDF, JPG o PNG. Máximo 5 MB.</small>
-
-                        @if($formacion?->cedula_origen_archivo)
-                            <span class="documento-guardado">
-                                Cédula previamente cargada
-                            </span>
-                        @endif
-                    </div>
-                </section>
-
-                <!-- ÚLTIMO GRADO DE ESTUDIOS -->
-                <section class="seccion">
-                    <h2>Último Grado de Estudios</h2>
-
-                    <div class="campo">
-                        <label for="nivel_ultimo_grado">
-                            Nivel
-                        </label>
-
-                        <select id="nivel_ultimo_grado"
-                                name="nivel_ultimo_grado"
-                                required>
-                            <option value="">Seleccione</option>
-
-                            @foreach([
-                                'Licenciatura',
-                                'Especialidad',
-                                'Maestría',
-                                'Doctorado'
-                            ] as $nivel)
-                                <option value="{{ $nivel }}"
-                                    @selected(
-                                        old('nivel_ultimo_grado', $formacion?->nivel_ultimo_grado) === $nivel
-                                    )>
-                                    {{ $nivel }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="campo">
-                        <label for="titulo_ultimo_grado">
-                            Nombre del Título o Grado
-                        </label>
-
-                        <select id="titulo_ultimo_grado"
-                                name="titulo_ultimo_grado"
-                                required>
-                            <option value="">Seleccione</option>
-
-                            @foreach([
-                                'Administración',
-                                'Contaduría',
-                                'Informática',
-                                'Negocios Internacionales',
-                                'Otro'
-                            ] as $titulo)
-                                <option value="{{ $titulo }}"
-                                    @selected(
-                                        old('titulo_ultimo_grado', $formacion?->titulo_ultimo_grado) === $titulo
-                                    )>
-                                    {{ $titulo }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </section>
-            </div>
-
-            <!-- INSTITUCIÓN DE PROCEDENCIA -->
-            <section class="institucion">
-                <h2>Institución de Procedencia</h2>
-
-                <div class="institucion-datos">
-
-                    <div class="campo">
-                        <label for="institucion_afiliada_id">
-                            Número de Afiliación
-                        </label>
-
-                        <select id="institucion_afiliada_id"
-                                name="institucion_afiliada_id"
-                                required>
-
-                            <option value="">Seleccione</option>
-
-                            @foreach($instituciones as $institucion)
-                                <option
-                                    value="{{ $institucion->id }}"
-                                    data-nombre="{{ $institucion->nombre }}"
-                                    data-sede="{{ $institucion->sede }}"
-                                    data-zona="{{ $institucion->zona_anfeca }}"
-                                    @selected(
-                                        old('institucion_afiliada_id', $formacion?->institucion_afiliada_id) == $institucion->id
-                                    )>
-                                    {{ $institucion->numero_afiliacion }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="detalle-institucion">
-                        <p>
-                            Institución:
-                            <strong id="nombreInstitucion">—</strong>
-                        </p>
-                        <p>
-                            Sede:
-                            <strong id="sedeInstitucion">—</strong>
-                        </p>
-                        <p>
-                            Zona ANFECA:
-                            <strong id="zonaInstitucion">—</strong>
-                        </p>
-                    </div>
-                </div>
-            </section>
+></div>
 
             <!-- BOTONES -->
             <div class="botones">
@@ -299,27 +121,7 @@
     </footer>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const select = document.getElementById('institucion_afiliada_id');
 
-    function actualizarInstitucion() {
-        const opcion = select.options[select.selectedIndex];
-
-        document.getElementById('nombreInstitucion').textContent =
-            opcion.dataset.nombre || '—';
-
-        document.getElementById('sedeInstitucion').textContent =
-            opcion.dataset.sede || '—';
-
-        document.getElementById('zonaInstitucion').textContent =
-            opcion.dataset.zona || '—';
-    }
-
-    select.addEventListener('change', actualizarInstitucion);
-    actualizarInstitucion();
-});
-</script>
 </body>
 </html>
 

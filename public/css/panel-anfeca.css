@@ -1,0 +1,119 @@
+
+/* ANFECA - Panel del solicitante */
+
+.contenido {
+    padding: 30px 5% 25px;
+}
+
+.panel-contenedor {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.panel-contenedor h2 {
+    font-size: 22px;
+    text-align: center;
+    margin: 0 0 12px;
+}
+
+.panel-descripcion {
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+.panel-progreso {
+    max-width: 850px;
+    margin: 0 auto 35px;
+    padding: 22px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.progreso-encabezado {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.barra-progreso {
+    width: 100%;
+    height: 12px;
+    background: #e7e7e7;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.barra-progreso-valor {
+    height: 100%;
+    background: #98121a;
+    border-radius: 10px;
+}
+
+.panel-progreso p {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 0;
+}
+
+.panel-etapas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.tarjeta-etapa {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 25px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.tarjeta-etapa h3 {
+    font-size: 18px;
+    margin: 0;
+}
+
+.tarjeta-etapa p {
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.estado-etapa {
+    display: inline-block;
+    width: fit-content;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.estado-etapa.completa {
+    background: #e4f3e7;
+    color: #216b35;
+}
+
+.estado-etapa.pendiente {
+    background: #f5ebd9;
+    color: #805b18;
+}
+
+.tarjeta-etapa .boton {
+    margin-top: auto;
+}
+
+.panel-acciones {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 35px;
+}
+
+@media (max-width: 900px) {
+    .panel-etapas {
+        grid-template-columns: 1fr;
+    }
+}

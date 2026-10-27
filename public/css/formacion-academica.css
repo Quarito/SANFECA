@@ -253,3 +253,30 @@ body {
     }
 }
 
+/* Documentos dentro de las columnas académicas */
+.documentos-vue {
+    margin-top: 18px;
+}
+
+.documentos-vue .campo-documento {
+    margin-top: 15px;
+}
+
+.documentos-vue input[type="file"] {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.documentos-vue small {
+    display: block;
+    margin-top: 6px;
+    text-align: center;
+    font-size: 11px;
+    color: #64748b;
+}
+
+@media (max-width: 768px) {
+    .columnas-formacion {
+        grid-template-columns: 1fr;
+    }
+}~

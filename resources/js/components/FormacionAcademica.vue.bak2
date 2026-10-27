@@ -1,0 +1,80 @@
+
+<script setup>
+import { ref, computed } from 'vue';
+
+const props = defineProps({
+    instituciones: {
+        type: Array,
+        default: () => []
+    },
+    formacion: {
+        type: Object,
+        default: () => ({})
+    }
+});
+
+const institucionId = ref(
+    String(props.formacion?.institucion_afiliada_id ?? '')
+);
+
+const institucionSeleccionada = computed(() => {
+    return props.instituciones.find(
+        institucion =>
+            String(institucion.id) === institucionId.value
+    );
+});
+</script>
+
+<template>
+    <section class="institucion">
+        <h2>Institución de Procedencia</h2>
+
+        <div class="institucion-datos">
+            <div class="campo">
+                <label for="institucion_afiliada_id">
+                    Número de Afiliación
+                </label>
+
+                <select
+                    id="institucion_afiliada_id"
+                    name="institucion_afiliada_id"
+                    v-model="institucionId"
+                    required
+                >
+                    <option value="">Seleccione</option>
+
+                    <option
+                        v-for="institucion in instituciones"
+                        :key="institucion.id"
+                        :value="String(institucion.id)"
+                    >
+                        {{ institucion.numero_afiliacion }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="detalle-institucion">
+                <p>
+                    Institución:
+                    <strong>
+                        {{ institucionSeleccionada?.nombre || '—' }}
+                    </strong>
+                </p>
+
+                <p>
+                    Sede:
+                    <strong>
+                        {{ institucionSeleccionada?.sede || '—' }}
+                    </strong>
+                </p>
+
+                <p>
+                    Zona ANFECA:
+                    <strong>
+                        {{ institucionSeleccionada?.zona_anfeca || '—' }}
+                    </strong>
+                </p>
+            </div>
+        </div>
+    </section>
+</template>

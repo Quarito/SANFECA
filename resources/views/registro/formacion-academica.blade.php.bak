@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Formación Académica | ANFECA</title>
+
+    <link rel="stylesheet"
+          href="{{ asset('css/certificacion.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ asset('css/formacion-academica.css') }}">
+</head>
+
+<body>
+<div class="pagina-anfeca">
+
+    <!-- ENCABEZADO INSTITUCIONAL -->
+    <header class="encabezado">
+        <div class="logos">
+            <img src="{{ asset('images/logo-anfeca.png') }}"
+                 alt="ANFECA">
+
+            <img src="{{ asset('images/logo-certificacion.png') }}"
+                 alt="Certificación">
+        </div>
+
+        <h1>
+            REGISTRO AL SISTEMA DE<br>
+            CERTIFICACIÓN DE LA ANFECA
+        </h1>
+
+        <div class="coordinacion">
+            Coordinación Nacional de<br>
+            Certificación Académica
+        </div>
+    </header>
+
+    <!-- USUARIO AUTENTICADO -->
+    <div class="barra-usuario">
+        <span class="icono-usuario">◉</span>
+        <span>
+            Usuario: {{ auth()->user()->name }}
+        </span>
+    </div>
+
+    <main class="contenido">
+
+        @if(session('success'))
+            <div class="mensaje-exito">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="mensaje-error">
+                <strong>Revisa los siguientes campos:</strong>
+                <ul>
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <!-- Componente Vue 3: prueba de integración -->
+	<div id="vue-formacion-academica"></div>
+	<form method="POST"
+              action="{{ route('registro.formacion.guardar') }}"
+              enctype="multipart/form-data"
+              class="formulario">
+            @csrf
+
+            <!-- DOS COLUMNAS SUPERIORES -->
+	
+            <div class="columnas columnas-formacion">
+
+                <!-- FORMACIÓN ACADÉMICA DE ORIGEN -->
+                <section class="seccion">
+                    <h2>Formación Académica de Origen</h2>
+
+                    <div class="campo">
+                        <label for="nivel_origen_visible">
+                            Nivel
+                        </label>
+
+                        <select id="nivel_origen_visible" disabled>
+                            <option selected>Licenciatura</option>
+                        </select>
+
+                        <input type="hidden"
+                               name="nivel_origen"
+                               value="Licenciatura">
+                    </div>
+
+                    <div class="campo">
+                        <label for="titulo_origen">
+                            Nombre del Título o Grado
+                        </label>
+
+                        <select id="titulo_origen"
+                                name="titulo_origen"
+                                required>
+
+                            <option value="">
+                                Seleccione una opción
+                            </option>
+
+                            @foreach([
+                                'Informática',
+                                'Administración',
+                                'Negocios Internacionales'
+                            ] as $titulo)
+                                <option value="{{ $titulo }}"
+                                    @selected(
+                                        old('titulo_origen', $formacion?->titulo_origen) === $titulo
+                                    )>
+                                    {{ $titulo }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="campo campo-documento">
+                        <label for="titulo_origen_archivo">
+                            Adjuntar Título Profesional
+                        </label>
+
+                        <input type="file"
+                               id="titulo_origen_archivo"
+                               name="titulo_origen_archivo"
+                               accept=".pdf,.jpg,.jpeg,.png"
+                               @if(!$formacion?->titulo_origen_archivo) required @endif>
+
+                        <small>PDF, JPG o PNG. Máximo 5 MB.</small>
+
+                        @if($formacion?->titulo_origen_archivo)
+                            <span class="documento-guardado">
+                                Título previamente cargado
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="campo campo-documento">
+                        <label for="cedula_origen_archivo">
+                            Adjuntar Cédula Profesional
+                        </label>
+
+                        <input type="file"
+                               id="cedula_origen_archivo"
+                               name="cedula_origen_archivo"
+                               accept=".pdf,.jpg,.jpeg,.png"
+                               @if(!$formacion?->cedula_origen_archivo) required @endif>
+
+                        <small>PDF, JPG o PNG. Máximo 5 MB.</small>
+
+                        @if($formacion?->cedula_origen_archivo)
+                            <span class="documento-guardado">
+                                Cédula previamente cargada
+                            </span>
+                        @endif
+                    </div>
+                </section>
+
+                <!-- ÚLTIMO GRADO DE ESTUDIOS -->
+                <section class="seccion">
+                    <h2>Último Grado de Estudios</h2>
+
+                    <div class="campo">
+                        <label for="nivel_ultimo_grado">
+                            Nivel
+                        </label>
+
+                        <select id="nivel_ultimo_grado"
+                                name="nivel_ultimo_grado"
+                                required>
+                            <option value="">Seleccione</option>
+
+                            @foreach([
+                                'Licenciatura',
+                                'Especialidad',
+                                'Maestría',
+                                'Doctorado'
+                            ] as $nivel)
+                                <option value="{{ $nivel }}"
+                                    @selected(
+                                        old('nivel_ultimo_grado', $formacion?->nivel_ultimo_grado) === $nivel
+                                    )>
+                                    {{ $nivel }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="campo">
+                        <label for="titulo_ultimo_grado">
+                            Nombre del Título o Grado
+                        </label>
+
+                        <select id="titulo_ultimo_grado"
+                                name="titulo_ultimo_grado"
+                                required>
+                            <option value="">Seleccione</option>
+
+                            @foreach([
+                                'Administración',
+                                'Contaduría',
+                                'Informática',
+                                'Negocios Internacionales',
+                                'Otro'
+                            ] as $titulo)
+                                <option value="{{ $titulo }}"
+                                    @selected(
+                                        old('titulo_ultimo_grado', $formacion?->titulo_ultimo_grado) === $titulo
+                                    )>
+                                    {{ $titulo }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </section>
+            </div>
+
+            <!-- INSTITUCIÓN DE PROCEDENCIA -->
+            <section class="institucion">
+                <h2>Institución de Procedencia</h2>
+
+                <div class="institucion-datos">
+
+                    <div class="campo">
+                        <label for="institucion_afiliada_id">
+                            Número de Afiliación
+                        </label>
+
+                        <select id="institucion_afiliada_id"
+                                name="institucion_afiliada_id"
+                                required>
+
+                            <option value="">Seleccione</option>
+
+                            @foreach($instituciones as $institucion)
+                                <option
+                                    value="{{ $institucion->id }}"
+                                    data-nombre="{{ $institucion->nombre }}"
+                                    data-sede="{{ $institucion->sede }}"
+                                    data-zona="{{ $institucion->zona_anfeca }}"
+                                    @selected(
+                                        old('institucion_afiliada_id', $formacion?->institucion_afiliada_id) == $institucion->id
+                                    )>
+                                    {{ $institucion->numero_afiliacion }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="detalle-institucion">
+                        <p>
+                            Institución:
+                            <strong id="nombreInstitucion">—</strong>
+                        </p>
+                        <p>
+                            Sede:
+                            <strong id="sedeInstitucion">—</strong>
+                        </p>
+                        <p>
+                            Zona ANFECA:
+                            <strong id="zonaInstitucion">—</strong>
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BOTONES -->
+            <div class="botones">
+                <a href="{{ route('registro.certificacion') }}"
+                   class="boton">
+                    Anterior
+                </a>
+
+                <button type="submit" class="boton">
+                    Siguiente
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <!-- PIE INSTITUCIONAL -->
+    <footer class="pie-pagina">
+        <div class="origen">
+            Hecho en México<br>
+            D.R. © {{ date('Y') }}
+        </div>
+
+        <div class="legal">
+            Esta página puede ser reproducida con fines no
+            lucrativos, siempre y cuando no se mutile y se
+            cite la fuente completa y su dirección electrónica.
+            AVISO DE PRIVACIDAD.
+        </div>
+    </footer>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('institucion_afiliada_id');
+
+    function actualizarInstitucion() {
+        const opcion = select.options[select.selectedIndex];
+
+        document.getElementById('nombreInstitucion').textContent =
+            opcion.dataset.nombre || '—';
+
+        document.getElementById('sedeInstitucion').textContent =
+            opcion.dataset.sede || '—';
+
+        document.getElementById('zonaInstitucion').textContent =
+            opcion.dataset.zona || '—';
+    }
+
+    select.addEventListener('change', actualizarInstitucion);
+    actualizarInstitucion();
+});
+</script>
+</body>
+</html>
+

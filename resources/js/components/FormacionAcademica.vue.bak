@@ -1,0 +1,126 @@
+
+<script setup>
+import { ref, computed } from 'vue';
+
+const props = defineProps({
+    instituciones: {
+        type: Array,
+        default: () => []
+    },
+    formacion: {
+        type: Object,
+        default: () => ({})
+    }
+});
+
+const titulo = ref(props.formacion?.titulo_origen ?? '');
+const institucionId = ref(
+    String(props.formacion?.institucion_afiliada_id ?? '')
+);
+
+const titulos = [
+    'Informática',
+    'Administración',
+    'Negocios Internacionales'
+];
+
+const institucionSeleccionada = computed(() => {
+    return props.instituciones.find(
+        institucion =>
+            String(institucion.id) === institucionId.value
+    );
+});
+</script>
+
+<template>
+    <section class="vue-formacion">
+        <h3>Formación Académica — Vue 3</h3>
+
+        <label for="vue-titulo">
+            Título académico de origen
+        </label>
+
+        <select id="vue-titulo" v-model="titulo">
+            <option value="">Selecciona un título</option>
+
+            <option
+                v-for="opcion in titulos"
+                :key="opcion"
+                :value="opcion"
+            >
+                {{ opcion }}
+            </option>
+        </select>
+
+        <label for="vue-institucion">
+            Institución de procedencia
+        </label>
+
+        <select
+            id="vue-institucion"
+            v-model="institucionId"
+        >
+            <option value="">Selecciona una institución</option>
+
+            <option
+                v-for="institucion in instituciones"
+                :key="institucion.id"
+                :value="String(institucion.id)"
+            >
+                {{ institucion.nombre }}
+            </option>
+        </select>
+
+        <div v-if="institucionSeleccionada" class="detalle">
+            <p>
+                <strong>Número de afiliación:</strong>
+                {{ institucionSeleccionada.numero_afiliacion }}
+            </p>
+
+            <p>
+                <strong>Sede:</strong>
+                {{ institucionSeleccionada.sede }}
+            </p>
+
+            <p>
+                <strong>Zona ANFECA:</strong>
+                {{ institucionSeleccionada.zona_anfeca }}
+            </p>
+        </div>
+    </section>
+</template>
+
+<style scoped>
+.vue-formacion {
+    padding: 20px;
+    border: 1px solid #d6dce5;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background: #f8fafc;
+}
+
+.vue-formacion h3 {
+    margin-bottom: 15px;
+    color: #183b63;
+}
+
+.vue-formacion label {
+    display: block;
+    margin: 14px 0 6px;
+    font-weight: 600;
+}
+
+.vue-formacion select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+.detalle {
+    margin-top: 15px;
+    padding: 12px;
+    background: #eef4fa;
+    border-radius: 6px;
+}
+</style>

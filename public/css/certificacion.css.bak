@@ -1,0 +1,283 @@
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    color: #171717;
+    background: #ffffff;
+}
+
+.pagina-anfeca {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* ENCABEZADO */
+
+.encabezado {
+    width: 100%;
+    min-height: 105px;
+    display: grid;
+    grid-template-columns: 23% 45% 32%;
+    align-items: center;
+    padding: 14px 24px;
+    background:
+        linear-gradient(
+            135deg,
+            transparent 55%,
+            rgba(224, 64, 70, 0.13) 55%,
+            rgba(218, 38, 45, 0.50) 75%,
+            transparent 75%
+        ),
+        #f5f5f5;
+}
+
+.logos {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logos img:first-child {
+    width: 145px;
+    max-width: 65%;
+    height: auto;
+}
+
+.logos img:nth-child(2) {
+    width: 60px;
+    height: auto;
+}
+
+.encabezado h1 {
+    margin: 0;
+    color: #bd151a;
+    font-size: clamp(17px, 1.5vw, 25px);
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.coordinacion {
+    text-align: right;
+    color: #bd151a;
+    font-size: clamp(14px, 1.2vw, 20px);
+    padding-right: 10px;
+}
+
+/* USUARIO */
+
+.barra-usuario {
+    align-self: flex-end;
+    min-width: 300px;
+    max-width: 100%;
+    padding: 8px 18px;
+    border: 1px solid #d16a6a;
+    border-radius: 22px 0 0 22px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.icono-usuario {
+    font-size: 20px;
+    color: #777;
+}
+
+/* CONTENIDO */
+
+.contenido {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 28px clamp(20px, 5vw, 90px) 24px;
+}
+
+.formulario {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.columnas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(40px, 10vw, 180px);
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-top: 12px;
+}
+
+.seccion {
+    min-width: 0;
+}
+
+.seccion h2 {
+    text-align: center;
+    font-size: 18px;
+    margin: 0 0 12px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #888;
+    font-weight: 700;
+}
+
+.descripcion {
+    font-size: 14px;
+    margin: 0 0 16px;
+}
+
+.opciones {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-left: 38px;
+}
+
+.opcion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.opcion input {
+    width: 17px;
+    height: 17px;
+    accent-color: #99131a;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.campo label {
+    font-size: 14px;
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+.campo select {
+    width: 80%;
+    min-height: 34px;
+    padding: 5px 9px;
+    border: 1px solid #777;
+    border-radius: 2px;
+    background: #fff;
+    font: inherit;
+}
+
+/* BOTONES */
+
+.botones {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 60px;
+}
+
+.boton {
+    display: inline-block;
+    min-width: 125px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #950e16;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.boton:hover {
+    background: #ba1721;
+}
+
+/* MENSAJES */
+
+.mensaje-exito {
+    padding: 12px;
+    background: #e8f4e8;
+    color: #24602a;
+    margin-bottom: 20px;
+}
+
+.mensaje-error {
+    padding: 12px;
+    background: #fff0f0;
+    color: #a0141a;
+    margin-bottom: 20px;
+}
+
+/* PIE DE PÁGINA */
+
+.pie-pagina {
+    width: 100%;
+    min-height: 90px;
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 22px;
+    align-items: center;
+    padding: 15px 22px;
+    background: #c41b20;
+    color: #fff;
+    font-size: 12px;
+}
+
+.legal {
+    line-height: 1.35;
+}
+
+/* TABLETS Y CELULARES */
+
+@media (max-width: 800px) {
+    .encabezado {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .encabezado h1,
+    .coordinacion {
+        text-align: left;
+    }
+
+    .columnas {
+        grid-template-columns: 1fr;
+        gap: 35px;
+    }
+
+    .campo select {
+        width: 100%;
+    }
+
+    .botones {
+        padding-top: 45px;
+    }
+
+    .pie-pagina {
+        grid-template-columns: 1fr;
+    }
+}
+

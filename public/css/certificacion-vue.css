@@ -1,0 +1,116 @@
+
+/* ========================================
+   ANFECA - SELECCIÓN DE CERTIFICACIÓN
+   VUE 3
+   ======================================== */
+
+/* Mismas dimensiones que Formación Académica */
+
+.contenido {
+    padding: 30px 5% 25px;
+}
+
+.certificacion-vue {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+/* Dos secciones horizontales */
+
+.columnas-certificacion-vue {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8%;
+    width: 100%;
+}
+
+.seccion-certificacion-vue {
+    min-width: 0;
+}
+
+/* Encabezados */
+
+.seccion-certificacion-vue h2 {
+    font-size: 19px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #888;
+    padding-bottom: 8px;
+    margin: 0 0 22px;
+}
+
+/* Certificación */
+
+.descripcion-certificacion {
+    font-size: 14px;
+    text-align: center;
+    margin: 0 0 22px;
+}
+
+.opciones-certificacion {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.opcion-certificacion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.opcion-certificacion input {
+    width: 17px;
+    height: 17px;
+    accent-color: #98121a;
+}
+
+/* Personal Académico */
+
+.campo-certificacion {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.campo-certificacion label {
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 7px;
+}
+
+.campo-certificacion select {
+    width: 80%;
+    max-width: 440px;
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid #888;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+}
+
+/* Adaptación móvil */
+
+@media (max-width: 850px) {
+    .columnas-certificacion-vue {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .contenido {
+        padding: 25px 20px;
+    }
+
+    .campo-certificacion select {
+        width: 100%;
+        max-width: 440px;
+    }
+}

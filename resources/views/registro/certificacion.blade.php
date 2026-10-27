@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+@vite(['resources/css/app.css', 'resources/js/app.js'])
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
@@ -9,7 +10,10 @@
     <title>Certificación | ANFECA</title>
 
     <link rel="stylesheet"
-          href="{{ asset('css/certificacion.css') }}">
+	          href="{{ asset('css/certificacion.css') }}">
+	<link rel="stylesheet"
+	      href="{{ asset('css/certificacion-vue.css') }}">
+
 </head>
 <body>
 
@@ -68,91 +72,26 @@
               class="formulario">
             @csrf
 
-            <div class="columnas">
 
-                <!-- CERTIFICACIÓN -->
-                <section class="seccion">
-                    <h2>Certificación</h2>
+	<!-- SELECCIÓN DE CERTIFICACIÓN CON VUE 3 -->
+	<div
+	    id="vue-seleccion-certificacion"
+	    data-seleccion="{{ json_encode([
+	        'certificacion' => old(
+	            'certificacion',
+	            $seleccion?->certificacion
+	        ),
+	        'tipo_personal' => old(
+	            'tipo_personal',
+	            $seleccion?->tipo_personal
+	        ),
+	        'area_certificacion' => old(
+	            'area_certificacion',
+	            $seleccion?->area_certificacion
+	        )
+	    ]) }}"
+	></div>
 
-                    <p class="descripcion">
-                        Seleccione la Certificación Académica
-                        a la que se aspira
-                    </p>
-
-                    <div class="opciones">
-                        @foreach(['ANFECA', 'CACSLA', 'CACECA'] as $opcion)
-                            <label class="opcion">
-                                <input
-                                    type="radio"
-                                    name="certificacion"
-                                    value="{{ $opcion }}"
-                                    required
-                                    {{ old('certificacion', $seleccion?->certificacion) === $opcion ? 'checked' : '' }}
-                                >
-                                <span>{{ $opcion }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                </section>
-
-                <!-- PERSONAL ACADÉMICO -->
-                <section class="seccion">
-                    <h2>Personal Académico</h2>
-
-                    <div class="campo">
-                        <label for="tipo_personal">
-                            Tipo de Personal Académico
-                        </label>
-
-                        <select id="tipo_personal"
-                                name="tipo_personal"
-                                required>
-                            <option value="">
-                                Seleccione una opción
-                            </option>
-
-                            @foreach([
-                                'Tiempo Completo',
-                                'Medio Tiempo',
-                                'PAES'
-                            ] as $tipo)
-                                <option value="{{ $tipo }}"
-                                    {{ old('tipo_personal', $seleccion?->tipo_personal) === $tipo ? 'selected' : '' }}>
-                                    {{ $tipo }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="campo">
-                        <label for="area_certificacion">
-                            Área de Certificación Personal
-                        </label>
-
-                        <select id="area_certificacion"
-                                name="area_certificacion"
-                                required>
-                            <option value="">
-                                Seleccione una opción
-                            </option>
-
-                            @foreach([
-                                'Contaduría',
-                                'Administración',
-                                'Informática',
-				'Negocios Internacionales',
-				'Disciplinas vinculadas al ámbito...',
-                            ] as $area)
-                                <option value="{{ $area }}"
-                                    {{ old('area_certificacion', $seleccion?->area_certificacion) === $area ? 'selected' : '' }}>
-                                    {{ $area }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </section>
-
-            </div>
 
             <!-- NAVEGACIÓN -->
             <div class="botones">
