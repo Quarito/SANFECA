@@ -41,7 +41,7 @@ class SeleccionCertificacionController extends Controller
         );
 
         return redirect()
-            ->route('registro.certificacion')
+            ->route('registro.formacion')
             ->with('success', 'Selección guardada correctamente.');
     }
 }

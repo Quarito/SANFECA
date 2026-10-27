@@ -8,29 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('formaciones_academicas', function (Blueprint $table) {
-            $table->id();
-
-            $table->foreignId('user_id')
-                ->unique()
-                ->constrained('users')
-                ->cascadeOnDelete();
-
-            $table->string('nivel_origen', 100);
-            $table->string('titulo_origen', 200);
-            $table->string('nivel_ultimo_grado', 100);
-            $table->string('titulo_ultimo_grado', 200);
-
-            $table->foreignId('institucion_afiliada_id')
-                ->constrained('instituciones_afiliadas');
-
-            $table->timestamps();
+        Schema::table('formaciones_academicas', function (Blueprint $table) {
+            $table->string('titulo_origen_archivo')->nullable();
+            $table->string('cedula_origen_archivo')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('formaciones_academicas');
+        Schema::table('formaciones_academicas', function (Blueprint $table) {
+            $table->dropColumn([
+                'titulo_origen_archivo',
+                'cedula_origen_archivo'
+            ]);
+        });
     }
 };
-
