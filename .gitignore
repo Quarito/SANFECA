@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 *.log
 .DS_Store
 .env
@@ -25,3 +26,11 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+=======
+.env
+.env.*
+!.env.example
+/vendor/
+/uploads/
+*.log
+>>>>>>> 66d70e251a120f74f1c8fcb600dc4ec2286c6008
