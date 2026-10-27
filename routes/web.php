@@ -1,7 +1,84 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DatosSolicitanteController;
+use App\Http\Controllers\SeleccionCertificacionController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
+
+Route::middleware('guest')->group(function () {
+
+    Route::get('/login', [LoginController::class, 'show'])
+        ->name('login');
+
+    Route::post('/login', [LoginController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('login.submit');
+
+});
+
+Route::post('/logout', [LoginController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
+
+Route::get('/panel', function () {
+    return view('panel');
+})->middleware('auth')->name('panel');
+
+Route::view('/registro', 'registro.create')
+    ->name('registro.create');
+
+Route::get('/recuperar', function () {
+    return 'Módulo de recuperación pendiente.';
+})->name('password.request');
+
+Route::get('/guia', function () {
+    return 'Guía paso a paso pendiente.';
+})->name('guia');
+
+
+Route::middleware('guest')->group(function () {
+
+/*    // Mostrar formulario de registro
+    Route::get(
+        '/registro/datos-personales',
+        [DatosSolicitanteController::class, 'create']
+    )->name('registro.datos');
+*/
+    // Guardar información del registro
+    Route::post(
+        '/registro/datos-personales',
+        [DatosSolicitanteController::class, 'store']
+    )->name('registro.datos.guardar');
+
+});
+
+Route::get(
+    '/registro/datos-personales',
+    [DatosSolicitanteController::class, 'create']
+)->name('registro.datos');
+
+Route::middleware('auth')->get(
+    '/registro/completado',
+    function () {
+        return view('registro.completado');
+    }
+)->name('registro.completado');
+
+Route::middleware('auth')->group(function () {
+
+    Route::get(
+        '/registro/certificacion',
+        [SeleccionCertificacionController::class, 'create']
+    )->name('registro.certificacion');
+
+    Route::post(
+        '/registro/certificacion',
+        [SeleccionCertificacionController::class, 'store']
+    )->name('registro.certificacion.guardar');
+
+});
+
