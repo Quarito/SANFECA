@@ -1,0 +1,255 @@
+
+/* =========================================
+   ANFECA - PANTALLA 4
+   FORMACIÓN ACADÉMICA
+   ========================================= */
+
+/* Página completa */
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+}
+
+.pagina-anfeca {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Contenido principal */
+
+.contenido {
+    flex: 1;
+    width: 100%;
+    padding: 30px 5% 25px;
+}
+
+.formulario {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* Formación de origen y último grado */
+
+.columnas-formacion {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8%;
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.columnas-formacion .seccion {
+    min-width: 0;
+}
+
+.columnas-formacion .seccion h2 {
+    font-size: 19px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #888;
+    padding-bottom: 8px;
+    margin-bottom: 22px;
+}
+
+/* Campos */
+
+.columnas-formacion .campo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.columnas-formacion .campo label {
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 7px;
+}
+
+.columnas-formacion .campo select {
+    width: 80%;
+    max-width: 440px;
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid #888;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+}
+
+/* Nivel de origen bloqueado */
+
+#nivel_origen_visible {
+    background: #ededed;
+    color: #555;
+    cursor: not-allowed;
+}
+
+/* Documentos */
+
+.columnas-formacion .campo-documento {
+    width: 80%;
+    max-width: 440px;
+    margin: 18px auto;
+    align-items: stretch;
+}
+
+.campo-documento label {
+    font-weight: 600;
+}
+
+.campo-documento input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    background: #fafafa;
+    border: 1px solid #aaa;
+    border-radius: 5px;
+    font-size: 13px;
+}
+
+.campo-documento input[type="file"]::file-selector-button {
+    background: #98121a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.campo-documento small {
+    display: block;
+    color: #666;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 7px;
+}
+
+.documento-guardado {
+    display: block;
+    color: #216b35;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* Institución de procedencia */
+
+.institucion {
+    width: 100%;
+    max-width: 850px;
+    margin: 35px auto 0;
+}
+
+.institucion h2 {
+    text-align: center;
+    font-size: 19px;
+    font-weight: bold;
+    border-bottom: 1px solid #888;
+    padding-bottom: 8px;
+    margin-bottom: 22px;
+}
+
+.institucion-datos {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    gap: 25px;
+    align-items: start;
+}
+
+.institucion-datos .campo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.institucion-datos .campo label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #2861bc;
+    margin-bottom: 8px;
+}
+
+.institucion-datos .campo select {
+    width: 100%;
+    max-width: 300px;
+    min-height: 36px;
+    border: 1px solid #888;
+    border-radius: 4px;
+    padding: 7px;
+    background: white;
+}
+
+.detalle-institucion {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.detalle-institucion p {
+    margin: 0 0 8px;
+}
+
+/* Botones de navegación */
+
+.formulario .botones {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 55px;
+}
+
+.formulario .boton {
+    min-width: 130px;
+    padding: 11px 22px;
+    background: #950e16;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    text-decoration: none;
+    text-align: center;
+    cursor: pointer;
+}
+
+.formulario .boton:hover {
+    background: #bb1922;
+}
+
+/* Adaptación a pantallas pequeñas */
+
+@media (max-width: 850px) {
+    .columnas-formacion {
+        grid-template-columns: 1fr;
+        gap: 35px;
+    }
+
+    .institucion-datos {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .columnas-formacion .campo select,
+    .columnas-formacion .campo-documento {
+        width: 100%;
+    }
+
+    .contenido {
+        padding: 25px 20px;
+    }
+
+    .formulario .botones {
+        padding-top: 40px;
+    }
+}
+

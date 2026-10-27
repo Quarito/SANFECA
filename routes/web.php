@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DatosSolicitanteController;
 use App\Http\Controllers\SeleccionCertificacionController;
+use App\Http\Controllers\FormacionAcademicaController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -79,6 +80,14 @@ Route::middleware('auth')->group(function () {
         '/registro/certificacion',
         [SeleccionCertificacionController::class, 'store']
     )->name('registro.certificacion.guardar');
+ Route::get(
+        '/registro/formacion-academica',
+        [FormacionAcademicaController::class, 'create']
+    )->name('registro.formacion');
 
+    Route::post(
+        '/registro/formacion-academica',
+        [FormacionAcademicaController::class, 'store']
+    )->name('registro.formacion.guardar');
 });
 

@@ -139,7 +139,7 @@
                             @foreach([
                                 'Contaduría',
                                 'Administración',
-                                'Informática'
+                                'Informática',
 				'Negocios Internacionales',
 				'Disciplinas vinculadas al ámbito...',
                             ] as $area)
