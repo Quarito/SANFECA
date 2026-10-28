@@ -1,0 +1,92 @@
+
+/* Pantalla 6 - Registro completado ANFECA */
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+}
+
+.pagina-completado {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.contenido-completado {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 60px 20px 50px;
+    box-sizing: border-box;
+}
+
+.tarjeta-completado {
+    width: 100%;
+    max-width: 355px;
+    min-height: 165px;
+    border: 1px solid #555;
+    border-radius: 7px;
+    padding: 14px 20px;
+    box-sizing: border-box;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.tarjeta-completado h2 {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.tarjeta-completado p {
+    margin: 4px 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.boton-completado {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 110px;
+    min-height: 30px;
+    padding: 6px 12px;
+    background: #990d17;
+    color: white;
+    border: 0;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+.boton-completado:hover {
+    background: #750812;
+    color: white;
+}
+
+.boton-finalizar {
+    min-height: 22px;
+}
+
+.pie-completado {
+    margin-top: auto;
+}
+
+@media (max-width: 600px) {
+    .contenido-completado {
+        padding: 45px 15px;
+    }
+
+    .tarjeta-completado {
+        max-width: 100%;
+    }
+}

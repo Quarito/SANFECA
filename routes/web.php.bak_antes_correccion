@@ -1,0 +1,108 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DatosSolicitanteController;
+use App\Http\Controllers\SeleccionCertificacionController;
+use App\Http\Controllers\FormacionAcademicaController;
+use App\Http\Controllers\PanelController;
+use App\Http\Controllers\DocumentoProbatorioController;
+
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
+Route::middleware('guest')->group(function () {
+
+    Route::get('/login', [LoginController::class, 'show'])
+        ->name('login');
+
+    Route::post('/login', [LoginController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('login.submit');
+
+});
+
+Route::post('/logout', [LoginController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
+
+Route::get('/panel', [PanelController::class, 'index'])
+    ->middleware('auth')
+    ->name('panel');
+
+Route::view('/registro', 'registro.create')
+    ->name('registro.create');
+
+Route::get('/recuperar', function () {
+    return 'Módulo de recuperación pendiente.';
+})->name('password.request');
+
+Route::get('/guia', function () {
+    return 'Guía paso a paso pendiente.';
+})->name('guia');
+
+
+Route::middleware('guest')->group(function () {
+Route::get(
+    '/registro/documentos-probatorios',
+    [DocumentoProbatorioController::class, 'create']
+)->name('registro.documentos');
+
+Route::post(
+    '/registro/documentos-probatorios',
+    [DocumentoProbatorioController::class, 'store']
+)->name('registro.documentos.guardar');
+
+Route::get(
+    '/registro/documentos-probatorios/ver/{campo}',
+    [DocumentoProbatorioController::class, 'ver']
+)->name('registro.documentos.ver');
+/*    // Mostrar formulario de registro
+    Route::get(
+        '/registro/datos-personales',
+        [DatosSolicitanteController::class, 'create']
+    )->name('registro.datos');
+*/
+    // Guardar información del registro
+    Route::post(
+        '/registro/datos-personales',
+        [DatosSolicitanteController::class, 'store']
+    )->name('registro.datos.guardar');
+
+});
+
+Route::get(
+    '/registro/datos-personales',
+    [DatosSolicitanteController::class, 'create']
+)->name('registro.datos');
+
+Route::middleware('auth')->get(
+    '/registro/completado',
+    function () {
+        return view('registro.completado');
+    }
+)->name('registro.completado');
+
+Route::middleware('auth')->group(function () {
+
+    Route::get(
+        '/registro/certificacion',
+        [SeleccionCertificacionController::class, 'create']
+    )->name('registro.certificacion');
+
+    Route::post(
+        '/registro/certificacion',
+        [SeleccionCertificacionController::class, 'store']
+    )->name('registro.certificacion.guardar');
+ Route::get(
+        '/registro/formacion-academica',
+        [FormacionAcademicaController::class, 'create']
+    )->name('registro.formacion');
+
+    Route::post(
+        '/registro/formacion-academica',
+        [FormacionAcademicaController::class, 'store']
+    )->name('registro.formacion.guardar');
+});
+

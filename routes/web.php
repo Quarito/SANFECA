@@ -1,94 +1,232 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DatosSolicitanteController;
 use App\Http\Controllers\SeleccionCertificacionController;
 use App\Http\Controllers\FormacionAcademicaController;
+use App\Http\Controllers\DocumentoProbatorioController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\RegistroCompletadoController;
+use App\Http\Controllers\Auth\RecuperacionPasswordController;
+
+/*
+|--------------------------------------------------------------------------
+| RUTA PRINCIPAL
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
+/*
+|--------------------------------------------------------------------------
+| AUTENTICACIÓN
+|--------------------------------------------------------------------------
+| Estas rutas son únicamente para usuarios sin sesión iniciada.
+*/
+
 Route::middleware('guest')->group(function () {
 
-    Route::get('/login', [LoginController::class, 'show'])
-        ->name('login');
+    // Mostrar pantalla de inicio de sesión
+    Route::get('/login', [
+        LoginController::class,
+        'show'
+    ])->name('login');
 
-    Route::post('/login', [LoginController::class, 'login'])
-        ->middleware('throttle:5,1')
-        ->name('login.submit');
+    // Procesar inicio de sesión
+    Route::post('/login', [
+        LoginController::class,
+        'login'
+    ])
+    ->middleware('throttle:5,1')
+    ->name('login.submit');
 
 });
 
-Route::post('/logout', [LoginController::class, 'logout'])
-    ->middleware('auth')
-    ->name('logout');
+/*
+|--------------------------------------------------------------------------
+| CERRAR SESIÓN
+|--------------------------------------------------------------------------
+*/
 
-Route::get('/panel', [PanelController::class, 'index'])
-    ->middleware('auth')
-    ->name('panel');
+Route::post('/logout', [
+    LoginController::class,
+    'logout'
+])
+->middleware('auth')
+->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| PANEL PRINCIPAL
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/panel', [
+    PanelController::class,
+    'index'
+])
+->middleware('auth')
+->name('panel');
+
+/*
+|--------------------------------------------------------------------------
+| REGISTRO INICIAL
+|--------------------------------------------------------------------------
+*/
 
 Route::view('/registro', 'registro.create')
     ->name('registro.create');
 
-Route::get('/recuperar', function () {
-    return 'Módulo de recuperación pendiente.';
-})->name('password.request');
+/*
+|--------------------------------------------------------------------------
+| DATOS PERSONALES
+|--------------------------------------------------------------------------
+| Se conserva el flujo de alta inicial.
+*/
+
+Route::get('/registro/datos-personales', [
+    DatosSolicitanteController::class,
+    'create'
+])->name('registro.datos');
+
+Route::middleware('guest')->group(function () {
+
+    Route::post('/registro/datos-personales', [
+        DatosSolicitanteController::class,
+        'store'
+    ])->name('registro.datos.guardar');
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| RECUPERACIÓN DE CONTRASEÑA Y GUÍA
+|--------------------------------------------------------------------------
+*/
+Route::middleware('guest')->group(function () {
+
+    // Pantalla 1: CURP y correo electrónico
+    Route::get(
+        '/recuperar',
+        [RecuperacionPasswordController::class, 'mostrarSolicitud']
+    )->name('password.request');
+
+    // Procesar solicitud de recuperación
+    Route::post(
+        '/recuperar',
+        [RecuperacionPasswordController::class, 'enviarEnlace']
+    )
+    ->middleware('throttle:3,1')
+    ->name('password.email');
+
+    // Pantalla 2: Confirmación de solicitud
+    Route::get(
+        '/recuperacion-enviada',
+        function () {
+            return view('auth.recuperacion-enviada');
+        }
+    )->name('password.sent');
+
+    // Pantalla 3: Establecer nueva contraseña
+    Route::get(
+        '/restablecer/{token}',
+        [RecuperacionPasswordController::class, 'mostrarNuevaPassword']
+    )->name('password.reset');
+
+    // Guardar nueva contraseña
+    Route::post(
+        '/restablecer',
+        [RecuperacionPasswordController::class, 'guardarNuevaPassword']
+    )
+    ->middleware('throttle:5,1')
+    ->name('password.update');
+
+});
 
 Route::get('/guia', function () {
     return 'Guía paso a paso pendiente.';
 })->name('guia');
 
-
-Route::middleware('guest')->group(function () {
-
-/*    // Mostrar formulario de registro
-    Route::get(
-        '/registro/datos-personales',
-        [DatosSolicitanteController::class, 'create']
-    )->name('registro.datos');
+/*
+|--------------------------------------------------------------------------
+| REGISTRO DE USUARIOS AUTENTICADOS
+|--------------------------------------------------------------------------
+| Todas las siguientes pantallas requieren sesión iniciada.
 */
-    // Guardar información del registro
-    Route::post(
-        '/registro/datos-personales',
-        [DatosSolicitanteController::class, 'store']
-    )->name('registro.datos.guardar');
-
-});
-
-Route::get(
-    '/registro/datos-personales',
-    [DatosSolicitanteController::class, 'create']
-)->name('registro.datos');
-
-Route::middleware('auth')->get(
-    '/registro/completado',
-    function () {
-        return view('registro.completado');
-    }
-)->name('registro.completado');
 
 Route::middleware('auth')->group(function () {
 
+    /*
+    |--------------------------------------------------------------------------
+    | PANTALLA 3 - SELECCIÓN DE CERTIFICACIÓN
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/registro/certificacion', [
+        SeleccionCertificacionController::class,
+        'create'
+    ])->name('registro.certificacion');
+
+    Route::post('/registro/certificacion', [
+        SeleccionCertificacionController::class,
+        'store'
+    ])->name('registro.certificacion.guardar');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PANTALLA 4 - FORMACIÓN ACADÉMICA
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/registro/formacion-academica', [
+        FormacionAcademicaController::class,
+        'create'
+    ])->name('registro.formacion');
+
+    Route::post('/registro/formacion-academica', [
+        FormacionAcademicaController::class,
+        'store'
+    ])->name('registro.formacion.guardar');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PANTALLA 5 - DOCUMENTOS PROBATORIOS
+    |--------------------------------------------------------------------------
+    */
+
+    // Mostrar documentos básicos, probatorios y Link
+    Route::get('/registro/documentos-probatorios', [
+        DocumentoProbatorioController::class,
+        'create'
+    ])->name('registro.documentos');
+
+    // Guardar Constancia, Comprobante de Pago y Link
+    Route::post('/registro/documentos-probatorios', [
+        DocumentoProbatorioController::class,
+        'store'
+    ])->name('registro.documentos.guardar');
+
+    // Descargar documentos del usuario autenticado
+    Route::get('/registro/documentos-probatorios/ver/{campo}', [
+        DocumentoProbatorioController::class,
+        'ver'
+    ])->name('registro.documentos.ver');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REGISTRO COMPLETADO
+    |--------------------------------------------------------------------------
+    */
+
     Route::get(
-        '/registro/certificacion',
-        [SeleccionCertificacionController::class, 'create']
-    )->name('registro.certificacion');
-
-    Route::post(
-        '/registro/certificacion',
-        [SeleccionCertificacionController::class, 'store']
-    )->name('registro.certificacion.guardar');
- Route::get(
-        '/registro/formacion-academica',
-        [FormacionAcademicaController::class, 'create']
-    )->name('registro.formacion');
-
-    Route::post(
-        '/registro/formacion-academica',
-        [FormacionAcademicaController::class, 'store']
-    )->name('registro.formacion.guardar');
+    '/registro/completado',
+    [RegistroCompletadoController::class, 'index']
+     )->name('registro.completado');
 });
-
