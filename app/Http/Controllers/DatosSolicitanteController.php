@@ -90,5 +90,146 @@ class DatosSolicitanteController extends Controller
         return redirect()
             ->route('registro.certificacion');
     }
+    /*
+    |--------------------------------------------------------------------------
+    | CONSULTAR DATOS DEL USUARIO REGISTRADO
+    |--------------------------------------------------------------------------
+    */
+
+    public function edit(Request $request)
+    {
+        $datos = DatosSolicitante::where(
+            'user_id',
+            $request->user()->id
+        )->first();
+
+        if (!$datos) {
+            return redirect()
+                ->route('panel')
+                ->with(
+                    'error',
+                    'No se encontraron datos personales registrados.'
+                );
+        }
+
+        return view('solicitante.mis-datos', [
+            'datos' => $datos,
+        ]);
+    }
+/*
+|--------------------------------------------------------------------------
+| ACTUALIZAR DATOS PERSONALES
+|--------------------------------------------------------------------------
+*/
+
+public function update(Request $request)
+{
+    $user = $request->user();
+
+    $solicitante = DatosSolicitante::where(
+        'user_id',
+        $user->id
+    )->firstOrFail();
+
+    // Normalizar información
+    $request->merge([
+        'curp' => strtoupper(trim($request->input('curp', ''))),
+        'rfc' => strtoupper(trim($request->input('rfc', ''))),
+        'correo_electronico' => strtolower(
+            trim($request->input('correo_electronico', ''))
+        ),
+    ]);
+
+    $datos = $request->validate([
+        'curp' => [
+            'required',
+            'string',
+            'size:18',
+            'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/',
+            Rule::unique('datos_solicitantes', 'curp')
+                ->ignore($solicitante->id),
+        ],
+        'rfc' => [
+            'required',
+            'string',
+            'min:12',
+            'max:13',
+            Rule::unique('datos_solicitantes', 'rfc')
+                ->ignore($solicitante->id),
+        ],
+        'cedula_profesional' => [
+            'nullable', 'string', 'max:30'
+        ],
+        'nombres' => [
+            'required', 'string', 'max:150'
+        ],
+        'apellido_paterno' => [
+            'required', 'string', 'max:100'
+        ],
+        'apellido_materno' => [
+            'nullable', 'string', 'max:100'
+        ],
+        'calle' => [
+            'required', 'string', 'max:200'
+        ],
+        'numero_exterior' => [
+            'required', 'string', 'max:20'
+        ],
+        'numero_interior' => [
+            'nullable', 'string', 'max:20'
+        ],
+        'codigo_postal' => [
+            'required', 'digits:5'
+        ],
+        'entidad_federativa' => [
+            'required', 'string', 'max:100'
+        ],
+        'colonia' => [
+            'required', 'string', 'max:150'
+        ],
+        'municipio' => [
+            'required', 'string', 'max:150'
+        ],
+        'correo_electronico' => [
+            'required',
+            'email',
+            'max:255',
+            Rule::unique('users', 'email')
+                ->ignore($user->id),
+            Rule::unique('datos_solicitantes', 'correo_electronico')
+                ->ignore($solicitante->id),
+        ],
+        'telefono_particular' => [
+            'nullable', 'string', 'max:20'
+        ],
+        'telefono_celular' => [
+            'nullable', 'string', 'max:20'
+        ],
+    ]);
+
+    DB::transaction(function () use (
+        $user,
+        $solicitante,
+        $datos
+    ) {
+        $solicitante->update($datos);
+
+        $user->update([
+            'name' => trim(
+                $datos['nombres'] . ' ' .
+                $datos['apellido_paterno'] . ' ' .
+                ($datos['apellido_materno'] ?? '')
+            ),
+            'email' => $datos['correo_electronico'],
+        ]);
+    });
+
+    return redirect()
+        ->route('mis-datos.edit')
+        ->with(
+            'success',
+            'Datos actualizados correctamente.'
+        );
+}
 }
 

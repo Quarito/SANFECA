@@ -41,9 +41,18 @@
         </section>
 
         <section class="acceso">
-            <form action="{{ route('login.submit') }}"
-                  method="POST">
-                @csrf
+
+	    {{-- Mensaje de confirmación de recuperación de contraseña --}}
+	    @if (session('status'))
+	        <div class="mensaje-exito" role="status">
+	            <span class="mensaje-exito-icono">✓</span>
+	            <span>{{ session('status') }}</span>
+	        </div>
+	    @endif
+
+	    <form action="{{ route('login.submit') }}"
+	          method="POST">
+        @csrf
 
                 <label for="email">Usuario</label>
                 <input type="email"

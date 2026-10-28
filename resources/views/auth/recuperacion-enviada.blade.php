@@ -6,17 +6,19 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Recuperación de Contraseña | ANFECA</title>
+    <title>Solicitud recibida | ANFECA</title>
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <link rel="stylesheet"
           href="{{ asset('css/certificacion.css') }}">
 
     <link rel="stylesheet"
-          href="{{ asset('css/recuperacion-enviada.css') }}">
+          href="{{ asset('css/recuperar-password.css') }}">
 </head>
 
 <body>
-<div class="pagina-recuperacion-enviada">
+<div class="pagina-recuperacion">
 
     <header class="encabezado">
         <div class="logos">
@@ -35,26 +37,32 @@
         </div>
     </header>
 
-    <main class="contenido-recuperacion-enviada">
+    <main class="contenido-recuperacion">
 
-        <section class="confirmacion-recuperacion">
+        <section class="tarjeta-confirmacion">
 
-            <h2>Recuperación de Contraseña</h2>
+            <div class="confirmacion-icono">✓</div>
 
-            <div class="mensaje-confirmacion">
-                Si los datos corresponden a una cuenta
-                registrada, se enviará un enlace de
-                recuperación a su correo electrónico.
-                <strong>
-                    Revise su correo
-                </strong>
-                y siga las instrucciones.
+            <h2>Solicitud recibida</h2>
+
+            <p>
+                Si los datos proporcionados corresponden
+                a una cuenta registrada, recibirás un
+                correo electrónico con las instrucciones
+                para restablecer tu contraseña.
+            </p>
+
+            <p>
+                Revisa también tu carpeta de correo
+                no deseado.
+            </p>
+
+            <div class="botones-recuperacion">
+                <a href="{{ route('login') }}"
+                   class="boton-rojo">
+                    Volver al inicio de sesión
+                </a>
             </div>
-
-            <a href="{{ route('login') }}"
-               class="boton-volver">
-                Volver
-            </a>
 
         </section>
 
@@ -67,12 +75,8 @@
         </div>
 
         <div class="legal">
-            Esta página puede ser reproducida con fines no lucrativos,
-            siempre y cuando no se mutile y se cite la fuente
-            completa y su dirección electrónica.
-            AVISO DE PRIVACIDAD.
-            Sitio web administrado por el Centro de Informática
-            de la Facultad de Contaduría y Administración (FCA).
+            Sistema de Certificación Académica ANFECA.
+            Consulta el aviso de privacidad institucional.
         </div>
     </footer>
 

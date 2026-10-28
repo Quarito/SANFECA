@@ -13,7 +13,7 @@
           href="{{ asset('css/certificacion.css') }}">
 
     <link rel="stylesheet"
-          href="{{ asset('css/recuperar-password.css') }}">
+          href="{{ asset('css/recuperar-password.css') }}?v=5"
 </head>
 
 <body>

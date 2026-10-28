@@ -95,3 +95,22 @@ const contenedorNuevaPassword = document.getElementById(
 if (contenedorNuevaPassword) {
     createApp(NuevaPassword).mount(contenedorNuevaPassword);
 }
+// ACTUALIZACIÓN DE DATOS PERSONALES
+import ActualizarDatos from './components/ActualizarDatos.vue';
+
+const contenedorActualizar = document.getElementById(
+    'vue-actualizar-datos'
+);
+
+if (contenedorActualizar) {
+    const datos = JSON.parse(
+        contenedorActualizar.dataset.datos || '{}'
+    );
+
+    createApp(ActualizarDatos, {
+    datos,
+    accion: contenedorActualizar.dataset.accion,
+    csrf: contenedorActualizar.dataset.csrf,
+    editarInicialmente: contenedorActualizar.dataset.editar === '1'
+}).mount(contenedorActualizar);
+}

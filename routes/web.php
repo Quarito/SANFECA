@@ -74,6 +74,26 @@ Route::get('/panel', [
 
 /*
 |--------------------------------------------------------------------------
+| AUTORIZACIÓN Y ACTUALIZACIÓN DE DATOS
+|--------------------------------------------------------------------------
+| Exclusivo para usuarios autenticados.
+*/
+
+Route::middleware('auth')->group(function () {
+
+    Route::get('/mis-datos', [
+        DatosSolicitanteController::class,
+        'edit'
+    ])->name('mis-datos.edit');
+
+    Route::put('/mis-datos', [
+        DatosSolicitanteController::class,
+        'update'
+    ])->name('mis-datos.update');
+
+});
+/*
+|--------------------------------------------------------------------------
 | REGISTRO INICIAL
 |--------------------------------------------------------------------------
 */

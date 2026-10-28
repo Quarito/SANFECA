@@ -26,26 +26,27 @@ class PanelController extends Controller
         )->exists();
 
         $etapas = [
-            [
-                'nombre' => 'Datos Personales',
-                'descripcion' => 'Información personal, domicilio y contacto.',
-                'completa' => $datosCompletos,
-                'ruta' => 'registro.datos',
-            ],
-            [
-                'nombre' => 'Selección de Certificación',
-                'descripcion' => 'Certificación, tipo de personal y área académica.',
-                'completa' => $certificacionCompleta,
-                'ruta' => 'registro.certificacion',
-            ],
-            [
-                'nombre' => 'Formación Académica',
-                'descripcion' => 'Grados académicos, documentos e institución.',
-                'completa' => $formacionCompleta,
-                'ruta' => 'registro.formacion',
-            ],
-        ];
-
+	    [
+	        'nombre' => 'Datos Personales',
+	        'descripcion' => 'Información personal, domicilio y contacto.',
+	        'completa' => $datosCompletos,
+	        'ruta' => $datosCompletos
+	            ? 'mis-datos.edit'
+	            : 'registro.datos',
+	    ],
+	    [
+	        'nombre' => 'Selección de Certificación',
+	        'descripcion' => 'Certificación, tipo de personal y área académica.',
+	        'completa' => $certificacionCompleta,
+	        'ruta' => 'registro.certificacion',
+	    ],
+	    [
+	        'nombre' => 'Formación Académica',
+	        'descripcion' => 'Grados académicos, documentos e institución.',
+	        'completa' => $formacionCompleta,
+	        'ruta' => 'registro.formacion',
+	    ],
+	];
         $completadas = collect($etapas)
             ->where('completa', true)
             ->count();

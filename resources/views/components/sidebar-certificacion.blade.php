@@ -1,13 +1,23 @@
 @php
     $esPreview = request()->is('preview/*');
 
-    $etapas = [
-        [
-            'nombre' => 'Datos personales',
-            'descripcion' => 'Información del solicitante',
-            'ruta' => 'registro.datos',
-            'preview' => 'preview.datos',
-        ],
+    $tieneDatos = false;
+
+    if (!$esPreview && auth()->check()) {
+        $tieneDatos = \App\Models\DatosSolicitante::where(
+            'user_id',
+            auth()->id()
+        )->exists();
+    }
+
+    $etapas = [        [
+    'nombre' => 'Datos personales',
+    'descripcion' => 'Información del solicitante',
+    'ruta' => $tieneDatos
+        ? 'mis-datos.edit'
+        : 'registro.datos',
+    'preview' => 'preview.datos',
+],
         [
             'nombre' => 'Certificación',
             'descripcion' => 'Selección de certificación',

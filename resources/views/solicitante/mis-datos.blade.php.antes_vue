@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Autorización de Datos | ANFECA</title>
+
+    <link rel="stylesheet"
+          href="{{ asset('css/certificacion.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ asset('css/panel-anfeca.css') }}">
+</head>
+
+<script>
+function mostrarFormularioDatos() {
+    document.getElementById('formulario-actualizacion').style.display = 'block';
+    document.getElementById('btn-modificar-datos').style.display = 'none';
+}
+
+function ocultarFormularioDatos() {
+    document.getElementById('formulario-actualizacion').style.display = 'none';
+    document.getElementById('btn-modificar-datos').style.display = 'inline-block';
+}
+</script>
+
+<body>
+<div class="pagina-anfeca">
+
+    <header class="encabezado">
+        <div class="logos">
+            <img src="{{ asset('images/logo-anfeca.png') }}"
+                 alt="ANFECA">
+
+            <img src="{{ asset('images/logo-certificacion.png') }}"
+                 alt="Certificación">
+        </div>
+
+        <h1>
+            REGISTRO AL SISTEMA DE<br>
+            CERTIFICACIÓN DE LA ANFECA
+        </h1>
+
+        <div class="coordinacion">
+            Coordinación Nacional de<br>
+            Certificación Académica
+        </div>
+    </header>
+
+    <div class="barra-usuario">
+        <span class="icono-usuario">◉</span>
+        <span>
+            Bienvenido de nuevo:
+            {{ auth()->user()->name }}
+        </span>
+    </div>
+
+    <div class="cert-layout">
+
+    @include('components.sidebar-certificacion')
+
+    <main class="contenido cert-main">
+        <div class="panel-contenedor">
+
+		@if(session('success'))
+    <div class="mensaje-exito" role="status">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="mensaje-error" role="alert">
+        <strong>No fue posible guardar los cambios:</strong>
+        <ul>
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+            <h2>Autorización de Datos</h2>
+
+            <p class="panel-descripcion">
+                Consulta la información personal
+                registrada en el sistema.
+            </p>
+
+            <div class="panel-etapas">
+
+                <section class="tarjeta-etapa">
+                    <h3>Datos personales</h3>
+
+                    <p><strong>CURP:</strong>
+                        {{ $datos->curp }}
+                    </p>
+
+                    <p><strong>RFC:</strong>
+                        {{ $datos->rfc }}
+                    </p>
+
+                    <p><strong>Nombre:</strong>
+                        {{ $datos->nombres }}
+                        {{ $datos->apellido_paterno }}
+                        {{ $datos->apellido_materno }}
+                    </p>
+                </section>
+
+                <section class="tarjeta-etapa">
+                    <h3>Domicilio</h3>
+
+                    <p>
+                        {{ $datos->calle }}
+                        {{ $datos->numero_exterior }}
+                        {{ $datos->numero_interior }}
+                    </p>
+
+                    <p>
+                        {{ $datos->colonia }},
+                        {{ $datos->municipio }}
+                    </p>
+
+                    <p>
+                        {{ $datos->entidad_federativa }},
+                        C.P. {{ $datos->codigo_postal }}
+                    </p>
+                </section>
+
+                <section class="tarjeta-etapa">
+                    <h3>Información de contacto</h3>
+
+                    <p><strong>Teléfono celular:</strong>
+                        {{ $datos->telefono_celular ?: 'No registrado' }}
+                    </p>
+
+                    <p><strong>Teléfono particular:</strong>
+                        {{ $datos->telefono_particular ?: 'No registrado' }}
+                    </p>
+
+                    <p><strong>Correo electrónico:</strong>
+                        {{ $datos->correo_electronico }}
+                    </p>
+                </section>
+
+            </div>
+<div id="formulario-actualizacion" style="display:none; margin-top:25px;">
+
+    <h2>Modificar datos personales</h2>
+
+    <form method="POST" action="{{ route('mis-datos.update') }}">
+        @csrf
+        @method('PUT')
+
+        <div class="panel-etapas">
+
+            <section class="tarjeta-etapa">
+                <h3>Datos personales</h3>
+
+                <label>CURP</label>
+                <input type="text" name="curp"
+                       value="{{ old('curp', $datos->curp) }}"
+                       maxlength="18" required>
+
+                <label>RFC</label>
+                <input type="text" name="rfc"
+                       value="{{ old('rfc', $datos->rfc) }}"
+                       maxlength="13" required>
+
+                <label>Nombre(s)</label>
+                <input type="text" name="nombres"
+                       value="{{ old('nombres', $datos->nombres) }}"
+                       required>
+
+                <label>Apellido paterno</label>
+                <input type="text" name="apellido_paterno"
+                       value="{{ old('apellido_paterno', $datos->apellido_paterno) }}"
+                       required>
+
+                <label>Apellido materno</label>
+                <input type="text" name="apellido_materno"
+                       value="{{ old('apellido_materno', $datos->apellido_materno) }}">
+            </section>
+
+            <section class="tarjeta-etapa">
+                <h3>Domicilio</h3>
+
+                <label>Calle</label>
+                <input type="text" name="calle"
+                       value="{{ old('calle', $datos->calle) }}" required>
+
+                <label>Número exterior</label>
+                <input type="text" name="numero_exterior"
+                       value="{{ old('numero_exterior', $datos->numero_exterior) }}" required>
+
+                <label>Número interior</label>
+                <input type="text" name="numero_interior"
+                       value="{{ old('numero_interior', $datos->numero_interior) }}">
+
+                <label>Código postal</label>
+                <input type="text" name="codigo_postal"
+                       value="{{ old('codigo_postal', $datos->codigo_postal) }}"
+                       maxlength="5" required>
+
+                <label>Entidad federativa</label>
+                <input type="text" name="entidad_federativa"
+                       value="{{ old('entidad_federativa', $datos->entidad_federativa) }}"
+                       required>
+
+                <label>Colonia</label>
+                <input type="text" name="colonia"
+                       value="{{ old('colonia', $datos->colonia) }}" required>
+
+                <label>Alcaldía/Municipio</label>
+                <input type="text" name="municipio"
+                       value="{{ old('municipio', $datos->municipio) }}" required>
+            </section>
+
+            <section class="tarjeta-etapa">
+                <h3>Información de contacto</h3>
+
+                <label>Correo electrónico</label>
+                <input type="email" name="correo_electronico"
+                       value="{{ old('correo_electronico', $datos->correo_electronico) }}"
+                       required>
+
+                <label>Teléfono particular</label>
+                <input type="text" name="telefono_particular"
+                       value="{{ old('telefono_particular', $datos->telefono_particular) }}">
+
+                <label>Teléfono celular</label>
+                <input type="text" name="telefono_celular"
+                       value="{{ old('telefono_celular', $datos->telefono_celular) }}">
+            </section>
+
+        </div>
+
+        <div class="panel-acciones" style="margin-top:20px;">
+
+            <button type="submit" class="boton">
+                Guardar cambios
+            </button>
+
+            <button type="button" class="boton"
+                    onclick="ocultarFormularioDatos()">
+                Cancelar
+            </button>
+
+        </div>
+
+    </form>
+</div>
+            <div class="panel-acciones">
+
+		    <button
+		        type="button"
+		        class="boton"
+		        id="btn-modificar-datos"
+		        onclick="mostrarFormularioDatos()"
+		    >
+		        Modificar datos
+		    </button>
+
+		    <a href="{{ route('registro.certificacion') }}"
+		       class="boton">
+		        Continuar
+		    </a>
+
+		</div>
+
+                </div>
+    </main>
+
+</div>
+
+<footer class="pie-pagina">
+        <div class="origen">
+            Hecho en México<br>
+            D.R. © {{ date('Y') }}
+        </div>
+
+        <div class="legal">
+            Esta página puede ser reproducida con fines no lucrativos,
+            siempre y cuando no se mutile, se cite la fuente completa
+            y su dirección electrónica.
+            De otra forma requiere permiso previo por escrito
+            de la institución.
+
+            <strong>AVISO DE PRIVACIDAD.</strong>
+        </div>
+    </footer>
+
+</div>
+</body>
+</html>
