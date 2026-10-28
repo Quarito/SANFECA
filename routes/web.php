@@ -230,3 +230,88 @@ Route::middleware('auth')->group(function () {
     [RegistroCompletadoController::class, 'index']
      )->name('registro.completado');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Vistas previas ANFECA - SOLO DESARROLLO
+|--------------------------------------------------------------------------
+*/
+
+if (app()->environment('local')) {
+
+    Route::prefix('preview')
+        ->name('preview.')
+        ->group(function () {
+
+            Route::get('/registro', function () {
+                return view('registro.datos-personales', [
+                    'datos' => null,
+                ]);
+            })->name('datos');
+
+            Route::get('/certificacion', function () {
+                return view('registro.certificacion', [
+                    'seleccion' => null,
+                ]);
+            })->name('certificacion');
+
+            Route::get('/formacion-academica', function () {
+                return view('registro.formacion-academica', [
+                    'formacion' => null,
+                    'instituciones' => collect(),
+                ]);
+            })->name('formacion');
+
+            Route::get('/documentos', function () {
+
+                $academicos = [
+                    'titulo_origen_archivo' => [
+                        'nombre' => 'Título de Licenciatura',
+                        'disponible' => false,
+                        'url' => null,
+                    ],
+                    'cedula_origen_archivo' => [
+                        'nombre' => 'Cédula de Licenciatura',
+                        'disponible' => false,
+                        'url' => null,
+                    ],
+                    'titulo_ultimo_grado_archivo' => [
+                        'nombre' => 'Título de último grado',
+                        'disponible' => false,
+                        'url' => null,
+                    ],
+                    'cedula_ultimo_grado_archivo' => [
+                        'nombre' => 'Cédula de último grado',
+                        'disponible' => false,
+                        'url' => null,
+                    ],
+                ];
+
+                $nuevos = [
+                    'constancia_antiguedad_archivo' => [
+                        'nombre' => 'Constancia de Antigüedad',
+                        'disponible' => false,
+                        'url' => null,
+                    ],
+                    'comprobante_pago_archivo' => [
+                        'nombre' => 'Comprobante de Pago',
+                        'disponible' => false,
+                        'url' => null,
+                    ],
+                ];
+
+                return view('registro.documentos-probatorios', [
+                    'academicos' => $academicos,
+                    'nuevos' => $nuevos,
+                    'link' => '',
+                ]);
+
+            })->name('documentos');
+
+            Route::get('/completado', function () {
+                return view('registro.completado', [
+                    'registroCompleto' => false,
+                ]);
+            })->name('completado');
+        });
+}

@@ -1,0 +1,353 @@
+
+.cert-layout {
+    display: flex;
+    min-height: calc(100vh - 90px);
+    background: #f6f8fb;
+}
+
+.cert-sidebar {
+    width: 250px;
+    min-width: 250px;
+    padding: 22px 14px;
+    background: #151d2e;
+    color: #ffffff;
+}
+
+.cert-sidebar-title {
+    margin-bottom: 22px;
+    padding: 0 8px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.cert-sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.cert-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 12px;
+    border: 1px solid #303a4c;
+    border-radius: 7px;
+    background: #1c2637;
+    color: #c6cfdd;
+    text-decoration: none;
+    transition: background .2s;
+}
+
+.cert-sidebar-item:hover {
+    background: #29384d;
+    color: white;
+}
+
+.cert-sidebar-item.active {
+    border-left: 3px solid #d7a72d;
+    background: #29384d;
+    color: white;
+}
+
+.cert-sidebar-item.unavailable {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+.cert-step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #40516c;
+    color: white;
+    font-size: 12px;
+}
+
+.cert-step-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cert-step-text strong {
+    font-size: 12px;
+}
+
+.cert-step-text small {
+    font-size: 10px;
+}
+
+.cert-main {
+    flex: 1;
+    min-width: 0;
+    padding: 25px;
+}
+
+@media (max-width: 768px) {
+    .cert-layout {
+        flex-direction: column;
+    }
+
+    .cert-sidebar {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .cert-main {
+        padding: 15px;
+    }
+}
+
+/* ==========================================
+   ANFECA - PANEL DE CERTIFICACIÓN
+   Diseño institucional rojo suave
+   ========================================== */
+
+:root {
+    --anfeca-rojo: #bd2434;
+    --anfeca-rojo-hover: #a71e2d;
+    --anfeca-rojo-claro: #f9e8e9;
+    --anfeca-rosa: #fcf3f3;
+    --anfeca-rosa-activo: #f7dfe1;
+    --anfeca-texto: #26313c;
+    --anfeca-secundario: #66717d;
+    --anfeca-borde: #e6d8da;
+}
+
+/* CONTENEDOR PRINCIPAL */
+
+.cert-layout {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: calc(100vh - 160px);
+    gap: 0;
+    background: #ffffff;
+}
+
+/* MENÚ LATERAL */
+
+.cert-layout .cert-sidebar {
+    width: 250px;
+    min-width: 250px;
+    box-sizing: border-box;
+    padding: 28px 15px;
+    background: linear-gradient(
+        180deg,
+        #fcf7f7 0%,
+        #f8eff0 100%
+    );
+    border-right: 1px solid var(--anfeca-borde);
+    color: var(--anfeca-texto);
+}
+
+/* TÍTULO DEL MENÚ */
+
+.cert-sidebar-title {
+    margin-bottom: 22px;
+    padding: 0 8px 16px;
+    border-bottom: 2px solid var(--anfeca-rojo);
+    color: var(--anfeca-texto);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+/* LISTA DE ETAPAS */
+
+.cert-sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* TARJETAS DEL MENÚ */
+
+.cert-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 62px;
+    box-sizing: border-box;
+    padding: 12px 11px;
+    background: #ffffff;
+    border: 1px solid var(--anfeca-borde);
+    border-radius: 7px;
+    color: var(--anfeca-texto);
+    text-decoration: none;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+/* EFECTO AL PASAR EL CURSOR */
+
+a.cert-sidebar-item:hover {
+    background: var(--anfeca-rosa);
+    border-color: #dbaeb3;
+    color: var(--anfeca-texto);
+    box-shadow: 0 2px 8px rgba(150, 30, 45, 0.06);
+}
+
+/* ETAPA ACTIVA */
+
+.cert-sidebar-item.active {
+    background: var(--anfeca-rosa-activo);
+    border: 1px solid #e9b8bd;
+    border-left: 4px solid var(--anfeca-rojo);
+    color: var(--anfeca-texto);
+    padding-left: 8px;
+}
+
+/* NÚMERO DE CADA ETAPA */
+
+.cert-step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #b77b84;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* NÚMERO DE ETAPA ACTIVA */
+
+.cert-sidebar-item.active .cert-step-number {
+    background: var(--anfeca-rojo);
+    color: #ffffff;
+}
+
+/* TEXTO DE LAS ETAPAS */
+
+.cert-step-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.cert-step-text strong {
+    color: var(--anfeca-texto);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.cert-step-text small {
+    color: var(--anfeca-secundario);
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+/* ETAPAS NO DISPONIBLES */
+
+.cert-sidebar-item.unavailable {
+    background: #f5f2f2;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ÁREA DE LOS FORMULARIOS EXISTENTES */
+
+.cert-layout .cert-main {
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 28px 24px;
+    background: #ffffff;
+}
+
+/* ACCESIBILIDAD */
+
+.cert-sidebar-item:focus-visible {
+    outline: 2px solid var(--anfeca-rojo);
+    outline-offset: 3px;
+}
+
+/* DISEÑO RESPONSIVO */
+
+@media (max-width: 768px) {
+    .cert-layout {
+        flex-direction: column;
+    }
+
+    .cert-layout .cert-sidebar {
+        width: 100%;
+        min-width: 0;
+        padding: 18px 15px;
+        border-right: none;
+        border-bottom: 1px solid var(--anfeca-borde);
+    }
+
+    .cert-sidebar nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    .cert-layout .cert-main {
+        width: 100%;
+        padding: 18px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .cert-sidebar nav {
+        grid-template-columns: 1fr;
+    }
+}
+/* =====================================
+   MODO VISTA PREVIA ANFECA
+   ===================================== */
+
+body.modo-preview .cert-main button[type="submit"] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+body.modo-preview .cert-main input,
+body.modo-preview .cert-main select,
+body.modo-preview .cert-main textarea {
+    background-color: #faf7f7;
+}
+/* Aviso de demostración ANFECA */
+
+.cert-preview-aviso {
+    background: #f9e8e9;
+    border: 1px solid #e9b8bd;
+    border-radius: 7px;
+    padding: 12px;
+    margin: 0 0 20px;
+}
+
+.cert-preview-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #a71e2d;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.cert-preview-titulo span {
+    font-size: 13px;
+}
+
+.cert-preview-aviso p {
+    color: #66717d;
+    font-size: 11px;
+    line-height: 1.5;
+    margin: 7px 0 0;
+}

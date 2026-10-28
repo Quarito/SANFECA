@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="{{ asset('css/certificacion.css') }}">
     <link rel="stylesheet" href="{{ asset('css/datos-personales-vue.css') }}">
 </head>
-<body>
+<body @if(request()->is("preview/*")) class="modo-preview" @endif>
 <div class="pagina-anfeca">
 
     <header class="encabezado">
@@ -39,7 +39,10 @@
         </span>
     </div>
 
-    <main class="contenido">
+    <div class="cert-layout">
+    @include('components.sidebar-certificacion')
+
+    <main class="contenido cert-main">
 
         @if(session('success'))
             <div class="mensaje-exito">
@@ -62,7 +65,11 @@
             method="POST"
             action="{{ route('registro.datos.guardar') }}"
             class="formulario"
-        >
+        
+@if(request()->is("preview/*"))
+    onsubmit="return false;"
+@endif
+>
             @csrf
 
             <div
@@ -97,6 +104,7 @@
             </div>
         </form>
     </main>
+</div>
 
     <footer class="pie-pagina">
         <div class="origen">

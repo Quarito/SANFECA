@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+@vite(['resources/css/app.css', 'resources/js/app.js'])
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
@@ -14,7 +15,7 @@
           href="{{ asset('css/registro-completado.css') }}">
 </head>
 
-<body>
+<body @if(request()->is("preview/*")) class="modo-preview" @endif>
     <div class="pagina-completado">
 
         <header class="encabezado">
@@ -43,11 +44,14 @@
 
         <div class="barra-usuario">
             <span>
-                Usuario: {{ auth()->user()->name }}
+                Usuario: {{ auth()->user()?->name ?? 'Vista previa' }}
             </span>
         </div>
 
-        <main class="contenido-completado">
+        <div class="cert-layout">
+    @include('components.sidebar-certificacion')
+
+    <main class="contenido-completado cert-main">
 
             <section class="tarjeta-completado">
 
@@ -102,6 +106,7 @@
             </section>
 
         </main>
+</div>
 
         <footer class="pie-pagina pie-completado">
             <div class="origen">

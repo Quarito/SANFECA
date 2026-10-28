@@ -16,7 +16,7 @@
           href="{{ asset('css/documentos-probatorios.css') }}">
 </head>
 
-<body>
+<body @if(request()->is("preview/*")) class="modo-preview" @endif>
 <div class="pagina-anfeca">
 
     <header class="encabezado">
@@ -41,10 +41,13 @@
 
     <div class="barra-usuario">
         <span class="icono-usuario">◉</span>
-        <span>Usuario: {{ auth()->user()->name }}</span>
+        <span>Usuario: {{ auth()->user()?->name ?? 'Vista previa' }}</span>
     </div>
 
-    <main class="contenido">
+    <div class="cert-layout">
+    @include('components.sidebar-certificacion')
+
+    <main class="contenido cert-main">
 
         @if(session('success'))
             <div class="mensaje-exito">
@@ -68,7 +71,11 @@
             action="{{ route('registro.documentos.guardar') }}"
             enctype="multipart/form-data"
             class="formulario"
-        >
+        
+@if(request()->is("preview/*"))
+    onsubmit="return false;"
+@endif
+>
             @csrf
 
             <div
@@ -90,6 +97,7 @@
             </div>
         </form>
     </main>
+</div>
 
     <footer class="pie-pagina">
         <div class="origen">

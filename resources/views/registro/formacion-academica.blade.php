@@ -15,7 +15,7 @@
           href="{{ asset('css/formacion-academica.css') }}">
 </head>
 
-<body>
+<body @if(request()->is("preview/*")) class="modo-preview" @endif>
 <div class="pagina-anfeca">
 
     <!-- ENCABEZADO INSTITUCIONAL -->
@@ -43,11 +43,14 @@
     <div class="barra-usuario">
         <span class="icono-usuario">◉</span>
         <span>
-            Usuario: {{ auth()->user()->name }}
+            Usuario: {{ auth()->user()?->name ?? 'Vista previa' }}
         </span>
     </div>
 
-    <main class="contenido">
+    <div class="cert-layout">
+    @include('components.sidebar-certificacion')
+
+    <main class="contenido cert-main">
 
         @if(session('success'))
             <div class="mensaje-exito">
@@ -69,7 +72,11 @@
 	<form method="POST"
               action="{{ route('registro.formacion.guardar') }}"
               enctype="multipart/form-data"
-              class="formulario">
+              class="formulario"
+@if(request()->is("preview/*"))
+    onsubmit="return false;"
+@endif
+>
             @csrf
 
 
@@ -104,6 +111,7 @@
             </div>
         </form>
     </main>
+</div>
 
     <!-- PIE INSTITUCIONAL -->
     <footer class="pie-pagina">
