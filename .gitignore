@@ -34,3 +34,9 @@ Thumbs.db
 /uploads/
 *.log
 >>>>>>> 66d70e251a120f74f1c8fcb600dc4ec2286c6008
+
+# Respaldos temporales
+*.bak
+*.bak_*
+*.antes_panel
+/respaldos/
