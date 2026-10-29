@@ -206,6 +206,8 @@ data-datos="{{ json_encode([
     data-accion="{{ route('mis-datos.update') }}"
     data-csrf="{{ csrf_token() }}"
     data-editar="{{ $errors->any() ? '1' : '0' }}"
+	data-accion-autorizar="{{ route('mis-datos.autorizar') }}"
+    data-autorizado="{{ $datos->datos_autorizados ? '1' : '0' }}"
 ></div>
 
            

@@ -108,9 +108,14 @@ if (contenedorActualizar) {
     );
 
     createApp(ActualizarDatos, {
-    datos,
+    datos: JSON.parse(contenedorActualizar.dataset.datos),
     accion: contenedorActualizar.dataset.accion,
     csrf: contenedorActualizar.dataset.csrf,
-    editarInicialmente: contenedorActualizar.dataset.editar === '1'
+    editarInicialmente: contenedorActualizar.dataset.editar === '1',
+	accionAutorizar: contenedorActualizar.dataset.accionAutorizar,
+autorizadoInicialmente: contenedorActualizar.dataset.autorizado === '1',
+
+
+
 }).mount(contenedorActualizar);
 }

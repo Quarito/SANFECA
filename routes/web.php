@@ -92,6 +92,12 @@ Route::middleware('auth')->group(function () {
     ])->name('mis-datos.update');
 
 });
+
+// Autorizar datos personales del solicitante
+Route::post('/mis-datos/autorizar', [DatosSolicitanteController::class, 'autorizar'])
+    ->middleware('auth')
+    ->name('mis-datos.autorizar');
+
 /*
 |--------------------------------------------------------------------------
 | REGISTRO INICIAL

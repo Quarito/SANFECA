@@ -17,11 +17,21 @@ const props = defineProps({
     editarInicialmente: {
         type: Boolean,
         default: false
-    }
+    },
+
+	accionAutorizar: {
+    type: String,
+    required: true
+},
+autorizadoInicialmente: {
+    type: Boolean,
+    default: false
+},
+
 });
 
 const editando = ref(props.editarInicialmente);
-
+const confirmacionDatos = ref(false);
 const campos = reactive({ ...props.datos });
 
 const grupos = [
@@ -144,7 +154,50 @@ function cancelar() {
                 </button>
             </div>
         </form>
-    </div>
+	<!-- Autorización de datos personales -->
+<section v-if="!editando" class="seccion-autorizacion">
+
+    <template v-if="autorizadoInicialmente">
+
+        <p class="mensaje-autorizado">
+            ✓ Tus datos personales se encuentran autorizados.
+        </p>
+
+    </template>
+
+    <form v-else :action="accionAutorizar" method="POST">
+
+        <input type="hidden" name="_token" :value="csrf">
+
+        <label class="confirmacion-datos">
+            <input
+                type="checkbox"
+                name="confirmacion_datos"
+                value="1"
+                v-model="confirmacionDatos"
+                required
+            >
+
+            Confirmo que he revisado mis datos personales
+            y que la información proporcionada es correcta.
+        </label>
+
+        <div class="panel-acciones">
+            <button
+                type="submit"
+                class="boton"
+                :disabled="!confirmacionDatos"
+            >
+                Autorizar y continuar
+            </button>
+        </div>
+
+    </form>
+
+</section>    
+
+
+</div>
 </template>
 
 <style scoped>
@@ -203,5 +256,38 @@ function cancelar() {
     .panel-etapas {
         grid-template-columns: 1fr;
     }
+}
+
+.seccion-autorizacion {
+    margin-top: 25px;
+    padding: 20px;
+    border: 1px solid #dddddd;
+    border-radius: 6px;
+    background: #fafafa;
+}
+
+.confirmacion-datos {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.confirmacion-datos input {
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.mensaje-autorizado {
+    color: #237a42;
+    font-weight: 600;
+    margin: 0;
+}
+
+.seccion-autorizacion button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 </style>
