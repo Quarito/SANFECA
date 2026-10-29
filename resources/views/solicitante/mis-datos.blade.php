@@ -12,7 +12,47 @@
           href="{{ asset('css/certificacion.css') }}">
 
     <link rel="stylesheet"
+
+
           href="{{ asset('css/panel-anfeca.css') }}">
+
+<style>
+/* Barra de usuario y cierre de sesión */
+
+.barra-usuario-acciones {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.usuario-bienvenida {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.barra-usuario-acciones form {
+    margin: 0;
+}
+
+.btn-cerrar-sesion {
+    background: #a71930;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 9px 15px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-cerrar-sesion:hover {
+    background: #821326;
+}
+</style>
+
 </head>
 
 <style>
@@ -90,13 +130,25 @@
         </div>
     </header>
 
-    <div class="barra-usuario">
+    <div class="barra-usuario barra-usuario-acciones">
+
+    <div class="usuario-bienvenida">
         <span class="icono-usuario">◉</span>
         <span>
             Bienvenido de nuevo:
             {{ auth()->user()->name }}
         </span>
     </div>
+
+    <form method="POST" action="{{ route('logout') }}">
+        @csrf
+
+        <button type="submit" class="btn-cerrar-sesion">
+            Cerrar sesión
+        </button>
+    </form>
+
+</div>
 
     <div class="cert-layout">
 

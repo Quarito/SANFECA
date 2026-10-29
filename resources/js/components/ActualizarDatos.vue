@@ -75,7 +75,16 @@ function cancelar() {
         <form :action="accion" method="POST">
             <input type="hidden" name="_token" :value="csrf">
             <input type="hidden" name="_method" value="PUT">
-
+<!-- Enviar todos los campos aunque estén en modo consulta -->
+<template v-if="!editando">
+    <input
+        v-for="(valor, nombre) in campos"
+        :key="nombre"
+        type="hidden"
+        :name="nombre"
+        :value="valor ?? ''"
+    >
+</template>
             <div class="panel-etapas">
                 <section
                     v-for="grupo in grupos"

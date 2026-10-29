@@ -26,6 +26,17 @@ class DatosSolicitante extends Model
         'correo_electronico',
         'telefono_particular',
         'telefono_celular',
+'datos_autorizados',
+'fecha_autorizacion',
     ];
+
+
+protected function casts(): array
+{
+    return [
+        'datos_autorizados' => 'boolean',
+        'fecha_autorizacion' => 'datetime',
+    ];
+}
 }
 

@@ -212,7 +212,10 @@ public function update(Request $request)
         $solicitante,
         $datos
     ) {
-        $solicitante->update($datos);
+        $solicitante->update(array_merge($datos, [
+    'datos_autorizados' => false,
+    'fecha_autorizacion' => null,
+]));
 
         $user->update([
             'name' => trim(
@@ -230,6 +233,39 @@ public function update(Request $request)
             'success',
             'Datos actualizados correctamente.'
         );
+}
+/*
+|--------------------------------------------------------------------------
+| AUTORIZACIÓN DE DATOS PERSONALES
+|--------------------------------------------------------------------------
+*/
+
+public function autorizar(Request $request)
+{
+    // Confirmación obligatoria
+    $request->validate([
+        'confirmacion_datos' => ['required', 'accepted'],
+    ], [
+        'confirmacion_datos.required' =>
+            'Debes confirmar que tus datos son correctos.',
+        'confirmacion_datos.accepted' =>
+            'Debes aceptar la confirmación de tus datos.',
+    ]);
+
+    // Buscar exclusivamente los datos del usuario autenticado
+    $datos = DatosSolicitante::where(
+        'user_id',
+        $request->user()->id
+    )->firstOrFail();
+
+    // Registrar autorización
+    $datos->datos_autorizados = true;
+    $datos->fecha_autorizacion = now();
+    $datos->save();
+
+    return redirect()
+        ->route('registro.certificacion')
+        ->with('success', 'Tus datos han sido autorizados correctamente.');
 }
 }
 
