@@ -50,15 +50,12 @@ body {
     gap: 12px;
 }
 
-.logos img:first-child {
-    width: 145px;
-    max-width: 65%;
+/* Logotipo de Certificación Académica ANFECA */
+.logos img {
+    width: 75px;
+    max-width: 100%;
     height: auto;
-}
-
-.logos img:nth-child(2) {
-    width: 60px;
-    height: auto;
+    object-fit: contain;
 }
 
 .encabezado h1 {

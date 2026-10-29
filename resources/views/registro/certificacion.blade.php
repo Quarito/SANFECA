@@ -24,8 +24,7 @@
     <!-- ENCABEZADO INSTITUCIONAL -->
     <header class="encabezado">
         <div class="logos">
-            <img src="{{ asset('images/logo-anfeca.png') }}"
-                 alt="Logotipo ANFECA">
+            
 
             <img src="{{ asset('images/logo-certificacion.png') }}"
                  alt="Logotipo de certificación">

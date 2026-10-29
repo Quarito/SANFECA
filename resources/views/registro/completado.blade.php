@@ -22,10 +22,7 @@
 
         <header class="encabezado">
             <div class="logos">
-                <img
-                    src="{{ asset('images/logo-anfeca.png') }}"
-                    alt="ANFECA"
-                >
+                
 
                 <img
                     src="{{ asset('images/logo-certificacion.png') }}"

@@ -42,14 +42,11 @@ body {
     gap: 8px;
 }
 
-.logos img:first-child {
-    width: 125px;
-    max-width: 70%;
-    object-fit: contain;
-}
-
-.logos img:nth-child(2) {
-    width: 50px;
+/* Logotipo oficial de Certificación Académica */
+.logos img {
+    width: 75px;
+    max-width: 100%;
+    height: auto;
     object-fit: contain;
 }
 

@@ -16,10 +16,11 @@
 
     <!-- ENCABEZADO -->
     <header class="encabezado">
-        <div class="logos">
-            <img src="{{ asset('images/logo-captura.png') }}"
-                 alt="ANFECA">
-        </div>
+    <div class="logos">
+
+        <img src="{{ asset('images/certificacion_anfeca.png') }}"
+             alt="Certificación Académica ANFECA">
+    </div>
 
         <h1>
             REGISTRO AL SISTEMA DE<br>
@@ -36,7 +37,7 @@
     <main class="contenido">
 
         <section class="fotografia">
-            <img src="{{ asset('images/foto-evento.png') }}"
+            <img src="{{ asset('images/evento_anfeca.jpg') }}"
                  alt="Evento académico ANFECA">
         </section>
 
