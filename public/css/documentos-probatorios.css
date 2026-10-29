@@ -160,3 +160,170 @@
         gap: 8px;
     }
 }
+
+/* ==========================================
+   ANFECA - DOCUMENTOS PROBATORIOS
+   Diseño centrado de dos columnas
+   ========================================== */
+
+/* Contenedor general */
+.cert-main .documentos-vue {
+    width: 100%;
+    max-width: 1050px;
+    margin: 35px auto 0;
+}
+
+/* Sección principal */
+.cert-main .documentos-vue .seccion-documentos {
+    width: 100%;
+    min-width: 0;
+}
+
+/* Título centrado */
+.cert-main .documentos-vue .seccion-documentos h2 {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 25px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #c9c9c9;
+}
+
+/* Dos columnas */
+.cert-main .documentos-vue .probatorios-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 32px;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Columna izquierda */
+.cert-main .documentos-vue .lista-documentos {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+}
+
+/* Cada documento en una fila */
+.cert-main .documentos-vue .fila-documento {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 85px;
+    width: 100%;
+    padding: 14px 0;
+}
+
+/* Icono */
+.cert-main .documentos-vue .icono-documento {
+    font-size: 23px;
+}
+
+/* Nombre del documento */
+.cert-main .documentos-vue .nombre-documento {
+    font-size: 14px;
+    line-height: 1.4;
+    min-width: 0;
+}
+
+/* Botones Ver y Cambiar */
+.cert-main .documentos-vue .acciones-documento {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cert-main .documentos-vue .accion-documento {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 9px 15px;
+    border-radius: 22px;
+    background: #e2f0f7;
+    color: #173a50;
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Mostrar el archivo seleccionado */
+.cert-main .documentos-vue .archivo-elegido {
+    grid-column: 2 / -1;
+    font-size: 11px;
+    color: #555;
+    overflow-wrap: anywhere;
+}
+
+/* Ocultar input nativo */
+.cert-main .documentos-vue .archivo-oculto {
+    display: none;
+}
+
+/* Columna derecha: Link */
+.cert-main .documentos-vue .grupo-link {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    gap: 12px;
+    min-width: 0;
+    padding-left: 28px;
+    border-left: 1px solid #d0d0d0;
+    min-height: 180px;
+}
+
+/* Etiqueta Link */
+.cert-main .documentos-vue .grupo-link label {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+/* Campo de URL más amplio */
+.cert-main .documentos-vue .grupo-link input {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: 48px;
+    padding: 10px 15px;
+    border: 1px solid #999;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+}
+
+/* Adaptación a pantallas pequeñas */
+@media (max-width: 850px) {
+    .cert-main .documentos-vue {
+        margin-top: 20px;
+    }
+
+    .cert-main .documentos-vue .probatorios-contenido {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .cert-main .documentos-vue .grupo-link {
+        border-left: none;
+        border-top: 1px solid #d0d0d0;
+        padding: 20px 0 0;
+        min-height: auto;
+    }
+}
+
+@media (max-width: 520px) {
+    .cert-main .documentos-vue .fila-documento {
+        grid-template-columns: 24px minmax(0, 1fr);
+    }
+
+    .cert-main .documentos-vue .acciones-documento {
+        grid-column: 2;
+        flex-wrap: wrap;
+    }
+}

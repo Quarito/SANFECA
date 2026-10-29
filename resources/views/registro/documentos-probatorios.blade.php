@@ -14,6 +14,10 @@
 
     <link rel="stylesheet"
           href="{{ asset('css/documentos-probatorios.css') }}">
+
+	<link rel="stylesheet"
+	      href="{{ asset('css/barra-usuario-certificacion.css') }}">
+
 </head>
 
 <body @if(request()->is("preview/*")) class="modo-preview" @endif>
@@ -39,10 +43,7 @@
         </div>
     </header>
 
-    <div class="barra-usuario">
-        <span class="icono-usuario">◉</span>
-        <span>Usuario: {{ auth()->user()?->name ?? 'Vista previa' }}</span>
-    </div>
+    @include('components.barra-usuario-certificacion')
 
     <div class="cert-layout">
     @include('components.sidebar-certificacion')

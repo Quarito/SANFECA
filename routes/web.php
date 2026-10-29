@@ -195,13 +195,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/registro/certificacion', [
         SeleccionCertificacionController::class,
         'create'
-    ])->name('registro.certificacion');
+    ])
+	->middleware('datos.autorizados')
+	->name('registro.certificacion');
 
     Route::post('/registro/certificacion', [
         SeleccionCertificacionController::class,
         'store'
-    ])->name('registro.certificacion.guardar');
-
+    ])
+	->middleware('datos.autorizados')
+	->name('registro.certificacion.guardar');
+	
+	Route::middleware('datos.autorizados')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -257,6 +262,7 @@ Route::middleware('auth')->group(function () {
      )->name('registro.completado');
 });
 
+}); // Fin de rutas protegidas por autorización de datos
 /*
 |--------------------------------------------------------------------------
 | Vistas previas ANFECA - SOLO DESARROLLO

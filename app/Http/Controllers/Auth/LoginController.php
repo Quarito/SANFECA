@@ -31,7 +31,7 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended('/panel');
+        return redirect()->route('mis-datos.edit');
     }
 
     // Cerrar sesión

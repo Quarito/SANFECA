@@ -1,0 +1,47 @@
+
+/* ANFECA - Barra de usuario compartida */
+
+.barra-usuario-certificacion {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.barra-usuario-identidad {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+}
+
+.barra-usuario-identidad span {
+    overflow-wrap: anywhere;
+}
+
+.form-cerrar-sesion {
+    margin: 0;
+    padding: 0;
+}
+
+.boton-cerrar-sesion {
+    background: #a00012;
+    color: #ffffff;
+    border: 1px solid #a00012;
+    border-radius: 7px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.boton-cerrar-sesion:hover {
+    background: #80000e;
+}
+
+.boton-cerrar-sesion:focus-visible {
+    outline: 2px solid #333;
+    outline-offset: 3px;
+}
