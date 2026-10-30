@@ -97,10 +97,10 @@
 
             <!-- NAVEGACIÓN -->
             <div class="botones">
-                <a href="{{ route('registro.datos') }}"
-                   class="boton">
-                    Anterior
-                </a>
+		<a href="{{ route('mis-datos.edit') }}"
+		   class="boton">
+		    Anterior
+		</a>
 
                 <button type="submit" class="boton">
                     Siguiente

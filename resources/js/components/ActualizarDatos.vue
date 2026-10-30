@@ -28,11 +28,36 @@ autorizadoInicialmente: {
     default: false
 },
 
+	urlSiguiente: {
+	    type: String,
+	    required: true
+	},
+
 });
 
 const editando = ref(props.editarInicialmente);
 const confirmacionDatos = ref(false);
 const campos = reactive({ ...props.datos });
+
+// Campos de identidad protegidos después de autorizar.
+const camposIdentidad = [
+    'curp',
+    'rfc',
+    'nombres',
+    'apellido_paterno',
+    'apellido_materno',
+    'cedula_profesional',
+    'correo_electronico'
+];
+
+// Determinar si un campo puede modificarse.
+function puedeEditar(nombre) {
+    if (!props.autorizadoInicialmente) {
+        return true;
+    }
+
+    return !camposIdentidad.includes(nombre);
+}
 
 const grupos = [
     {
@@ -95,6 +120,14 @@ function cancelar() {
         :value="valor ?? ''"
     >
 </template>
+
+<!-- Conservar el correo en el formulario cuando está protegido -->
+<input
+    v-if="editando && autorizadoInicialmente"
+    type="hidden"
+    name="correo_electronico"
+    :value="datos.correo_electronico ?? ''"
+>
             <div class="panel-etapas">
                 <section
                     v-for="grupo in grupos"
@@ -113,7 +146,7 @@ function cancelar() {
                         </label>
 
                         <input
-                            v-if="editando"
+                            v-if="editando && puedeEditar(nombre)"
                             :id="'actualizar-' + nombre"
                             :name="nombre"
                             v-model="campos[nombre]"
@@ -144,14 +177,14 @@ function cancelar() {
                     </button>
                 </template>
 
-                <button
-                    v-else
-                    type="button"
-                    class="boton"
-                    @click="editando = true"
-                >
-                    Modificar datos
-                </button>
+	         <button
+		    v-else
+		    type="button"
+		    class="boton"
+		    @click="editando = true"
+		>
+		    Modificar datos
+		</button>
             </div>
         </form>
 	<!-- Autorización de datos personales -->
@@ -159,11 +192,20 @@ function cancelar() {
 
     <template v-if="autorizadoInicialmente">
 
-        <p class="mensaje-autorizado">
-            ✓ Tus datos personales se encuentran autorizados.
-        </p>
+    <p class="mensaje-autorizado">
+        ✓ Tus datos personales se encuentran autorizados.
+    </p>
 
-    </template>
+    <div class="panel-acciones">
+        <a
+            :href="urlSiguiente"
+            class="boton"
+        >
+            Siguiente
+        </a>
+    </div>
+
+</template>
 
     <form v-else :action="accionAutorizar" method="POST">
 

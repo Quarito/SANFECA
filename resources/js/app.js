@@ -112,8 +112,9 @@ if (contenedorActualizar) {
     accion: contenedorActualizar.dataset.accion,
     csrf: contenedorActualizar.dataset.csrf,
     editarInicialmente: contenedorActualizar.dataset.editar === '1',
-	accionAutorizar: contenedorActualizar.dataset.accionAutorizar,
-autorizadoInicialmente: contenedorActualizar.dataset.autorizado === '1',
+    accionAutorizar: contenedorActualizar.dataset.accionAutorizar,
+    urlSiguiente: contenedorActualizar.dataset.urlSiguiente,
+    autorizadoInicialmente: contenedorActualizar.dataset.autorizado === '1',
 
 
 

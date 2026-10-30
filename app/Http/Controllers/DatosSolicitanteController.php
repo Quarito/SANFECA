@@ -34,7 +34,7 @@ class DatosSolicitanteController extends Controller
             'rfc' => strtoupper(trim($request->input('rfc', ''))),
         ]);
 
-        $datos = $request->validate([
+        $reglas = [
             'curp' => [
                 'required', 'string', 'size:18',
                 'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/',
@@ -62,7 +62,19 @@ class DatosSolicitanteController extends Controller
             'telefono_particular' => ['nullable', 'string', 'max:20'],
             'telefono_celular' => ['nullable', 'string', 'max:20'],
             'password' => ['required', 'string', 'min:12', 'confirmed'],
-        ]);
+        ];
+
+	// Si la identidad está autorizada,
+	// validar únicamente domicilio y contacto.
+	if ($identidadAutorizada) {
+	    $reglas = array_intersect_key(
+	        $reglas,
+	        array_flip($camposActualizables)
+	    );
+	}
+
+	// Validar los campos permitidos según el estado del usuario.
+	$datos = $request->validate($reglas);
 
         $user = DB::transaction(function () use ($datos) {
             $user = User::create([
@@ -130,6 +142,36 @@ public function update(Request $request)
         'user_id',
         $user->id
     )->firstOrFail();
+
+// Identificar si los datos personales ya fueron autorizados.
+$identidadAutorizada = (bool) $solicitante->datos_autorizados;
+
+// Campos que pueden actualizarse aun con identidad autorizada.
+$camposActualizables = [
+    'calle',
+    'numero_exterior',
+    'numero_interior',
+    'colonia',
+    'municipio',
+    'entidad_federativa',
+    'codigo_postal',
+    'telefono_celular',
+    'telefono_particular',
+];
+
+// Cuando la identidad ya está autorizada,
+// ignorar cualquier intento de modificar sus campos protegidos.
+if ($identidadAutorizada) {
+    $request->merge([
+        'curp' => $solicitante->curp,
+        'rfc' => $solicitante->rfc,
+        'cedula_profesional' => $solicitante->cedula_profesional,
+        'nombres' => $solicitante->nombres,
+        'apellido_paterno' => $solicitante->apellido_paterno,
+        'apellido_materno' => $solicitante->apellido_materno,
+	'correo_electronico' => $solicitante->correo_electronico,    
+]);
+}
 
     // Normalizar información
     $request->merge([
@@ -208,14 +250,28 @@ public function update(Request $request)
     ]);
 
     DB::transaction(function () use (
-        $user,
-        $solicitante,
-        $datos
-    ) {
-        $solicitante->update(array_merge($datos, [
-    'datos_autorizados' => false,
-    'fecha_autorizacion' => null,
-]));
+    $user,
+    $solicitante,
+    $datos,
+    $identidadAutorizada,
+    $camposActualizables
+) {
+    if ($identidadAutorizada) {
+
+        // Solo actualizar domicilio y contacto.
+        $datosPermitidos = array_intersect_key(
+            $datos,
+            array_flip($camposActualizables)
+        );
+
+        $solicitante->update($datosPermitidos);
+
+        
+
+    } else {
+
+        // Usuario pendiente de autorizar: puede corregir sus datos.
+        $solicitante->update($datos);
 
         $user->update([
             'name' => trim(
@@ -225,7 +281,8 @@ public function update(Request $request)
             ),
             'email' => $datos['correo_electronico'],
         ]);
-    });
+    }
+});
 
     return redirect()
         ->route('mis-datos.edit')
