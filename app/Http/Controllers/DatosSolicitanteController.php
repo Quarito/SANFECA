@@ -299,7 +299,19 @@ if ($identidadAutorizada) {
 
 public function autorizar(Request $request)
 {
-    // Confirmación obligatoria
+    // Buscar los datos del usuario autenticado.
+    $datos = DatosSolicitante::where(
+        'user_id',
+        $request->user()->id
+    )->firstOrFail();
+
+    // Evitar modificar una autorización existente.
+    if ($datos->datos_autorizados) {
+        return redirect()
+            ->route('registro.certificacion');
+    }
+
+    // Validar la confirmación del usuario.
     $request->validate([
         'confirmacion_datos' => ['required', 'accepted'],
     ], [
@@ -309,20 +321,55 @@ public function autorizar(Request $request)
             'Debes aceptar la confirmación de tus datos.',
     ]);
 
-    // Buscar exclusivamente los datos del usuario autenticado
-    $datos = DatosSolicitante::where(
-        'user_id',
-        $request->user()->id
-    )->firstOrFail();
+    // Validar que el expediente esté completo.
+    $validador = \Illuminate\Support\Facades\Validator::make(
+        $datos->getAttributes(),
+        [
+            'curp' => [
+                'required',
+                'string',
+                'size:18',
+                'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/',
+            ],
+            'rfc' => ['required', 'string', 'min:12', 'max:13'],
+            'nombres' => ['required', 'string'],
+            'apellido_paterno' => ['required', 'string'],
+            'calle' => ['required', 'string'],
+            'numero_exterior' => ['required', 'string'],
+            'colonia' => ['required', 'string'],
+            'municipio' => ['required', 'string'],
+            'entidad_federativa' => ['required', 'string'],
+            'codigo_postal' => ['required', 'digits:5'],
+            'correo_electronico' => ['required', 'email'],
+        ],
+        [
+            'curp.required' =>
+                'Debes registrar tu CURP antes de autorizar tus datos.',
+        ]
+    );
 
-    // Registrar autorización
+    if ($validador->fails()) {
+        return redirect()
+            ->route('mis-datos.edit')
+            ->withErrors($validador)
+            ->with(
+                'error',
+                'Completa los datos personales obligatorios antes de autorizar.'
+            );
+    }
+
+    // Registrar la autorización.
     $datos->datos_autorizados = true;
     $datos->fecha_autorizacion = now();
     $datos->save();
 
     return redirect()
         ->route('registro.certificacion')
-        ->with('success', 'Tus datos han sido autorizados correctamente.');
+        ->with(
+            'success',
+            'Tus datos han sido autorizados correctamente.'
+        );
 }
+
 }
 
