@@ -3,22 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\SeleccionCertificacion;
+use App\Services\ConsultaAntecedentesService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class SeleccionCertificacionController extends Controller
 {
-    public function create(Request $request)
-    {
-        $seleccion = SeleccionCertificacion::where(
-            'user_id',
-            $request->user()->id
-        )->first();
+    public function create(
+    Request $request,
+    ConsultaAntecedentesService $consultaAntecedentes
+) {
+    $seleccion = SeleccionCertificacion::where(
+        'user_id',
+        $request->user()->id
+    )->first();
 
-        return view('registro.certificacion', [
-            'seleccion' => $seleccion,
-        ]);
-    }
+    $resultadoAntecedentes = $consultaAntecedentes->consultar(
+        $request->user()->id
+    );
+
+    return view('registro.certificacion', [
+        'seleccion' => $seleccion,
+    ]);
+}
 
     public function store(Request $request)
     {
