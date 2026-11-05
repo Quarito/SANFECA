@@ -93,6 +93,7 @@
             </div>
 
             <div class="panel-acciones">
+                <a class="boton" href="{{ route('refrendos.inicio') }}">Solicitar refrendo</a>
                 <form method="POST"
                       action="{{ route('logout') }}">
                     @csrf

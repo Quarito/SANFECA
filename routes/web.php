@@ -347,3 +347,5 @@ if (app()->environment('local')) {
             })->name('completado');
         });
 }
+
+require __DIR__.'/refrendos.php';
