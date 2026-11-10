@@ -279,4 +279,61 @@ body {
     .columnas-formacion {
         grid-template-columns: 1fr;
     }
-}~
+}
+
+
+/* BOTONES DE DOCUMENTOS ACADÉMICOS */
+
+.cert-main .documentos-vue .fila-documento {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 42px;
+    flex-wrap: wrap;
+}
+
+.cert-main .documentos-vue .icono-documento {
+    font-size: 20px;
+}
+
+.cert-main .documentos-vue .nombre-documento {
+    font-size: 14px;
+    flex: 1;
+    min-width: 140px;
+}
+
+.cert-main .documentos-vue .acciones-documento {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cert-main .documentos-vue .accion-documento {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 15px;
+    border-radius: 22px;
+    background: #e2f0f7;
+    color: #173a50;
+    font-size: 12px;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.cert-main .documentos-vue .archivo-oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.cert-main .documentos-vue .archivo-elegido {
+    display: block;
+    font-size: 11px;
+    color: #216b35;
+    overflow-wrap: anywhere;
+    margin-top: 5px;
+}

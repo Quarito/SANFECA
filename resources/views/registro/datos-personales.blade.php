@@ -44,6 +44,12 @@
 
     <main class="contenido cert-main">
 
+        <div
+            data-vue-encabezado
+            data-titulo="Datos Personales"
+            data-descripcion="Complete y verifique su información personal y de contacto para continuar con el proceso de certificación académica."
+        ></div>
+
         @if(session('success'))
             <div class="mensaje-exito">
                 {{ session('success') }}

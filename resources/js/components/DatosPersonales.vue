@@ -15,6 +15,7 @@ const campos = reactive({
     nombres: props.datos.nombres ?? '',
     apellido_paterno: props.datos.apellido_paterno ?? '',
     apellido_materno: props.datos.apellido_materno ?? '',
+    genero: props.datos.genero ?? '',
     calle: props.datos.calle ?? '',
     numero_exterior: props.datos.numero_exterior ?? '',
     numero_interior: props.datos.numero_interior ?? '',
@@ -32,6 +33,7 @@ const personales = [
     { name: 'nombres', label: 'Nombre(s)', required: true },
     { name: 'rfc', label: 'RFC (homoclave)', required: true, maxlength: 13 },
     { name: 'apellido_paterno', label: 'Apellido Paterno', required: true },
+    { name: 'genero', label: 'Género', required: true, type: 'select' },
     { name: 'apellido_materno', label: 'Apellido Materno' }
 ];
 
@@ -68,15 +70,31 @@ const comunicacion = [
                             {{ campo.label }}{{ campo.required ? '*' : '' }}
                         </label>
 
-                        <input
-                            :id="campo.name"
-                            :name="campo.name"
-                            :type="campo.type || 'text'"
-                            v-model="campos[campo.name]"
-                            :maxlength="campo.maxlength"
-                            :required="campo.required || false"
-                            :autocomplete="'off'"
-                        >
+
+                    <select
+                        v-if="campo.type === 'select'"
+                        :id="campo.name"
+                        :name="campo.name"
+                        v-model="campos[campo.name]"
+                        :required="campo.required || false"
+                    >
+                        <option value="" disabled>Seleccione...</option>
+                        <option value="Femenino">Femenino</option>
+                        <option value="Masculino">Masculino</option>
+
+                    </select>
+
+                    <input
+                        v-else
+                        :id="campo.name"
+                        :name="campo.name"
+                        :type="campo.type || 'text'"
+                        v-model="campos[campo.name]"
+                        :maxlength="campo.maxlength"
+                        :required="campo.required || false"
+                        autocomplete="off"
+                    >
+
                     </div>
 
                     <div class="campo-datos">

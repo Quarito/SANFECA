@@ -1,29 +1,48 @@
 @php
     $esPreview = request()->is('preview/*');
-
     $tieneDatos = false;
+    $esRefrendo = false;
 
     if (!$esPreview && auth()->check()) {
         $tieneDatos = \App\Models\DatosSolicitante::where(
-            'user_id',
-            auth()->id()
+            'user_id', auth()->id()
         )->exists();
+
+        $solicitudMenu = \App\Models\SolicitudCertificacion::where(
+            'user_id', auth()->id()
+        )
+            ->where('estado', 'borrador')
+            ->latest('id')
+            ->first();
+
+        $esRefrendo = $solicitudMenu?->tipo_tramite === 'refrendo';
     }
 
-    $etapas = [        [
-    'nombre' => 'Datos personales',
-    'descripcion' => 'Información del solicitante',
-    'ruta' => $tieneDatos
-        ? 'mis-datos.edit'
-        : 'registro.datos',
-    'preview' => 'preview.datos',
-],
+    $etapas = [
+        [
+            'nombre' => 'Datos personales',
+            'descripcion' => 'Información del solicitante',
+            'ruta' => $tieneDatos ? 'mis-datos.edit' : 'registro.datos',
+            'preview' => 'preview.datos',
+        ],
         [
             'nombre' => 'Certificación',
             'descripcion' => 'Selección de certificación',
             'ruta' => 'registro.certificacion',
             'preview' => 'preview.certificacion',
         ],
+    ];
+
+    if ($esRefrendo || request()->routeIs('preview.refrendo')) {
+        $etapas[] = [
+            'nombre' => 'Datos de refrendo',
+            'descripcion' => 'Información del refrendo',
+            'ruta' => 'registro.refrendo',
+            'preview' => 'preview.refrendo',
+        ];
+    }
+
+    $etapas = array_merge($etapas, [
         [
             'nombre' => 'Formación académica',
             'descripcion' => 'Estudios del solicitante',
@@ -42,7 +61,15 @@
             'ruta' => 'registro.completado',
             'preview' => 'preview.completado',
         ],
-    ];
+    ]);
+
+    $rutaActual = request()->route()?->getName();
+
+    $indiceActual = collect($etapas)->search(
+        fn ($etapa) => $rutaActual === (
+            $esPreview ? $etapa['preview'] : $etapa['ruta']
+        )
+    );
 @endphp
 
 <aside class="cert-sidebar">
@@ -76,19 +103,22 @@
 
                 $activa = $existe
                     && request()->routeIs($nombreRuta);
+
+                $anterior = $indiceActual !== false
+                    && $indice < $indiceActual;
             @endphp
 
             @if ($existe)
 
                 <a
                     href="{{ route($nombreRuta) }}"
-                    class="cert-sidebar-item {{ $activa ? 'active' : '' }}"
+                    class="cert-sidebar-item {{ $activa ? 'active' : '' }} {{ $anterior ? 'completed' : '' }}"
                     @if ($activa)
                         aria-current="step"
                     @endif
                 >
                     <span class="cert-step-number">
-                        {{ $indice + 1 }}
+                        {{ $anterior ? '✓' : $indice + 1 }}
                     </span>
 
                     <span class="cert-step-text">

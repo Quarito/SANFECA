@@ -17,6 +17,7 @@ class DatosSolicitante extends Model
         'apellido_paterno',
         'apellido_materno',
         'calle',
+        'genero',
         'numero_exterior',
         'numero_interior',
         'codigo_postal',

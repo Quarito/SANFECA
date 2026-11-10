@@ -114,3 +114,115 @@
         max-width: 440px;
     }
 }
+
+
+/* ANTECEDENTES HISTÓRICOS DE CERTIFICACIÓN */
+
+.antecedentes-certificacion-vue {
+    width: 100%;
+    margin-top: 35px;
+    padding: 20px 24px;
+    border: 1px solid #d8d8d8;
+    border-radius: 6px;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+
+.antecedentes-certificacion-vue h2 {
+    font-size: 19px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #888;
+    padding-bottom: 8px;
+    margin: 0 0 20px;
+}
+
+.antecedentes-certificacion-vue > p {
+    font-size: 14px;
+    line-height: 1.6;
+    text-align: center;
+    margin: 12px 0;
+}
+
+.lista-antecedentes-vue {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.registro-antecedente-vue {
+    padding: 16px 20px;
+    border: 1px solid #ddd;
+    border-left: 4px solid #98121a;
+    border-radius: 4px;
+    background-color: #fafafa;
+    min-width: 0;
+}
+
+.registro-antecedente-vue h3 {
+    color: #98121a;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 14px;
+}
+
+.registro-antecedente-vue p {
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 8px 0;
+}
+
+@media (max-width: 850px) {
+    .antecedentes-certificacion-vue {
+        margin-top: 30px;
+        padding: 16px;
+    }
+
+    .lista-antecedentes-vue {
+        grid-template-columns: 1fr;
+    }
+
+    .registro-antecedente-vue {
+        padding: 14px;
+    }
+}
+
+/* ==========================================
+   ANTECEDENTES HISTÓRICOS - CENTRADO
+   ========================================== */
+
+.antecedentes-certificacion-vue .lista-antecedentes-vue {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    width: 100%;
+}
+
+.antecedentes-certificacion-vue .registro-antecedente-vue {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 500px;
+    margin: 0;
+    padding: 16px 20px;
+    text-align: center;
+    border-left: 4px solid #98121a;
+}
+
+.antecedentes-certificacion-vue .registro-antecedente-vue h3 {
+    text-align: center;
+    color: #98121a;
+    margin: 0 0 12px;
+}
+
+.antecedentes-certificacion-vue .registro-antecedente-vue p {
+    text-align: center;
+    margin: 8px 0;
+}
+
+@media (max-width: 600px) {
+    .antecedentes-certificacion-vue .registro-antecedente-vue {
+        max-width: 100%;
+        padding: 14px;
+    }
+}

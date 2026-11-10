@@ -14,6 +14,8 @@
     <link rel="stylesheet"
           href="{{ asset('css/formacion-academica.css') }}">
     <link rel="stylesheet"
+          href="{{ asset('css/documentos-compartidos.css') }}">
+    <link rel="stylesheet"
           href="{{ asset('css/barra-usuario-certificacion.css') }}">
 </head>
 
@@ -47,6 +49,13 @@
     @include('components.sidebar-certificacion')
 
     <main class="contenido cert-main">
+
+        <!-- ENCABEZADO INSTITUCIONAL REUTILIZABLE VUE 3 -->
+        <div
+            data-vue-encabezado
+            data-titulo="Formación Académica"
+            data-descripcion="Registre su formación académica y adjunte los documentos correspondientes.">
+        </div>
 
         @if(session('success'))
             <div class="mensaje-exito">
@@ -86,17 +95,21 @@
 	    'nivel_ultimo_grado' => old('nivel_ultimo_grado', $formacion?->nivel_ultimo_grado),
 	    'titulo_ultimo_grado' => old('titulo_ultimo_grado', $formacion?->titulo_ultimo_grado),
 	    'institucion_afiliada_id' => old('institucion_afiliada_id', $formacion?->institucion_afiliada_id),
-	    'titulo_origen_archivo' => $formacion?->titulo_origen_archivo,
-	    'cedula_origen_archivo' => $formacion?->cedula_origen_archivo,
-	    'titulo_ultimo_grado_archivo' => $formacion?->titulo_ultimo_grado_archivo,
-	    'cedula_ultimo_grado_archivo' => $formacion?->cedula_ultimo_grado_archivo
+	    'titulo_origen_archivo' => $formacion?->titulo_origen_archivo && \Illuminate\Support\Facades\Storage::disk('local')->exists($formacion->titulo_origen_archivo),
+	    'cedula_origen_archivo' => $formacion?->cedula_origen_archivo && \Illuminate\Support\Facades\Storage::disk('local')->exists($formacion->cedula_origen_archivo),
+	    'titulo_ultimo_grado_archivo' => $formacion?->titulo_ultimo_grado_archivo && \Illuminate\Support\Facades\Storage::disk('local')->exists($formacion->titulo_ultimo_grado_archivo),
+	    'cedula_ultimo_grado_archivo' => $formacion?->cedula_ultimo_grado_archivo && \Illuminate\Support\Facades\Storage::disk('local')->exists($formacion->cedula_ultimo_grado_archivo),
+            'titulo_origen_archivo_url' => route('registro.documentos.ver', 'titulo_origen_archivo'),
+            'cedula_origen_archivo_url' => route('registro.documentos.ver', 'cedula_origen_archivo'),
+            'titulo_ultimo_grado_archivo_url' => route('registro.documentos.ver', 'titulo_ultimo_grado_archivo'),
+            'cedula_ultimo_grado_archivo_url' => route('registro.documentos.ver', 'cedula_ultimo_grado_archivo')
 	]) }}"
 
 ></div>
 
             <!-- BOTONES -->
             <div class="botones">
-                <a href="{{ route('registro.certificacion') }}"
+                <a href="{{ route((isset($solicitud) && $solicitud->tipo_tramite === 'refrendo') ? 'registro.refrendo' : 'registro.certificacion') }}"
                    class="boton">
                     Anterior
                 </a>

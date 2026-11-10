@@ -49,6 +49,13 @@
 
     <main class="contenido cert-main">
 
+        <!-- ENCABEZADO INSTITUCIONAL REUTILIZABLE VUE 3 -->
+        <div
+            data-vue-encabezado
+            data-titulo="Certificación"
+            data-descripcion="Seleccione la certificación académica que desea solicitar y complete la información correspondiente.">
+        </div>
+
         @if(session('success'))
             <div class="mensaje-exito">
                 {{ session('success') }}
@@ -92,6 +99,13 @@
 	            $seleccion?->area_certificacion
 	        )
 	    ]) }}"
+		 data-antecedentes="{{ json_encode($resultadoAntecedentes ?? [
+		     'estado' => 'sin_seleccion',
+		     'total' => 0,
+		     'verificados' => 0,
+		     'posibles_coincidencias' => 0,
+		     'historial' => []
+		 ]) }}"
 	></div>
 
 

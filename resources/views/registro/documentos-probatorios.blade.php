@@ -14,6 +14,8 @@
 
     <link rel="stylesheet"
           href="{{ asset('css/documentos-probatorios.css') }}">
+    <link rel="stylesheet"
+          href="{{ asset('css/documentos-compartidos.css') }}">
 
 	<link rel="stylesheet"
 	      href="{{ asset('css/barra-usuario-certificacion.css') }}">
@@ -48,6 +50,13 @@
     @include('components.sidebar-certificacion')
 
     <main class="contenido cert-main">
+
+        <!-- ENCABEZADO INSTITUCIONAL REUTILIZABLE VUE 3 -->
+        <div
+            data-vue-encabezado
+            data-titulo="Documentos Probatorios"
+            data-descripcion="Adjunte los documentos probatorios requeridos para respaldar su solicitud de certificación o refrendo.">
+        </div>
 
         @if(session('success'))
             <div class="mensaje-exito">

@@ -1,6 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue';
 
+const archivosSeleccionados = ref({});
+
+function seleccionarArchivoAcademico(event, campo) {
+    archivosSeleccionados.value[campo] =
+        event.target.files?.[0]?.name ?? '';
+}
+
 const props = defineProps({
     instituciones: {
         type: Array,
@@ -101,38 +108,94 @@ const institucionSeleccionada = computed(() => {
 
                 
                 <!-- DOCUMENTOS DE ORIGEN -->
-		<div class="documentos-vue">
+		<div class="documentos-vue documentos-anfeca">
 		    <div class="campo campo-documento">
-		        <label for="titulo_origen_archivo">
-		            Adjuntar Título Profesional
-		        </label>
+    <div class="fila-documento">
+        <span class="icono-documento" aria-hidden="true">📄</span>
 
-		        <input
-		            type="file"
-		            id="titulo_origen_archivo"
-		            name="titulo_origen_archivo"
-		            accept=".pdf,.jpg,.jpeg,.png"
-		            :required="!formacion?.titulo_origen_archivo"
-		        >
+        <span class="nombre-documento">Título Profesional</span>
 
-		        <small>PDF, JPG o PNG. Máximo 5 MB.</small>
-		    </div>
+        <div class="acciones-documento">
+            <a
+                v-if="formacion?.titulo_origen_archivo"
+                :href="formacion?.titulo_origen_archivo_url"
+                class="accion-documento"
+            >
+                Ver
+            </a>
+
+            <label
+                for="titulo_origen_archivo"
+                class="accion-documento"
+            >
+                {{ formacion?.titulo_origen_archivo ? 'Cambiar' : 'Añadir' }}
+            </label>
+        </div>
+    </div>
+
+    <input
+        id="titulo_origen_archivo"
+        type="file"
+        class="archivo-oculto"
+        name="titulo_origen_archivo"
+        accept=".pdf,.jpg,.jpeg,.png"
+        :required="!formacion?.titulo_origen_archivo"
+        @change="seleccionarArchivoAcademico($event, 'titulo_origen_archivo')"
+    >
+
+    <small
+        v-if="archivosSeleccionados['titulo_origen_archivo']"
+        class="archivo-elegido"
+    >
+        {{ archivosSeleccionados['titulo_origen_archivo'] }}
+    </small>
+
+    <small class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
+</div>
 
 		    <div class="campo campo-documento">
-		        <label for="cedula_origen_archivo">
-		            Adjuntar Cédula Profesional
-		        </label>
+    <div class="fila-documento">
+        <span class="icono-documento" aria-hidden="true">📄</span>
 
-		        <input
-		            type="file"
-		            id="cedula_origen_archivo"
-		            name="cedula_origen_archivo"
-		            accept=".pdf,.jpg,.jpeg,.png"
-		            :required="!formacion?.cedula_origen_archivo"
-		        >
+        <span class="nombre-documento">Cédula Profesional</span>
 
-		        <small>PDF, JPG o PNG. Máximo 5 MB.</small>
-		    </div>
+        <div class="acciones-documento">
+            <a
+                v-if="formacion?.cedula_origen_archivo"
+                :href="formacion?.cedula_origen_archivo_url"
+                class="accion-documento"
+            >
+                Ver
+            </a>
+
+            <label
+                for="cedula_origen_archivo"
+                class="accion-documento"
+            >
+                {{ formacion?.cedula_origen_archivo ? 'Cambiar' : 'Añadir' }}
+            </label>
+        </div>
+    </div>
+
+    <input
+        id="cedula_origen_archivo"
+        type="file"
+        class="archivo-oculto"
+        name="cedula_origen_archivo"
+        accept=".pdf,.jpg,.jpeg,.png"
+        :required="!formacion?.cedula_origen_archivo"
+        @change="seleccionarArchivoAcademico($event, 'cedula_origen_archivo')"
+    >
+
+    <small
+        v-if="archivosSeleccionados['cedula_origen_archivo']"
+        class="archivo-elegido"
+    >
+        {{ archivosSeleccionados['cedula_origen_archivo'] }}
+    </small>
+
+    <small class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
+</div>
 		</div>
 	</section>
 
@@ -185,38 +248,94 @@ const institucionSeleccionada = computed(() => {
 		    </select>
 		</div>
                 <!-- DOCUMENTOS DEL ÚLTIMO GRADO -->
-		<div class="documentos-vue">
+		<div class="documentos-vue documentos-anfeca">
 		    <div class="campo campo-documento">
-		        <label for="titulo_ultimo_grado_archivo">
-		            Adjuntar Título o Grado Académico
-		        </label>
+    <div class="fila-documento">
+        <span class="icono-documento" aria-hidden="true">📄</span>
 
-		        <input
-		            type="file"
-		            id="titulo_ultimo_grado_archivo"
-		            name="titulo_ultimo_grado_archivo"
-		            accept=".pdf,.jpg,.jpeg,.png"
-		            :required="!formacion?.titulo_ultimo_grado_archivo"
-		        >
+        <span class="nombre-documento">Título del último grado</span>
 
-		        <small>PDF, JPG o PNG. Máximo 5 MB.</small>
-		    </div>
+        <div class="acciones-documento">
+            <a
+                v-if="formacion?.titulo_ultimo_grado_archivo"
+                :href="formacion?.titulo_ultimo_grado_archivo_url"
+                class="accion-documento"
+            >
+                Ver
+            </a>
+
+            <label
+                for="titulo_ultimo_grado_archivo"
+                class="accion-documento"
+            >
+                {{ formacion?.titulo_ultimo_grado_archivo ? 'Cambiar' : 'Añadir' }}
+            </label>
+        </div>
+    </div>
+
+    <input
+        id="titulo_ultimo_grado_archivo"
+        type="file"
+        class="archivo-oculto"
+        name="titulo_ultimo_grado_archivo"
+        accept=".pdf,.jpg,.jpeg,.png"
+        :required="!formacion?.titulo_ultimo_grado_archivo"
+        @change="seleccionarArchivoAcademico($event, 'titulo_ultimo_grado_archivo')"
+    >
+
+    <small
+        v-if="archivosSeleccionados['titulo_ultimo_grado_archivo']"
+        class="archivo-elegido"
+    >
+        {{ archivosSeleccionados['titulo_ultimo_grado_archivo'] }}
+    </small>
+
+    <small class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
+</div>
 
 		    <div class="campo campo-documento">
-		        <label for="cedula_ultimo_grado_archivo">
-		            Adjuntar Cédula Profesional
-		        </label>
+    <div class="fila-documento">
+        <span class="icono-documento" aria-hidden="true">📄</span>
 
-		        <input
-		            type="file"
-		            id="cedula_ultimo_grado_archivo"
-		            name="cedula_ultimo_grado_archivo"
-		            accept=".pdf,.jpg,.jpeg,.png"
-		            :required="!formacion?.cedula_ultimo_grado_archivo"
-		        >
+        <span class="nombre-documento">Cédula del último grado</span>
 
-		        <small>PDF, JPG o PNG. Máximo 5 MB.</small>
-		    </div>
+        <div class="acciones-documento">
+            <a
+                v-if="formacion?.cedula_ultimo_grado_archivo"
+                :href="formacion?.cedula_ultimo_grado_archivo_url"
+                class="accion-documento"
+            >
+                Ver
+            </a>
+
+            <label
+                for="cedula_ultimo_grado_archivo"
+                class="accion-documento"
+            >
+                {{ formacion?.cedula_ultimo_grado_archivo ? 'Cambiar' : 'Añadir' }}
+            </label>
+        </div>
+    </div>
+
+    <input
+        id="cedula_ultimo_grado_archivo"
+        type="file"
+        class="archivo-oculto"
+        name="cedula_ultimo_grado_archivo"
+        accept=".pdf,.jpg,.jpeg,.png"
+        :required="!formacion?.cedula_ultimo_grado_archivo"
+        @change="seleccionarArchivoAcademico($event, 'cedula_ultimo_grado_archivo')"
+    >
+
+    <small
+        v-if="archivosSeleccionados['cedula_ultimo_grado_archivo']"
+        class="archivo-elegido"
+    >
+        {{ archivosSeleccionados['cedula_ultimo_grado_archivo'] }}
+    </small>
+
+    <small class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
+</div>
 		</div>
             </section>
         </div>

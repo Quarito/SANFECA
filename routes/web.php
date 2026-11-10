@@ -18,6 +18,10 @@ use App\Http\Controllers\Auth\RecuperacionPasswordController;
 */
 
 Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('panel');
+    }
+
     return redirect()->route('login');
 });
 
@@ -210,7 +214,24 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | PANTALLA 4 - FORMACIÓN ACADÉMICA
+    | PANTALLA 4 - DATOS DE REFRENDO
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/registro/refrendo', [
+        \App\Http\Controllers\DatoRefrendoController::class,
+        'create'
+    ])->name('registro.refrendo');
+
+    Route::post('/registro/refrendo', [
+        \App\Http\Controllers\DatoRefrendoController::class,
+        'store'
+    ])->name('registro.refrendo.guardar');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PANTALLA 5 - FORMACIÓN ACADÉMICA
     |--------------------------------------------------------------------------
     */
 
@@ -260,6 +281,8 @@ Route::middleware('auth')->group(function () {
     '/registro/completado',
     [RegistroCompletadoController::class, 'index']
      )->name('registro.completado');
+
+    Route::post('/registro/completado/confirmar', [RegistroCompletadoController::class, 'confirmar'])->name('registro.completado.confirmar');
 });
 
 }); // Fin de rutas protegidas por autorización de datos
@@ -340,9 +363,37 @@ if (app()->environment('local')) {
 
             })->name('documentos');
 
+            Route::get('/refrendo', function () {
+                return view('registro.refrendo', [
+                    'datosRefrendo' => (object) [
+                        'numero_refrendo_asignado' => null,
+                        'aplica_articulo_14' => null,
+                        'inciso_articulo_14' => null,
+                    ],
+                    'datosAutomaticos' => [
+                        'refrendo_actual' => 1,
+                    ],
+                ]);
+            })->name('refrendo');
+
             Route::get('/completado', function () {
+                // Datos ficticios exclusivos de la vista previa.
+                $solicitud = (object) [
+                    'certificacion' => 'ANFECA',
+                    'tipo_tramite' => 'primera_vez',
+                ];
+
                 return view('registro.completado', [
+                    'solicitud' => $solicitud,
+                    'enviada' => false,
                     'registroCompleto' => false,
+                    'requisitos' => [
+                        'datos_personales' => true,
+                        'certificacion' => true,
+                        'refrendo' => true,
+                        'formacion_academica' => false,
+                        'documentos_probatorios' => false,
+                    ],
                 ]);
             })->name('completado');
         });

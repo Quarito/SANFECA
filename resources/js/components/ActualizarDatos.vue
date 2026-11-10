@@ -39,6 +39,24 @@ const editando = ref(props.editarInicialmente);
 const confirmacionDatos = ref(false);
 const campos = reactive({ ...props.datos });
 
+// Identificar los campos telefónicos.
+function esTelefono(nombre) {
+    return [
+        'telefono_celular',
+        'telefono_particular'
+    ].includes(nombre);
+}
+
+// Permitir únicamente números y un máximo de 10 dígitos.
+function validarTelefono(nombre, event) {
+    const valor = event.target.value
+        .replace(/\D/g, '')
+        .slice(0, 10);
+
+    campos[nombre] = valor;
+    event.target.value = valor;
+}
+
 // Campos de identidad protegidos después de autorizar.
 const camposIdentidad = [
     'curp',
@@ -46,6 +64,7 @@ const camposIdentidad = [
     'nombres',
     'apellido_paterno',
     'apellido_materno',
+    'genero',
     'cedula_profesional',
     'correo_electronico'
 ];
@@ -67,7 +86,8 @@ const grupos = [
             ['rfc', 'RFC'],
             ['nombres', 'Nombre(s)'],
             ['apellido_paterno', 'Apellido paterno'],
-            ['apellido_materno', 'Apellido materno']
+            ['apellido_materno', 'Apellido materno'],
+            ['genero', 'Género']
         ]
     },
     {
@@ -94,6 +114,7 @@ const grupos = [
 
 const obligatorios = [
     'curp', 'rfc', 'nombres', 'apellido_paterno',
+    'genero',
     'calle', 'numero_exterior', 'colonia',
     'municipio', 'entidad_federativa',
     'codigo_postal', 'correo_electronico'
@@ -145,19 +166,44 @@ function cancelar() {
                             {{ etiqueta }}
                         </label>
 
-                        <input
-                            v-if="editando && puedeEditar(nombre)"
-                            :id="'actualizar-' + nombre"
-                            :name="nombre"
-                            v-model="campos[nombre]"
-                            :required="obligatorios.includes(nombre)"
-                            :maxlength="nombre === 'curp' ? 18 : nombre === 'codigo_postal' ? 5 : undefined"
-                            :type="nombre === 'correo_electronico' ? 'email' : 'text'"
-                        >
 
-                        <span v-else>
-                            {{ campos[nombre] || 'No registrado' }}
-                        </span>
+            <select
+                v-if="editando && puedeEditar(nombre) && nombre === 'genero'"
+                :id="'actualizar-' + nombre"
+                :name="nombre"
+                v-model="campos[nombre]"
+                required
+            >
+                <option value="" disabled>Seleccione...</option>
+                <option value="Femenino">Femenino</option>
+                <option value="Masculino">Masculino</option>
+            </select>
+
+            <input
+                v-else-if="editando && puedeEditar(nombre)"
+                :id="'actualizar-' + nombre"
+                :name="nombre"
+                v-model="campos[nombre]"
+                :required="obligatorios.includes(nombre)"
+                :maxlength="
+                    esTelefono(nombre) ? 10 :
+                    nombre === 'curp' ? 18 :
+                    nombre === 'codigo_postal' ? 5 :
+                    undefined
+                "
+                :type="
+                    esTelefono(nombre) ? 'tel' :
+                    nombre === 'correo_electronico' ? 'email' :
+                    'text'
+                "
+                :inputmode="esTelefono(nombre) ? 'numeric' : undefined"
+                @input="esTelefono(nombre) && validarTelefono(nombre, $event)"
+            >
+
+            <span v-else>
+                {{ campos[nombre] || 'No registrado' }}
+            </span>
+
                     </div>
                 </section>
             </div>
@@ -236,7 +282,7 @@ function cancelar() {
 
     </form>
 
-</section>    
+</section>
 
 
 </div>

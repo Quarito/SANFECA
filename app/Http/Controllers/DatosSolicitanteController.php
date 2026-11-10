@@ -48,6 +48,16 @@ class DatosSolicitanteController extends Controller
             'nombres' => ['required', 'string', 'max:150'],
             'apellido_paterno' => ['required', 'string', 'max:100'],
             'apellido_materno' => ['nullable', 'string', 'max:100'],
+            'genero' => [
+                'required',
+                'string',
+                Rule::in([
+                    'Femenino',
+                    'Masculino',
+                ])
+            ],
+'password' => ['required', 'string', 'min:12', 'confirmed'],
+            'password' => ['required', 'string', 'min:12', 'confirmed'],
             'calle' => ['required', 'string', 'max:200'],
             'numero_exterior' => ['required', 'string', 'max:20'],
             'numero_interior' => ['nullable', 'string', 'max:20'],
@@ -59,22 +69,34 @@ class DatosSolicitanteController extends Controller
                 'required', 'email', 'max:255',
                 Rule::unique('users', 'email')
             ],
-            'telefono_particular' => ['nullable', 'string', 'max:20'],
-            'telefono_celular' => ['nullable', 'string', 'max:20'],
-            'password' => ['required', 'string', 'min:12', 'confirmed'],
-        ];
+            'telefono_particular' => [
+	    'nullable',
+	    'required_without:telefono_celular',
+	    'digits:10'
+	],
+	'telefono_celular' => [
+	    'nullable',
+	    'required_without:telefono_particular',
+	    'digits:10'
+	],
+	];
 
-	// Si la identidad está autorizada,
-	// validar únicamente domicilio y contacto.
-	if ($identidadAutorizada) {
-	    $reglas = array_intersect_key(
-	        $reglas,
-	        array_flip($camposActualizables)
-	    );
-	}
+
 
 	// Validar los campos permitidos según el estado del usuario.
-	$datos = $request->validate($reglas);
+	$datos = $request->validate($reglas, [
+    'telefono_particular.required_without' =>
+        'Debes proporcionar al menos un teléfono: particular o celular.',
+
+    'telefono_celular.required_without' =>
+        'Debes proporcionar al menos un teléfono: particular o celular.',
+
+    'telefono_particular.digits' =>
+        'El teléfono particular debe contener exactamente 10 dígitos.',
+
+    'telefono_celular.digits' =>
+        'El teléfono celular debe contener exactamente 10 dígitos.',
+]);
 
         $user = DB::transaction(function () use ($datos) {
             $user = User::create([
@@ -169,7 +191,8 @@ if ($identidadAutorizada) {
         'nombres' => $solicitante->nombres,
         'apellido_paterno' => $solicitante->apellido_paterno,
         'apellido_materno' => $solicitante->apellido_materno,
-	'correo_electronico' => $solicitante->correo_electronico,    
+        'genero' => $solicitante->genero,
+	'correo_electronico' => $solicitante->correo_electronico,
 ]);
 }
 
@@ -211,6 +234,12 @@ if ($identidadAutorizada) {
         'apellido_materno' => [
             'nullable', 'string', 'max:100'
         ],
+        'genero' => [
+            Rule::requiredIf(!$identidadAutorizada),
+            'nullable',
+            'string',
+            Rule::in(['Femenino', 'Masculino']),
+        ],
         'calle' => [
             'required', 'string', 'max:200'
         ],
@@ -241,13 +270,21 @@ if ($identidadAutorizada) {
             Rule::unique('datos_solicitantes', 'correo_electronico')
                 ->ignore($solicitante->id),
         ],
-        'telefono_particular' => [
-            'nullable', 'string', 'max:20'
-        ],
-        'telefono_celular' => [
-            'nullable', 'string', 'max:20'
-        ],
-    ]);
+        'telefono_particular' => ['nullable', 'required_without:telefono_celular', 'digits:10'],
+'telefono_celular' => ['nullable', 'required_without:telefono_particular', 'digits:10'],
+], [
+    'telefono_particular.required_without' =>
+        'Debes proporcionar al menos un teléfono: particular o celular.',
+
+    'telefono_celular.required_without' =>
+        'Debes proporcionar al menos un teléfono: particular o celular.',
+
+    'telefono_particular.digits' =>
+        'El teléfono particular debe contener exactamente 10 dígitos.',
+
+    'telefono_celular.digits' =>
+        'El teléfono celular debe contener exactamente 10 dígitos.',
+]);
 
     DB::transaction(function () use (
     $user,
@@ -266,7 +303,7 @@ if ($identidadAutorizada) {
 
         $solicitante->update($datosPermitidos);
 
-        
+
 
     } else {
 
@@ -341,6 +378,9 @@ public function autorizar(Request $request)
             'entidad_federativa' => ['required', 'string'],
             'codigo_postal' => ['required', 'digits:5'],
             'correo_electronico' => ['required', 'email'],
+            'telefono_particular' => ['nullable', 'required_without:telefono_celular', 'digits:10'],
+            'telefono_celular' => ['nullable', 'required_without:telefono_particular', 'digits:10'],
+
         ],
         [
             'curp.required' =>

@@ -92,7 +92,8 @@
         overflow-wrap: anywhere;
     }
 
-    #vue-actualizar-datos .campo-actualizacion input {
+    #vue-actualizar-datos .campo-actualizacion input,
+    #vue-actualizar-datos .campo-actualizacion select {
         width: 100%;
         min-width: 0;
         box-sizing: border-box;
@@ -161,23 +162,24 @@
     </div>
 @endif
 
-@if($errors->any())
+	@if($errors->any())
     <div class="mensaje-error" role="alert">
         <strong>No fue posible guardar los cambios:</strong>
         <ul>
-            @foreach($errors->all() as $error)
+            @foreach(array_unique($errors->all()) as $error)
                 <li>{{ $error }}</li>
             @endforeach
         </ul>
     </div>
 @endif
 
-            <h2>Autorización de Datos</h2>
 
-            <p class="panel-descripcion">
-                Consulta la información personal
-                registrada en el sistema.
-            </p>
+
+            <div
+                data-vue-encabezado
+                data-titulo="Autorización de Datos"
+                data-descripcion="Consulte la información personal registrada en el sistema y autorice sus datos para continuar con el proceso de certificación.">
+            </div>
 
             
             
@@ -190,6 +192,7 @@ data-datos="{{ json_encode([
         'nombres' => old('nombres', $datos->nombres),
         'apellido_paterno' => old('apellido_paterno', $datos->apellido_paterno),
         'apellido_materno' => old('apellido_materno', $datos->apellido_materno),
+        'genero' => old('genero', $datos->genero),
         'calle' => old('calle', $datos->calle),
         'numero_exterior' => old('numero_exterior', $datos->numero_exterior),
         'numero_interior' => old('numero_interior', $datos->numero_interior),

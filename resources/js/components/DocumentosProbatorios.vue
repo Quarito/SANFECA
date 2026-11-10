@@ -2,6 +2,10 @@
 import { ref } from 'vue';
 
 const props = defineProps({
+    academicos: {
+        type: Object,
+        default: () => ({})
+    },
     nuevos: {
         type: Object,
         default: () => ({})
@@ -34,10 +38,11 @@ function seleccionarArchivo(event, campo) {
 </script>
 
 <template>
-    <div class="documentos-vue">
+    <div class="documentos-vue documentos-anfeca">
+
         <section class="seccion-documentos">
 
-            <h2>Documentos Probatorios</h2>
+
 
             <div class="probatorios-contenido">
 
@@ -47,7 +52,7 @@ function seleccionarArchivo(event, campo) {
                     <div
                         v-for="campo in probatorios"
                         :key="campo"
-                        class="fila-documento"
+                        class="fila-documento campo-documento"
                     >
                         <span
                             class="icono-documento"

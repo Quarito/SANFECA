@@ -1,9 +1,13 @@
 
 <script setup>
-import { reactive } from 'vue';
+import { reactive, computed } from 'vue';
 
 const props = defineProps({
     seleccion: {
+        type: Object,
+        default: () => ({})
+    },
+    antecedentes: {
         type: Object,
         default: () => ({})
     }
@@ -20,6 +24,14 @@ const certificaciones = [
     'CACSLA',
     'CACECA'
 ];
+
+const certificacionCoincide = computed(() => {
+    const certificacionGuardada =
+        props.antecedentes.certificacion_consultada ?? '';
+
+    return certificacionGuardada !== '' &&
+        formulario.certificacion === certificacionGuardada;
+});
 
 const tiposPersonal = [
     'Tiempo Completo',
@@ -124,5 +136,59 @@ const areasCertificacion = [
             </section>
 
         </div>
+
+        <!-- ANTECEDENTES HISTÓRICOS DE CERTIFICACIÓN -->
+        <section
+            class="antecedentes-certificacion-vue"
+            aria-labelledby="titulo-antecedentes"
+        >
+            <h2 id="titulo-antecedentes">
+                Antecedentes históricos de certificación
+            </h2>
+
+            <p v-if="!formulario.certificacion">
+                Seleccione una certificación para consultar sus antecedentes.
+            </p>
+
+            <p v-else-if="!certificacionCoincide">
+                Para consultar los antecedentes de esta certificación,
+                primero debe guardar su selección.
+            </p>
+
+            <template v-else>
+                <div
+                    v-if="antecedentes.historial?.length"
+                    class="lista-antecedentes-vue"
+                >
+                    <article
+                        v-for="(registro, indice) in antecedentes.historial"
+                        :key="indice"
+                        class="registro-antecedente-vue"
+                    >
+                        <h3>{{ registro.certificacion }}</h3>
+
+                        <p v-if="registro.primera_vez">
+                            <strong>Primera certificación:</strong>
+                            {{ registro.primera_vez }}
+                        </p>
+
+                        <p
+                            v-for="refrendo in registro.refrendos || []"
+                            :key="refrendo.numero"
+                        >
+                            <strong>
+                                Refrendo {{ refrendo.numero }}:
+                            </strong>
+                            {{ refrendo.anio }}
+                        </p>
+                    </article>
+                </div>
+
+                <p v-else>
+                    No se encontraron antecedentes históricos
+                    verificados vinculados a esta certificación.
+                </p>
+            </template>
+        </section>
     </div>
 </template>

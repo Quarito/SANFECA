@@ -1,0 +1,99 @@
+/* Estilos exclusivos de la pantalla Datos de Refrendo */
+
+.formulario-refrendo {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+.formulario-refrendo .campo input,
+.formulario-refrendo .campo select {
+    width: 80%;
+    max-width: 440px;
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid #888;
+    border-radius: 4px;
+    background: #fff;
+    font: inherit;
+    box-sizing: border-box;
+}
+
+.formulario-refrendo .campo input:focus,
+.formulario-refrendo .campo select:focus {
+    outline: 2px solid #950e16;
+    outline-offset: 2px;
+}
+
+.formulario-refrendo .campo[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 600px) {
+    .formulario-refrendo .campo input,
+    .formulario-refrendo .campo select {
+        width: 100%;
+    }
+}
+
+/* ==========================================
+   ENCABEZADO DE DATOS DE REFRENDO
+   ========================================== */
+
+.cert-main .encabezado-refrendo {
+    width: 100%;
+    margin: 0 auto 24px;
+    text-align: center;
+}
+
+.cert-main .titulo-refrendo {
+    padding: 18px 24px;
+    background: linear-gradient(
+        110deg,
+        #ffffff 0%,
+        #f9eeee 50%,
+        #f6e5e7 100%
+    );
+    border-radius: 12px;
+    border-left: 4px solid #a30917;
+}
+
+.cert-main .titulo-refrendo h2 {
+    margin: 0;
+    color: #a30917;
+    font-size: clamp(22px, 2.5vw, 30px);
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: center;
+}
+
+.cert-main .descripcion-refrendo {
+    max-width: 760px;
+    margin: 18px auto 0;
+    padding: 0 12px;
+    color: #333333;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.cert-main .descripcion-refrendo::after {
+    content: "";
+    display: block;
+    width: 90px;
+    height: 3px;
+    margin: 14px auto 0;
+    background-color: #a30917;
+    border-radius: 3px;
+}
+
+@media (max-width: 768px) {
+    .cert-main .titulo-refrendo {
+        padding: 16px;
+    }
+
+    .cert-main .descripcion-refrendo {
+        font-size: 14px;
+    }
+}

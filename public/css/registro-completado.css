@@ -16,15 +16,23 @@ body {
 .contenido-completado {
     flex: 1;
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 60px 20px 50px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 28px;
+    padding: 24px 30px 50px;
     box-sizing: border-box;
+}
+
+/* Encabezado institucional */
+.contenido-completado > [data-vue-encabezado] {
+    width: 100%;
+    max-width: 100%;
 }
 
 .tarjeta-completado {
     width: 100%;
-    max-width: 355px;
+    max-width: 680px;
     min-height: 165px;
     border: 1px solid #555;
     border-radius: 7px;
@@ -88,5 +96,523 @@ body {
 
     .tarjeta-completado {
         max-width: 100%;
+    }
+}
+
+
+/* CORRECCIÓN DE ALINEACIÓN FINALIZACIÓN */
+.cert-layout .contenido-completado.cert-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 28px;
+    width: 100%;
+    min-width: 0;
+    padding: 28px 24px 50px;
+}
+
+.cert-layout .contenido-completado.cert-main > [data-vue-encabezado] {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    flex: none;
+}
+
+.cert-layout .contenido-completado.cert-main > .tarjeta-completado {
+    width: 100%;
+    max-width: 680px;
+    flex: none;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .cert-layout .contenido-completado.cert-main {
+        padding: 18px 12px 35px;
+        gap: 20px;
+    }
+}
+
+
+/* DOCUMENTO GENERADO - ANFECA */
+
+.cert-main .seccion-documento-generado {
+    margin: 24px 0;
+    padding: 20px 0;
+    border-top: 1px solid #dddddd;
+    border-bottom: 1px solid #dddddd;
+    background: transparent;
+}
+
+.cert-main .documento-generado-encabezado h3 {
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #333333;
+}
+
+.cert-main .documento-generado-encabezado p {
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: #666666;
+}
+
+.cert-main .documento-generado-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 12px 0;
+}
+
+.cert-main .documento-generado-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.cert-main .documento-generado-icono {
+    font-size: 23px;
+}
+
+.cert-main .documento-generado-info strong {
+    display: block;
+    font-size: 13px;
+    color: #333333;
+}
+
+.cert-main .documento-generado-info small {
+    display: block;
+    margin-top: 5px;
+    font-size: 11px;
+    color: #777777;
+}
+
+.cert-main .boton-documento-generado {
+    padding: 8px 18px;
+    border: 1px solid #c9828e;
+    border-radius: 20px;
+    background: #ffffff;
+    color: #a34c5a;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cert-main .boton-documento-generado:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.cert-main .documento-generado-nota {
+    margin: 12px 0 0;
+    font-size: 11px;
+    color: #777777;
+}
+
+@media (max-width: 600px) {
+    .cert-main .documento-generado-fila {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+
+/* REDISENO MINIMALISTA FINALIZACION ANFECA */
+
+.cert-layout .contenido-completado.cert-main {
+    align-items: stretch;
+    gap: 20px;
+}
+
+.cert-layout .contenido-completado.cert-main > .tarjeta-completado {
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 20px 24px 30px;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    text-align: left;
+}
+
+.cert-main .tarjeta-completado h2 {
+    margin: 0 0 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e5e5;
+    color: #333333;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.cert-main .tarjeta-completado > p {
+    margin: 0;
+    color: #555555;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+.cert-main .tarjeta-completado > p strong {
+    color: #333333;
+    font-weight: 600;
+}
+
+.cert-main .tarjeta-completado ul {
+    list-style: none;
+    padding: 8px 0;
+    margin: 0;
+    border-top: 1px solid #eeeeee;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.cert-main .tarjeta-completado ul li {
+    padding: 9px 4px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #444444;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: left;
+}
+
+.cert-main .tarjeta-completado ul li:last-child {
+    border-bottom: none;
+}
+
+.cert-main .seccion-documento-generado {
+    width: 100%;
+    margin: 8px 0;
+    padding: 20px 0;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.cert-main .documento-generado-encabezado h3 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.cert-main .documento-generado-encabezado p {
+    margin: 0 0 14px;
+    color: #666666;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.cert-main .documento-generado-fila {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.cert-main .documento-generado-info {
+    flex: 1;
+}
+
+.cert-main .documento-generado-info strong {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.cert-main .documento-generado-info small {
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.cert-main .documento-generado-nota {
+    margin: 12px 0 0;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.cert-main .tarjeta-completado form {
+    width: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cert-main .tarjeta-completado .boton-completado {
+    min-width: 150px;
+    min-height: 38px;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.cert-main .tarjeta-completado > a.boton-completado {
+    align-self: flex-end;
+    background: #ffffff;
+    color: #990d17;
+    border: 1px solid #c9828e;
+}
+
+.cert-main .tarjeta-completado > a.boton-completado:hover {
+    background: #fff5f6;
+    color: #750812;
+}
+
+@media (max-width: 600px) {
+    .cert-layout .contenido-completado.cert-main > .tarjeta-completado {
+        padding: 16px 12px 24px;
+    }
+
+    .cert-main .tarjeta-completado form {
+        justify-content: stretch;
+    }
+
+    .cert-main .tarjeta-completado .boton-completado {
+        width: 100%;
+    }
+
+    .cert-main .tarjeta-completado > a.boton-completado {
+        align-self: stretch;
+    }
+
+    .cert-main .documento-generado-fila {
+        align-items: stretch;
+    }
+}
+
+
+/* FINALIZACION SIMPLE MINIMALISTA ANFECA */
+
+/* Tarjeta principal */
+.cert-layout .contenido-completado.cert-main {
+    align-items: center;
+    gap: 22px;
+}
+
+.cert-layout .contenido-completado.cert-main > .tarjeta-completado {
+    width: 100%;
+    max-width: 560px;
+    margin: 18px auto 30px;
+    padding: 28px 32px;
+    border: 1px solid #dddddd;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+}
+
+/* Textos */
+.cert-main .tarjeta-completado h2 {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.cert-main .tarjeta-completado > p {
+    width: 100%;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* Lista de requisitos */
+.cert-main .tarjeta-completado ul {
+    width: 100%;
+    margin: 4px 0;
+    padding: 8px 0;
+    border-top: 1px solid #eeeeee;
+    border-bottom: 1px solid #eeeeee;
+    list-style: none;
+}
+
+.cert-main .tarjeta-completado ul li {
+    padding: 5px 0;
+    border: none;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Documento pendiente */
+.cert-main .seccion-documento-generado {
+    width: 100%;
+    margin: 4px 0;
+    padding: 16px 0;
+    border-top: 1px solid #eeeeee;
+    border-bottom: 1px solid #eeeeee;
+    text-align: center;
+}
+
+.cert-main .documento-generado-encabezado h3 {
+    font-size: 15px;
+    text-align: center;
+}
+
+.cert-main .documento-generado-encabezado p {
+    font-size: 12px;
+    text-align: center;
+}
+
+.cert-main .documento-generado-fila {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.cert-main .documento-generado-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+}
+
+.cert-main .documento-generado-nota {
+    text-align: center;
+    font-size: 11px;
+}
+
+/* Botón de descarga minimalista */
+.cert-main .boton-documento-generado {
+    min-width: 170px;
+    min-height: 38px;
+    padding: 9px 20px;
+    border: 1px solid #c9828e;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #a34c5a;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Botón de confirmación */
+.cert-main .tarjeta-completado form {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.cert-main .tarjeta-completado .boton-completado {
+    min-width: 170px;
+    min-height: 38px;
+    padding: 9px 18px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Regresar al panel */
+.cert-main .tarjeta-completado > a.boton-completado {
+    align-self: center;
+    background: #ffffff;
+    color: #990d17;
+    border: 1px solid #c9828e;
+}
+
+/* Adaptación móvil */
+@media (max-width: 600px) {
+    .cert-layout .contenido-completado.cert-main > .tarjeta-completado {
+        max-width: 100%;
+        padding: 22px 16px;
+        margin: 8px auto;
+    }
+
+    .cert-main .tarjeta-completado form {
+        justify-content: center;
+    }
+
+    .cert-main .tarjeta-completado .boton-completado {
+        width: 100%;
+    }
+}
+
+
+/* AJUSTE FINAL TIPOGRAFIA ANFECA */
+
+.cert-layout .contenido-completado.cert-main > .tarjeta-completado {
+    max-width: 560px;
+    padding: 38px 36px;
+    gap: 20px;
+}
+
+.cert-main .tarjeta-completado h2 {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.cert-main .tarjeta-completado > p {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+.cert-main .documento-simple {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 4px 0;
+}
+
+.cert-main .documento-simple p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    color: #777777;
+    text-align: center;
+}
+
+.cert-main .documento-simple .boton-documento-generado {
+    min-width: 240px;
+    min-height: 44px;
+    padding: 10px 22px;
+    border: 1px solid #c9828e;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #a34c5a;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.cert-main .documento-simple .boton-documento-generado:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.cert-main .tarjeta-completado .boton-completado {
+    min-width: 240px;
+    min-height: 44px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 7px;
+}
+
+@media (max-width: 600px) {
+    .cert-layout .contenido-completado.cert-main > .tarjeta-completado {
+        padding: 28px 18px;
+    }
+
+    .cert-main .tarjeta-completado h2 {
+        font-size: 20px;
+    }
+
+    .cert-main .documento-simple .boton-documento-generado {
+        width: 100%;
+        min-width: 0;
     }
 }

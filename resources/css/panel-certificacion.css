@@ -351,3 +351,30 @@ body.modo-preview .cert-main textarea {
     line-height: 1.5;
     margin: 7px 0 0;
 }
+
+/* INDICADOR VISUAL DE ETAPAS ANTERIORES */
+.cert-sidebar-item.completed {
+    background: #f1f8f3;
+    border-color: #b9d9c2;
+}
+
+.cert-sidebar-item.completed .cert-step-number {
+    background: #287a45;
+    color: #ffffff;
+    font-size: 16px;
+}
+
+.cert-sidebar-item.completed .cert-step-text strong {
+    color: #245d38;
+}
+
+/* ETAPA ACTUAL: PRIORIDAD VISUAL */
+.cert-sidebar-item.active {
+    background: var(--anfeca-rosa-activo);
+    border-color: #e9b8bd;
+    border-left: 4px solid var(--anfeca-rojo);
+}
+
+.cert-sidebar-item.active .cert-step-number {
+    background: var(--anfeca-rojo);
+}

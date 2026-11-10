@@ -1,42 +1,54 @@
-<<<<<<< HEAD
-*.log
-.DS_Store
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/fonts-manifest.dev.json
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
-_ide_helper.php
-Homestead.json
-Homestead.yaml
-Thumbs.db
-=======
+# Configuracion y credenciales
 .env
 .env.*
 !.env.example
+/auth.json
+
+# Dependencias
 /vendor/
+/node_modules/
+
+# Archivos generados
+/public/build/
+/public/hot
+/public/storage/
+/public/fonts-manifest.dev.json
+/storage/*.key
+/storage/pail/
+/storage/framework/cache/data/
+/storage/framework/sessions/
+/storage/framework/views/
+/storage/logs/*.log
 /uploads/
-*.log
->>>>>>> 66d70e251a120f74f1c8fcb600dc4ec2286c6008
 
 # Respaldos temporales
 *.bak
 *.bak_*
 *.antes_panel
+*.antes_centrado
 /respaldos/
+.gitignore.respaldo_local
+
+# Archivos de desarrollo
+.DS_Store
+.phpactor.json
+.phpunit.result.cache
+/.phpunit.cache/
+/.codex/
+/.cursor/
+/.idea/
+/nova/
+/.vscode/
+/.zed/
+_ide_helper.php
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# Archivos de registro
+*.log
+
+# Archivos temporales pendientes de revision
+/0
+/[
+/sin_vinculacion

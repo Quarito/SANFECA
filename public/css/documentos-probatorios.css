@@ -327,3 +327,53 @@
         flex-wrap: wrap;
     }
 }
+
+
+/* DISTRIBUCION FINAL DOCUMENTOS PROBATORIOS */
+
+/* Mantener documentos y Link en dos columnas */
+@media (min-width: 851px) {
+    .cert-main .documentos-anfeca .probatorios-contenido {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: center;
+        gap: 32px;
+    }
+}
+
+/* Conservar el separador vertical */
+.cert-main .documentos-anfeca .grupo-link {
+    border-left: 1px solid #d0d0d0;
+    padding-left: 28px;
+}
+
+/* Evitar que las tarjetas se extiendan fuera de su columna */
+.cert-main .documentos-anfeca .probatorios-contenido
+.lista-documentos {
+    width: 100%;
+    min-width: 0;
+}
+
+/* Mantener el nombre del archivo debajo de su documento */
+.cert-main .documentos-anfeca .probatorios-contenido
+.archivo-elegido {
+    width: 100%;
+    margin-top: 7px;
+    padding-left: 33px;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+/* Restaurar disposición vertical en pantallas pequeñas */
+@media (max-width: 850px) {
+    .cert-main .documentos-anfeca .probatorios-contenido {
+        grid-template-columns: 1fr;
+    }
+
+    .cert-main .documentos-anfeca .grupo-link {
+        border-left: none;
+        border-top: 1px solid #d0d0d0;
+        padding: 20px 0 0;
+        min-height: auto;
+    }
+}

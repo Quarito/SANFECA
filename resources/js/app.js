@@ -1,3 +1,5 @@
+import EncabezadoProceso from './components/EncabezadoProceso.vue';
+import DatosRefrendo from './components/DatosRefrendo.vue';
 
 import { createApp } from 'vue';
 
@@ -29,8 +31,13 @@ if (contenedorCertificacion) {
         contenedorCertificacion.dataset.seleccion || '{}'
     );
 
+    const antecedentes = JSON.parse(
+        contenedorCertificacion.dataset.antecedentes || '{}'
+    );
+
     createApp(SeleccionCertificacion, {
-        seleccion
+        seleccion,
+        antecedentes
     }).mount(contenedorCertificacion);
 }
 
@@ -120,3 +127,35 @@ if (contenedorActualizar) {
 
 }).mount(contenedorActualizar);
 }
+
+
+// PANTALLA 3: DATOS DE REFRENDO
+const contenedorRefrendo = document.getElementById(
+    'vue-datos-refrendo'
+);
+
+if (contenedorRefrendo) {
+    const datos = JSON.parse(
+        contenedorRefrendo.dataset.datos || '{}'
+    );
+
+    const automaticos = JSON.parse(
+        contenedorRefrendo.dataset.automaticos || '{}'
+    );
+
+    createApp(DatosRefrendo, {
+        datos,
+        automaticos
+    }).mount(contenedorRefrendo);
+}
+
+
+// ENCABEZADOS INSTITUCIONALES DEL REGISTRO
+document.querySelectorAll('[data-vue-encabezado]').forEach(
+    contenedor => {
+        createApp(EncabezadoProceso, {
+            titulo: contenedor.dataset.titulo || '',
+            descripcion: contenedor.dataset.descripcion || ''
+        }).mount(contenedor);
+    }
+);
