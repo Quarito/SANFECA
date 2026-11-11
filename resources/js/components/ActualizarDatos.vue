@@ -124,6 +124,16 @@ function cancelar() {
     Object.assign(campos, props.datos);
     editando.value = false;
 }
+
+const camposNombre = [
+    'nombres',
+    'apellido_paterno',
+    'apellido_materno',
+];
+
+const patronNombre = String.raw`(?=.*\p{Lu})(?=.*\p{Ll}).*`;
+
+const indicacionNombre = 'Combine mayúsculas y minúsculas; por ejemplo: Diego o Sánchez.';
 </script>
 
 <template>
@@ -156,6 +166,15 @@ function cancelar() {
                     class="tarjeta-etapa"
                 >
                     <h3>{{ grupo.titulo }}</h3>
+
+                    <p
+                        v-if="grupo.titulo === 'Datos personales'"
+                        id="indicacion-nombre-actualizacion"
+                    >
+                        Escriba su nombre y apellidos con mayúsculas, minúsculas
+                        y los acentos que correspondan. Revise su escritura:
+                        así aparecerá su nombre en el certificado.
+                    </p>
 
                     <div
                         v-for="[nombre, etiqueta] in grupo.campos"
@@ -198,6 +217,13 @@ function cancelar() {
                 "
                 :inputmode="esTelefono(nombre) ? 'numeric' : undefined"
                 @input="esTelefono(nombre) && validarTelefono(nombre, $event)"
+                :pattern="camposNombre.includes(nombre) ? patronNombre : undefined"
+                :title="camposNombre.includes(nombre) ? indicacionNombre : undefined"
+                :aria-describedby="
+                    camposNombre.includes(nombre)
+                        ? 'indicacion-nombre-actualizacion'
+                        : undefined
+                "
             >
 
             <span v-else>
