@@ -52,6 +52,17 @@ const comunicacion = [
     { name: 'telefono_particular', label: 'Teléfono Particular', type: 'tel' },
     { name: 'telefono_celular', label: 'Teléfono Celular', type: 'tel' }
 ];
+
+const camposNombre = [
+    'nombres',
+    'apellido_paterno',
+    'apellido_materno',
+];
+
+const patronNombre = String.raw`(?=.*\p{Lu})(?=.*\p{Ll}).*`;
+
+const indicacionNombre =
+    'Combine mayúsculas y minúsculas; por ejemplo: Martín, Vargas, López, etc.';
 </script>
 
 <template>
@@ -59,6 +70,12 @@ const comunicacion = [
         <div class="secciones-datos">
             <section class="seccion-datos">
                 <h2>Datos Personales</h2>
+
+                <p id="indicacion-nombre-registro">
+                    Escriba su nombre y apellidos con mayúsculas, minúsculas
+                    y los acentos que correspondan. Revise su escritura:
+                    así aparecerá su nombre en el certificado.
+                </p>
 
                 <div class="dos-columnas-datos">
                     <div
@@ -92,6 +109,21 @@ const comunicacion = [
                         v-model="campos[campo.name]"
                         :maxlength="campo.maxlength"
                         :required="campo.required || false"
+                        :pattern="
+                            camposNombre.includes(campo.name)
+                                ? patronNombre
+                                : undefined
+                        "
+                        :title="
+                            camposNombre.includes(campo.name)
+                                ? indicacionNombre
+                                : undefined
+                        "
+                        :aria-describedby="
+                            camposNombre.includes(campo.name)
+                                ? 'indicacion-nombre-registro'
+                                : undefined
+                        "
                         autocomplete="off"
                     >
 

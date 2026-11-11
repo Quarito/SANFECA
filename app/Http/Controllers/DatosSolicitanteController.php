@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use App\Rules\NombreConMayusculasYMinusculas;
 
 class DatosSolicitanteController extends Controller
 {
@@ -45,9 +46,9 @@ class DatosSolicitanteController extends Controller
                 'unique:datos_solicitantes,rfc'
             ],
             'cedula_profesional' => ['nullable', 'string', 'max:30'],
-            'nombres' => ['required', 'string', 'max:150'],
-            'apellido_paterno' => ['required', 'string', 'max:100'],
-            'apellido_materno' => ['nullable', 'string', 'max:100'],
+            'nombres' => ['bail', 'required', 'string', 'max:150', new NombreConMayusculasYMinusculas()],
+            'apellido_paterno' => ['bail', 'required', 'string', 'max:100', new NombreConMayusculasYMinusculas()],
+            'apellido_materno' => ['bail', 'nullable', 'string', 'max:100', new NombreConMayusculasYMinusculas()],
             'genero' => [
                 'required',
                 'string',
@@ -167,6 +168,11 @@ public function update(Request $request)
 
 // Identificar si los datos personales ya fueron autorizados.
 $identidadAutorizada = (bool) $solicitante->datos_autorizados;
+//Fallback: Regla para evitar que un usuario con identidad autorizada no pueda cambiar sus datos personales
+//si tuviera un nombre o apellido en mayúsculas y minúsculas: No se le aplicará la regla de validación.
+$reglasFormatoNombre = $identidadAutorizada
+    ? []
+    : [new NombreConMayusculasYMinusculas()];
 
 // Campos que pueden actualizarse aun con identidad autorizada.
 $camposActualizables = [
@@ -226,13 +232,13 @@ if ($identidadAutorizada) {
             'nullable', 'string', 'max:30'
         ],
         'nombres' => [
-            'required', 'string', 'max:150'
+            'bail', 'required', 'string', 'max:150', ...$reglasFormatoNombre
         ],
         'apellido_paterno' => [
-            'required', 'string', 'max:100'
+            'bail', 'required', 'string', 'max:100', ...$reglasFormatoNombre
         ],
         'apellido_materno' => [
-            'nullable', 'string', 'max:100'
+            'bail', 'nullable', 'string', 'max:100', ...$reglasFormatoNombre
         ],
         'genero' => [
             Rule::requiredIf(!$identidadAutorizada),
@@ -369,8 +375,8 @@ public function autorizar(Request $request)
                 'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/',
             ],
             'rfc' => ['required', 'string', 'min:12', 'max:13'],
-            'nombres' => ['required', 'string'],
-            'apellido_paterno' => ['required', 'string'],
+            'nombres' => ['bail', 'required', 'string', 'max:150', new NombreConMayusculasYMinusculas()],
+            'apellido_paterno' => ['bail', 'required', 'string', 'max:100', new NombreConMayusculasYMinusculas()],
             'calle' => ['required', 'string'],
             'numero_exterior' => ['required', 'string'],
             'colonia' => ['required', 'string'],
@@ -394,7 +400,7 @@ public function autorizar(Request $request)
             ->withErrors($validador)
             ->with(
                 'error',
-                'Completa los datos personales obligatorios antes de autorizar.'
+                'Revisa el formato y completa los datos personales obligatorios antes de autorizar.'
             );
     }
 
