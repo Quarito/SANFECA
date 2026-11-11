@@ -40,11 +40,11 @@ const tiposPersonal = [
 ];
 
 const areasCertificacion = [
-    'Contaduría',
+    'Contaduría Pública',
     'Administración',
-    'Informática',
+    'Informática Administrativa',
     'Negocios Internacionales',
-    'Disciplinas vinculadas al ámbito...'
+    'Disciplinas vinculadas al ámbito económico-administrativo',
 ];
 </script>
 
