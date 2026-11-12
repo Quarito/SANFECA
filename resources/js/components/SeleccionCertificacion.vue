@@ -1,6 +1,7 @@
-
 <script setup>
-import { reactive, computed } from 'vue';
+import { reactive, computed, ref, watch } from 'vue';
+
+
 
 const props = defineProps({
     seleccion: {
@@ -10,6 +11,10 @@ const props = defineProps({
     antecedentes: {
         type: Object,
         default: () => ({})
+    },
+    numeroCertificadoInicial: {
+        type: String,
+        default: ''
     }
 });
 
@@ -18,12 +23,38 @@ const formulario = reactive({
     tipo_personal: props.seleccion.tipo_personal ?? '',
     area_certificacion: props.seleccion.area_certificacion ?? ''
 });
+const numeroCertificadoAnterior = ref(props.numeroCertificadoInicial);
+const consultandoCertificado = ref(false);
+const mensajeConsulta = ref('');
+const historialConsultado = ref(null);
+
+let versionConsulta = 0;
+let actualizandoCertificacionHistorica = false;
+
+watch(
+    [numeroCertificadoAnterior, () => formulario.certificacion],
+    () => {
+        if (actualizandoCertificacionHistorica) {
+            return;
+        }
+
+        versionConsulta++;
+        historialConsultado.value = null;
+        mensajeConsulta.value = '';
+        consultandoCertificado.value = false;
+    },
+    { flush: 'sync' }
+);
 
 const certificaciones = [
     'ANFECA',
     'CACSLA',
     'CACECA'
 ];
+
+const certificacionBloqueada = computed(() => {
+    return historialConsultado.value !== null;
+});
 
 const certificacionCoincide = computed(() => {
     const certificacionGuardada =
@@ -46,11 +77,138 @@ const areasCertificacion = [
     'Negocios Internacionales',
     'Disciplinas vinculadas al ámbito...'
 ];
+
+async function consultarCertificadoAnterior() {
+    const numero = numeroCertificadoAnterior.value.trim();
+
+    mensajeConsulta.value = '';
+    historialConsultado.value = null;
+
+    if (!numero) {
+        mensajeConsulta.value = 'Ingrese un número de certificado.';
+        return;
+    }
+
+    
+    consultandoCertificado.value = true;
+const versionActual = ++versionConsulta;
+
+    try {
+        const token = document.querySelector(
+            'input[name="_token"]'
+        )?.value;
+
+        const respuesta = await fetch(
+            '/registro/certificacion/consultar',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token ?? ''
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    numero_certificado: numero
+                })
+            }
+        );
+
+        const resultado = await respuesta.json();
+	if (versionActual !== versionConsulta) {
+    return;
+}
+        if (!respuesta.ok) {
+            mensajeConsulta.value =
+                resultado.mensaje ??
+                'No fue posible realizar la consulta.';
+            return;
+        }
+
+        if (
+	    resultado.encontrado &&
+	    certificaciones.includes(resultado.historial?.certificacion)
+	) {
+	       actualizandoCertificacionHistorica = true;
+
+		formulario.certificacion = resultado.historial.certificacion;
+
+		actualizandoCertificacionHistorica = false;
+
+		historialConsultado.value = resultado.historial;
+		mensajeConsulta.value = resultado.mensaje;
+
+		consultandoCertificado.value = false;
+	} else {
+	    mensajeConsulta.value =
+	        'No fue posible verificar el certificado anterior.';
+	}
+
+    } catch (error) {
+        mensajeConsulta.value =
+            'Ocurrió un error de comunicación. Intente nuevamente.';
+    } finally {
+    if (versionActual === versionConsulta) {
+        consultandoCertificado.value = false;
+    		}
+	}
+}
+
+
 </script>
 
 <template>
     <div class="certificacion-vue">
-        <div class="columnas-certificacion-vue">
+
+<!-- CONSULTA DE CERTIFICADO ANTERIOR -->
+<section class="consulta-certificado-vue">
+
+    <div class="consulta-certificado-info">
+        <h2>Consulta de certificado anterior</h2>
+
+        <p>
+            ¿Cuenta con un número de certificado anterior?
+            Ingréselo para consultar sus antecedentes históricos.
+        </p>
+    </div>
+
+    <div class="consulta-certificado-formulario">
+        <label for="numero_certificado_anterior">
+            Número de certificado
+        </label>
+
+        <div class="consulta-certificado-controles">
+            <input
+                id="numero_certificado_anterior"
+		name="numero_certificado_anterior"
+		 v-model="numeroCertificadoAnterior"
+		 type="text"
+                placeholder="Ingrese su número de certificado"
+                autocomplete="off"
+            >
+
+		<button
+		    type="button"
+		    class="boton-consultar-certificado"
+		    :disabled="consultandoCertificado || !numeroCertificadoAnterior.trim()"
+		    @click="consultarCertificadoAnterior"
+		>
+		    {{ consultandoCertificado ? 'Consultando...' : 'Consultar' }}
+		</button>
+		<p
+    v-if="mensajeConsulta"
+    class="mensaje-consulta-certificado"
+    role="status"
+>
+    {{ mensajeConsulta }}
+</p>
+        </div>
+    </div>
+
+</section>
+
+
+ <div class="columnas-certificacion-vue">
 
             <!-- COLUMNA 1 -->
             <section class="seccion-certificacion-vue">
@@ -68,12 +226,13 @@ const areasCertificacion = [
                         class="opcion-certificacion"
                     >
                         <input
-                            v-model="formulario.certificacion"
-                            type="radio"
-                            name="certificacion"
-                            :value="opcion"
-                            required
-                        >
+			    v-model="formulario.certificacion"
+			    type="radio"
+			    name="certificacion"
+			    :value="opcion"
+			    :disabled="certificacionBloqueada"
+			    required
+			>
 
                         <span>{{ opcion }}</span>
                     </label>
@@ -139,6 +298,7 @@ const areasCertificacion = [
 
         <!-- ANTECEDENTES HISTÓRICOS DE CERTIFICACIÓN -->
         <section
+		v-if="historialConsultado && historialConsultado.certificacion === formulario.certificacion"
             class="antecedentes-certificacion-vue"
             aria-labelledby="titulo-antecedentes"
         >
@@ -146,49 +306,26 @@ const areasCertificacion = [
                 Antecedentes históricos de certificación
             </h2>
 
-            <p v-if="!formulario.certificacion">
-                Seleccione una certificación para consultar sus antecedentes.
-            </p>
+<div class="lista-antecedentes-vue">
+    <article class="registro-antecedente-vue">
+        <h3>{{ historialConsultado.certificacion }}</h3>
 
-            <p v-else-if="!certificacionCoincide">
-                Para consultar los antecedentes de esta certificación,
-                primero debe guardar su selección.
-            </p>
+        <p v-if="historialConsultado.primera_vez">
+            <strong>Primera certificación:</strong>
+            {{ historialConsultado.primera_vez }}
+        </p>
 
-            <template v-else>
-                <div
-                    v-if="antecedentes.historial?.length"
-                    class="lista-antecedentes-vue"
-                >
-                    <article
-                        v-for="(registro, indice) in antecedentes.historial"
-                        :key="indice"
-                        class="registro-antecedente-vue"
-                    >
-                        <h3>{{ registro.certificacion }}</h3>
-
-                        <p v-if="registro.primera_vez">
-                            <strong>Primera certificación:</strong>
-                            {{ registro.primera_vez }}
-                        </p>
-
-                        <p
-                            v-for="refrendo in registro.refrendos || []"
-                            :key="refrendo.numero"
-                        >
-                            <strong>
-                                Refrendo {{ refrendo.numero }}:
-                            </strong>
-                            {{ refrendo.anio }}
-                        </p>
-                    </article>
-                </div>
-
-                <p v-else>
-                    No se encontraron antecedentes históricos
-                    verificados vinculados a esta certificación.
-                </p>
-            </template>
+        <p
+            v-for="refrendo in historialConsultado.refrendos || []"
+            :key="refrendo.numero"
+        >
+            <strong>
+                Refrendo {{ refrendo.numero }}:
+            </strong>
+            {{ refrendo.anio }}
+        </p>
+    </article>
+</div>
         </section>
     </div>
 </template>

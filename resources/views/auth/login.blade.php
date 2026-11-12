@@ -55,13 +55,13 @@
 	          method="POST">
         @csrf
 
-                <label for="email">Usuario</label>
+                <label for="email">Usuario (correo electrónico)</label>
                 <input type="email"
                        id="email"
                        name="email"
                        value="{{ old('email') }}"
                        autocomplete="username"
-                       required>
+                       required placeholder="ejemplo@universidad.edu.mx">
 
                 <label for="password">Contraseña</label>
                 <input type="password"

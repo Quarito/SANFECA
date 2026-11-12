@@ -56,8 +56,13 @@ class DatosSolicitanteController extends Controller
                     'Masculino',
                 ])
             ],
-'password' => ['required', 'string', 'min:12', 'confirmed'],
-            'password' => ['required', 'string', 'min:12', 'confirmed'],
+	'password' => [
+	    Rule::requiredIf(!Auth::check()),
+	    'nullable',
+	    'string',
+	    'min:12',
+	    'confirmed',
+	],
             'calle' => ['required', 'string', 'max:200'],
             'numero_exterior' => ['required', 'string', 'max:20'],
             'numero_interior' => ['nullable', 'string', 'max:20'],
@@ -65,10 +70,13 @@ class DatosSolicitanteController extends Controller
             'entidad_federativa' => ['required', 'string', 'max:100'],
             'colonia' => ['required', 'string', 'max:150'],
             'municipio' => ['required', 'string', 'max:150'],
-            'correo_electronico' => [
-                'required', 'email', 'max:255',
-                Rule::unique('users', 'email')
-            ],
+		'correo_electronico' => [
+		    'required',
+		    'email',
+		    'max:255',
+		    Rule::unique('users', 'email')->ignore(Auth::id()),
+		    Rule::unique('datos_solicitantes', 'correo_electronico'),
+		],
             'telefono_particular' => [
 	    'nullable',
 	    'required_without:telefono_celular',
@@ -98,25 +106,31 @@ class DatosSolicitanteController extends Controller
         'El teléfono celular debe contener exactamente 10 dígitos.',
 ]);
 
-        $user = DB::transaction(function () use ($datos) {
-            $user = User::create([
-                'name' => trim(
-                    $datos['nombres'] . ' ' .
-                    $datos['apellido_paterno'] . ' ' .
-                    ($datos['apellido_materno'] ?? '')
-                ),
-                'email' => $datos['correo_electronico'],
-                'password' => Hash::make($datos['password']),
-            ]);
+        $user = DB::transaction(function () use ($datos, $request) {
 
-            unset($datos['password']);
+	    $user = $request->user();
 
-            $datos['user_id'] = $user->id;
+	    if (!$user) {
+	        $user = User::create([
+	            'name' => trim(
+	                $datos['nombres'].' '.
+	                $datos['apellido_paterno'].' '.
+	                ($datos['apellido_materno'] ?? '')
+	            ),
+	            'email' => $datos['correo_electronico'],
+	            'password' => Hash::make($datos['password']),
+	            'rol' => 'solicitante',
+	        ]);
+	    }
 
-            DatosSolicitante::create($datos);
+	    unset($datos['password']);
 
-            return $user;
-        });
+	    $datos['user_id'] = $user->id;
+
+	    DatosSolicitante::create($datos);
+
+	    return $user;
+	});
 
         Auth::login($user);
         $request->session()->regenerate();
@@ -138,13 +152,8 @@ class DatosSolicitanteController extends Controller
         )->first();
 
         if (!$datos) {
-            return redirect()
-                ->route('panel')
-                ->with(
-                    'error',
-                    'No se encontraron datos personales registrados.'
-                );
-        }
+    return redirect()->route('registro.datos');
+}
 
         return view('solicitante.mis-datos', [
             'datos' => $datos,

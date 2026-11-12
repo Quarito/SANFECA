@@ -16,7 +16,11 @@ const props = defineProps({
     formacion: {
         type: Object,
         default: () => ({})
-    }
+    },
+	esRefrendo: {
+	    type: Boolean,
+	    default: false
+	},
 });
 
 const titulosOrigen = [
@@ -78,22 +82,24 @@ const institucionSeleccionada = computed(() => {
 		    </select>
 
 		    <input
-		        type="hidden"
-		        name="nivel_origen"
-		        value="Licenciatura"
-		    >
+			    v-if="!esRefrendo"
+			    type="hidden"
+			    name="nivel_origen"
+			    value="Licenciatura"
+			>
 		</div>
                 <div class="campo">
 		    <label for="titulo_origen">
 		        Nombre del Título o Grado
 		    </label>
 
-		    <select
-		        id="titulo_origen"
-		        name="titulo_origen"
-		        v-model="tituloOrigen"
-		        required
-		    >
+			<select
+			    id="titulo_origen"
+			    :name="esRefrendo ? undefined : 'titulo_origen'"
+			    v-model="tituloOrigen"
+			    :disabled="esRefrendo"
+			    :required="!esRefrendo"
+			>
 		        <option value="">Seleccione</option>
 
 		        <option
@@ -107,95 +113,117 @@ const institucionSeleccionada = computed(() => {
 		</div>
 
                 
-                <!-- DOCUMENTOS DE ORIGEN -->
+		<!-- DOCUMENTOS DE ORIGEN -->
 		<div class="documentos-vue documentos-anfeca">
+
+		    <!-- TÍTULO PROFESIONAL -->
 		    <div class="campo campo-documento">
-    <div class="fila-documento">
-        <span class="icono-documento" aria-hidden="true">📄</span>
+		        <div class="fila-documento">
+		            <span class="icono-documento" aria-hidden="true">📄</span>
 
-        <span class="nombre-documento">Título Profesional</span>
+		            <span class="nombre-documento">
+		                Título Profesional
+		            </span>
 
-        <div class="acciones-documento">
-            <a
-                v-if="formacion?.titulo_origen_archivo"
-                :href="formacion?.titulo_origen_archivo_url"
-                class="accion-documento"
-            >
-                Ver
-            </a>
+		            <div class="acciones-documento">
+		                <a
+		                    v-if="formacion?.titulo_origen_archivo"
+		                    :href="formacion?.titulo_origen_archivo_url"
+		                    class="accion-documento"
+		                >
+		                    Ver
+		                </a>
 
-            <label
-                for="titulo_origen_archivo"
-                class="accion-documento"
-            >
-                {{ formacion?.titulo_origen_archivo ? 'Cambiar' : 'Añadir' }}
-            </label>
-        </div>
-    </div>
+		                <label
+		                    v-if="!esRefrendo || !formacion?.titulo_origen_archivo"
+		                    for="titulo_origen_archivo"
+		                    class="accion-documento"
+		                >
+		                    {{ formacion?.titulo_origen_archivo ? 'Cambiar' : 'Añadir' }}
+		                </label>
+		            </div>
+		        </div>
 
-    <input
-        id="titulo_origen_archivo"
-        type="file"
-        class="archivo-oculto"
-        name="titulo_origen_archivo"
-        accept=".pdf,.jpg,.jpeg,.png"
-        :required="!formacion?.titulo_origen_archivo"
-        @change="seleccionarArchivoAcademico($event, 'titulo_origen_archivo')"
-    >
+		        <input
+		            v-if="!esRefrendo || !formacion?.titulo_origen_archivo"
+		            id="titulo_origen_archivo"
+		            type="file"
+		            class="archivo-oculto"
+		            name="titulo_origen_archivo"
+		            accept=".pdf,.jpg,.jpeg,.png"
+		            :required="!formacion?.titulo_origen_archivo"
+		            @change="seleccionarArchivoAcademico($event, 'titulo_origen_archivo')"
+		        >
 
-    <small
-        v-if="archivosSeleccionados['titulo_origen_archivo']"
-        class="archivo-elegido"
-    >
-        {{ archivosSeleccionados['titulo_origen_archivo'] }}
-    </small>
+		        <small
+		            v-if="archivosSeleccionados['titulo_origen_archivo']"
+		            class="archivo-elegido"
+		        >
+		            {{ archivosSeleccionados['titulo_origen_archivo'] }}
+		        </small>
 
-    <small class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
-</div>
+		        <small
+		            v-if="!esRefrendo || !formacion?.titulo_origen_archivo"
+		            class="ayuda-documento"
+		        >
+		            PDF, JPG o PNG. Máximo 5 MB.
+		        </small>
+		    </div>
 
+		    <!-- CÉDULA PROFESIONAL -->
 		    <div class="campo campo-documento">
-    <div class="fila-documento">
-        <span class="icono-documento" aria-hidden="true">📄</span>
+		        <div class="fila-documento">
+		            <span class="icono-documento" aria-hidden="true">📄</span>
 
-        <span class="nombre-documento">Cédula Profesional</span>
+		            <span class="nombre-documento">
+		                Cédula Profesional
+		            </span>
 
-        <div class="acciones-documento">
-            <a
-                v-if="formacion?.cedula_origen_archivo"
-                :href="formacion?.cedula_origen_archivo_url"
-                class="accion-documento"
-            >
-                Ver
-            </a>
+		            <div class="acciones-documento">
+		                <a
+		                    v-if="formacion?.cedula_origen_archivo"
+		                    :href="formacion?.cedula_origen_archivo_url"
+		                    class="accion-documento"
+		                >
+		                    Ver
+		                </a>
 
-            <label
-                for="cedula_origen_archivo"
-                class="accion-documento"
-            >
-                {{ formacion?.cedula_origen_archivo ? 'Cambiar' : 'Añadir' }}
-            </label>
-        </div>
-    </div>
+		                <label
+		                    v-if="!esRefrendo || !formacion?.cedula_origen_archivo"
+		                    for="cedula_origen_archivo"
+		                    class="accion-documento"
+		                >
+		                    {{ formacion?.cedula_origen_archivo ? 'Cambiar' : 'Añadir' }}
+		                </label>
+		            </div>
+		        </div>
 
-    <input
-        id="cedula_origen_archivo"
-        type="file"
-        class="archivo-oculto"
-        name="cedula_origen_archivo"
-        accept=".pdf,.jpg,.jpeg,.png"
-        :required="!formacion?.cedula_origen_archivo"
-        @change="seleccionarArchivoAcademico($event, 'cedula_origen_archivo')"
-    >
+		        <input
+		            v-if="!esRefrendo || !formacion?.cedula_origen_archivo"
+		            id="cedula_origen_archivo"
+		            type="file"
+		            class="archivo-oculto"
+		            name="cedula_origen_archivo"
+		            accept=".pdf,.jpg,.jpeg,.png"
+		            :required="!formacion?.cedula_origen_archivo"
+		            @change="seleccionarArchivoAcademico($event, 'cedula_origen_archivo')"
+		        >
 
-    <small
-        v-if="archivosSeleccionados['cedula_origen_archivo']"
-        class="archivo-elegido"
-    >
-        {{ archivosSeleccionados['cedula_origen_archivo'] }}
-    </small>
+		        <small
+		            v-if="archivosSeleccionados['cedula_origen_archivo']"
+		            class="archivo-elegido"
+		        >
+		            {{ archivosSeleccionados['cedula_origen_archivo'] }}
+		        </small>
 
-    <small class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
-</div>
+		        <small
+		            v-if="!esRefrendo || !formacion?.cedula_origen_archivo"
+		            class="ayuda-documento"
+		        >
+		            PDF, JPG o PNG. Máximo 5 MB.
+		        </small>
+		    </div>
+
 		</div>
 	</section>
 

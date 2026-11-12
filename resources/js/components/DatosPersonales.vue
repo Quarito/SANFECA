@@ -6,6 +6,10 @@ const props = defineProps({
     datos: {
         type: Object,
         default: () => ({})
+    },
+    autenticado: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -37,20 +41,22 @@ const personales = [
     { name: 'apellido_materno', label: 'Apellido Materno' }
 ];
 
+
 const domicilio = [
     { name: 'calle', label: 'Calle', required: true },
     { name: 'entidad_federativa', label: 'Entidad Federativa', required: true },
     { name: 'numero_exterior', label: 'Núm. Exterior', required: true },
-    { name: 'colonia', label: 'Colonia', required: true },
-    { name: 'numero_interior', label: 'Núm. Interior' },
     { name: 'municipio', label: 'Alcaldía/Municipio', required: true },
+    { name: 'numero_interior', label: 'Núm. Interior' },
+    { name: 'colonia', label: 'Colonia', required: true },
     { name: 'codigo_postal', label: 'Código Postal', required: true, maxlength: 5 }
 ];
 
+
 const comunicacion = [
     { name: 'correo_electronico', label: 'Correo Electrónico', type: 'email', required: true },
-    { name: 'telefono_particular', label: 'Teléfono Particular', type: 'tel' },
-    { name: 'telefono_celular', label: 'Teléfono Celular', type: 'tel' }
+{ name: 'telefono_particular', label: 'Teléfono Particular', type: 'tel' },
+{ name: 'telefono_celular', label: 'Teléfono Celular', type: 'tel' }
 ];
 </script>
 
@@ -97,8 +103,8 @@ const comunicacion = [
 
                     </div>
 
-                    <div class="campo-datos">
-                        <label for="password">Contraseña*</label>
+                    <div v-if="true" class="campo-datos">
+			<label for="password">Contraseña*</label>
                         <input
                             id="password"
                             name="password"
@@ -109,12 +115,12 @@ const comunicacion = [
                         >
                     </div>
 
-                    <div class="campo-datos">
+                    <div v-if="true" class="campo-datos">
                         <label for="password_confirmation">
                             Confirmación contraseña*
                         </label>
                         <input
-                            id="password_confirmation"
+			    id="password_confirmation"
                             name="password_confirmation"
                             type="password"
                             minlength="12"

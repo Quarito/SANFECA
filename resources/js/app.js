@@ -18,7 +18,13 @@ if (contenedorDatos) {
         contenedorDatos.dataset.datos || '{}'
     );
 
-    createApp(DatosPersonales, { datos }).mount(contenedorDatos);
+    const autenticado =
+        contenedorDatos.dataset.autenticado === '1';
+
+    createApp(DatosPersonales, {
+        datos,
+        autenticado
+    }).mount(contenedorDatos);
 }
 
 // PANTALLA 2: SELECCIÓN DE CERTIFICACIÓN
@@ -36,15 +42,15 @@ if (contenedorCertificacion) {
     );
 
     createApp(SeleccionCertificacion, {
-        seleccion,
-        antecedentes
-    }).mount(contenedorCertificacion);
+    seleccion,
+    antecedentes,
+    numeroCertificadoInicial:
+        contenedorCertificacion.dataset.numeroCertificadoAnterior || ''
+}).mount(contenedorCertificacion);
 }
 
 // PANTALLA 4: FORMACIÓN ACADÉMICA
-const contenedorFormacion = document.getElementById(
-    'vue-formacion-academica'
-);
+const contenedorFormacion = document.getElementById('vue-formacion-academica');
 
 if (contenedorFormacion) {
     const instituciones = JSON.parse(
@@ -54,10 +60,12 @@ if (contenedorFormacion) {
     const formacion = JSON.parse(
         contenedorFormacion.dataset.formacion || '{}'
     );
+const esRefrendo = contenedorFormacion.dataset.esRefrendo === 'true';
 
-    createApp(FormacionAcademica, {
+     createApp(FormacionAcademica, {
         instituciones,
-        formacion
+        formacion,
+        esRefrendo
     }).mount(contenedorFormacion);
 }
 // PANTALLA 5: DOCUMENTOS PROBATORIOS

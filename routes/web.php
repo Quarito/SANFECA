@@ -19,7 +19,7 @@ use App\Http\Controllers\Auth\RecuperacionPasswordController;
 
 Route::get('/', function () {
     if (auth()->check()) {
-        return redirect()->route('panel');
+        return redirect()->route('mis-datos.edit');
     }
 
     return redirect()->route('login');
@@ -211,6 +211,18 @@ Route::middleware('auth')->group(function () {
 	->name('registro.certificacion.guardar');
 	
 	Route::middleware('datos.autorizados')->group(function () {
+/*
+|--------------------------------------------------------------------------
+| CONSULTA DE CERTIFICADO ANTERIOR
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/registro/certificacion/consultar', [
+    SeleccionCertificacionController::class,
+    'consultarCertificadoAnterior'
+])
+->middleware('datos.autorizados')
+->name('registro.certificacion.consultar');
 
     /*
     |--------------------------------------------------------------------------

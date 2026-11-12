@@ -11,12 +11,13 @@ class SolicitudCertificacion extends Model
     protected $table = 'solicitudes_certificacion';
 
     protected $fillable = [
-        'user_id',
-        'tipo_tramite',
-        'certificacion',
-        'estado',
-        'fecha_envio',
-    ];
+    'user_id',
+    'tipo_tramite',
+    'certificacion',
+    'estado',
+    'fecha_envio',
+    'certificado_historico_id',
+];
 
     protected $casts = [
         'fecha_envio' => 'datetime',
@@ -25,6 +26,14 @@ class SolicitudCertificacion extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function certificadoHistorico(): BelongsTo
+    {
+        return $this->belongsTo(
+        CertificadoHistorico::class,
+        'certificado_historico_id'
+    );
     }
 
     public function datosRefrendo(): HasOne

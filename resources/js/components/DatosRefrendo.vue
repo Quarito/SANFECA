@@ -29,45 +29,18 @@ const mostrarInciso = computed(
 
 const incisos = ['14.1', '14.2', '14.3', '14.4'];
 
-const numeroAsignado = computed(
-    () => props.datos.numero_refrendo_asignado ||
-        'Pendiente de asignación'
-);
+
 
 const refrendoActual = computed(
     () => `Refrendo número: ${props.automaticos.refrendo_actual ?? ''}`
 );
 </script>
 
+
 <template>
     <div class="formulario formulario-refrendo">
 
-        <div class="campo">
-            <label for="numero_refrendo_asignado">
-                Número de refrendo asignado
-            </label>
-
-            <input
-                id="numero_refrendo_asignado"
-                type="text"
-                :value="numeroAsignado"
-                readonly
-            >
-        </div>
-
-        <div class="campo">
-            <label for="refrendo_actual">
-                Refrendo actual
-            </label>
-
-            <input
-                id="refrendo_actual"
-                type="text"
-                :value="refrendoActual"
-                readonly
-            >
-        </div>
-
+        <!-- Selección de artículo 14 -->
         <div class="campo">
             <label for="aplica_articulo_14">
                 ¿Corresponde a refrendo por artículo 14? *
@@ -85,6 +58,7 @@ const refrendoActual = computed(
             </select>
         </div>
 
+        <!-- Inciso, únicamente cuando corresponde -->
         <div v-if="mostrarInciso" class="campo">
             <label for="inciso_articulo_14">
                 Inciso del artículo 14 *
@@ -108,6 +82,21 @@ const refrendoActual = computed(
             </select>
         </div>
 
+        <!-- Próximo refrendo calculado automáticamente -->
+        <div class="campo">
+            <label for="refrendo_actual">
+                Próximo refrendo
+            </label>
+
+            <input
+                id="refrendo_actual"
+                type="text"
+                :value="refrendoActual"
+                readonly
+            >
+        </div>
+
+        <!-- Mensaje para quienes no aplican al artículo 14 -->
         <div
             v-if="aplicaArticulo14 === '0'"
             class="mensaje-no-articulo-14"
@@ -118,6 +107,7 @@ const refrendoActual = computed(
 
     </div>
 </template>
+
 
 <style scoped>
 .formulario-refrendo {

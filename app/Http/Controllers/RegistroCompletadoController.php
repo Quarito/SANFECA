@@ -23,44 +23,114 @@ class RegistroCompletadoController extends Controller
         'constancia_antiguedad_archivo',
         'comprobante_pago_archivo',
     ];
+private function tipoTramiteValido(
+    SolicitudCertificacion $solicitud,
+    ConsultaAntecedentesService $servicio
+): bool {
+    $tipoDetectado = $servicio->determinarTipoTramite(
+        $solicitud->user_id
+    );
 
-    private function obtenerSolicitud(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ): ?SolicitudCertificacion {
-        $userId = $request->user()->id;
+    if ($solicitud->tipo_tramite === 'inicial') {
+        return $tipoDetectado === 'inicial';
+    }
 
-        // Permite consultar una solicitud ya enviada.
-        $enviada = SolicitudCertificacion::where('user_id', $userId)
-            ->where('estado', 'enviado')
-            ->latest('id')
-            ->first();
+    if ($solicitud->tipo_tramite !== 'refrendo') {
+        return false;
+    }
 
-        $certificacion = SeleccionCertificacion::where(
-            'user_id',
-            $userId
-        )->value('certificacion');
+    // Compatibilidad con solicitudes anteriores.
+    if ($solicitud->certificado_historico_id === null) {
+        return $tipoDetectado === 'refrendo';
+    }
 
+    // Validar el certificado histórico asociado.
+    $certificado = \App\Models\CertificadoHistorico::find(
+        $solicitud->certificado_historico_id
+    );
+
+    if (!$certificado) {
+        return false;
+    }
+
+    $validado = $servicio->validarCertificadoAnterior(
+        $solicitud->user_id,
+        $solicitud->certificacion,
+        (string) $certificado->numero_certificado
+    );
+
+    return $validado !== null
+        && (int) $validado->id === (int) $certificado->id;
+}
+private function obtenerSolicitud(
+    Request $request,
+    ConsultaAntecedentesService $servicio
+): ?SolicitudCertificacion {
+    $userId = $request->user()->id;
+
+    $certificacion = SeleccionCertificacion::where(
+        'user_id',
+        $userId
+    )->value('certificacion');
+
+    if ($certificacion) {
         $tipo = $servicio->determinarTipoTramite($userId);
 
-        if (
-            $certificacion
-            && in_array($tipo, ['inicial', 'refrendo'], true)
-        ) {
-            $borrador = SolicitudCertificacion::where('user_id', $userId)
-                ->where('certificacion', $certificacion)
-                ->where('tipo_tramite', $tipo)
-                ->where('estado', 'borrador')
-                ->latest('id')
-                ->first();
+        $borradores = SolicitudCertificacion::where('user_id', $userId)
+            ->where('certificacion', $certificacion)
+            ->where('estado', 'borrador')
+            ->latest('id')
+            ->get();
 
-            if ($borrador) {
-                return $borrador;
+        foreach ($borradores as $solicitud) {
+            if ($solicitud->tipo_tramite === 'refrendo') {
+                // Si tiene certificado asociado, debe validarse siempre.
+                if ($solicitud->certificado_historico_id !== null) {
+                    $certificado = \App\Models\CertificadoHistorico::find(
+                        $solicitud->certificado_historico_id
+                    );
+
+                    if (!$certificado) {
+                        continue;
+                    }
+
+                    $validado = $servicio->validarCertificadoAnterior(
+                        $userId,
+                        $certificacion,
+                        (string) $certificado->numero_certificado
+                    );
+
+                    if (
+                        $validado !== null
+                        && (int) $validado->id === (int) $certificado->id
+                    ) {
+                        return $solicitud;
+                    }
+
+                    continue;
+                }
+
+                // Compatibilidad con refrendos anteriores sin asociación.
+                if ($tipo === 'refrendo') {
+                    return $solicitud;
+                }
+            }
+
+            if (
+                $solicitud->tipo_tramite === 'inicial'
+                && $tipo === 'inicial'
+            ) {
+                return $solicitud;
             }
         }
-
-        return $enviada;
     }
+
+    // Permitir consultar una solicitud enviada anteriormente.
+    return SolicitudCertificacion::where('user_id', $userId)
+        ->where('estado', 'enviado')
+        ->latest('id')
+        ->first();
+}
 
     private function requisitos(
         SolicitudCertificacion $solicitud
@@ -72,6 +142,19 @@ class RegistroCompletadoController extends Controller
 
         $formacion = $solicitud->formacionAcademica;
         $documentos = $solicitud->documentosProbatorios;
+	// Identificar refrendos que aplican al artículo 14.
+	$datosRefrendo = $solicitud->datosRefrendo;
+
+	$omiteFormacion = (
+	    $solicitud->tipo_tramite === 'refrendo'
+	    && $datosRefrendo !== null
+	    && (int) $datosRefrendo->aplica_articulo_14 === 1
+	    && in_array(
+	        $datosRefrendo->inciso_articulo_14,
+	        ['14.1', '14.2', '14.3', '14.4'],
+	        true
+	    )
+	);
 
         $resultado = [
             'datos_personales' => $datos !== null
@@ -86,20 +169,24 @@ class RegistroCompletadoController extends Controller
                     $solicitud->tipo_tramite === 'refrendo'
                     && $solicitud->datosRefrendo !== null
                 ),
-            'formacion_academica' => $formacion !== null,
+            'formacion_academica' => $omiteFormacion || $formacion !== null,
             'documentos_probatorios' => $documentos !== null,
         ];
 
-        foreach (self::ACADEMICOS as $campo) {
-            $ruta = $formacion?->{$campo};
+        // Los refrendos por artículo 14 no requieren
+	// volver a presentar documentación académica.
+	if (!$omiteFormacion) {
+	    foreach (self::ACADEMICOS as $campo) {
+	        $ruta = $formacion?->{$campo};
 
-            if (
-                !$ruta
-                || !Storage::disk('local')->exists($ruta)
-            ) {
-                $resultado['formacion_academica'] = false;
-            }
-        }
+	        if (
+	            !$ruta
+	            || !Storage::disk('local')->exists($ruta)
+	        ) {
+	            $resultado['formacion_academica'] = false;
+	        }
+	    }
+	}
 
         foreach (self::PROBATORIOS as $campo) {
             $ruta = $documentos?->{$campo};
@@ -155,9 +242,14 @@ class RegistroCompletadoController extends Controller
                 ->with('success', 'La solicitud ya fue enviada.');
         }
 
-        if ($servicio->determinarTipoTramite($request->user()->id) !== $solicitud->tipo_tramite) {
-            return redirect()->route('registro.completado')->with('error', 'Los antecedentes requieren una nueva revisión antes del envío.');
-        }
+        if (!$this->tipoTramiteValido($solicitud, $servicio)) {
+    return redirect()
+        ->route('registro.completado')
+        ->with(
+            'error',
+            'Los antecedentes requieren una nueva revisión antes del envío.'
+        );
+}
 
         $requisitos = $this->requisitos($solicitud);
 
@@ -178,8 +270,7 @@ class RegistroCompletadoController extends Controller
             }
 
 		if (
-		    $servicio->determinarTipoTramite($actual->user_id)
-		        !== $actual->tipo_tramite
+		    !$this->tipoTramiteValido($actual, $servicio)
 		    || in_array(false, $this->requisitos($actual), true)
 		) {
 		    throw \Illuminate\Validation\ValidationException::withMessages([

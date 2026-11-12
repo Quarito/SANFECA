@@ -8,6 +8,71 @@ use App\Models\SeleccionCertificacion;
 
 class ConsultaAntecedentesService
 {
+    public function validarCertificadoAnterior(
+        int $userId,
+        string $certificacion,
+        string $numeroCertificado
+    ): ?CertificadoHistorico {
+        $numeroCertificado = trim($numeroCertificado);
+
+        if ($numeroCertificado === '') {
+            return null;
+        }
+
+        $solicitante = DatosSolicitante::where(
+            'user_id',
+            $userId
+        )->first();
+
+        if (
+            !$solicitante ||
+            !$solicitante->datos_autorizados ||
+            trim((string) $solicitante->curp) === ''
+        ) {
+            return null;
+        }
+
+        $certificado = CertificadoHistorico::where(
+            'numero_certificado',
+            $numeroCertificado
+        )
+        ->where('certificacion', $certificacion)
+        ->first();
+
+        if (!$certificado) {
+            return null;
+        }
+
+        $curpUsuario = mb_strtoupper(
+            trim((string) $solicitante->curp)
+        );
+
+        $curpHistorica = mb_strtoupper(
+            trim((string) $certificado->curp_historica)
+        );
+
+        if (
+            $curpHistorica === '' ||
+            $curpUsuario !== $curpHistorica
+        ) {
+            return null;
+        }
+
+        if (
+            $certificado->user_id !== null &&
+            (int) $certificado->user_id !== $userId
+        ) {
+            return null;
+        }
+
+        if (trim((string) $certificado->primera_vez) === '') {
+            return null;
+        }
+
+        return $certificado;
+    }
+
+
     public function consultar(int $userId): array
     {
         $seleccion = SeleccionCertificacion::where(
@@ -161,30 +226,49 @@ class ConsultaAntecedentesService
     }
 
 
-    public function obtenerDatosRefrendo(int $userId): ?array
-    {
-        if ($this->determinarTipoTramite($userId) !== 'refrendo') {
-            return null;
-        }
+	    public function obtenerDatosRefrendo(
+	    int $userId,
+	    ?CertificadoHistorico $certificadoValidado = null
+	): ?array {
+	    if (
+	        !$certificadoValidado &&
+	        $this->determinarTipoTramite($userId) !== 'refrendo'
+	    ) {
+	        return null;
+	    }
 
-        $resultado = $this->consultar($userId);
+	    $resultado = $this->consultar($userId);
 
-        $numerosRegistrados = [];
+		$numerosRegistrados = [];
 
-        foreach ($resultado['historial'] as $antecedente) {
-            foreach ($antecedente['refrendos'] as $refrendo) {
-                $numerosRegistrados[] = (int) $refrendo['numero'];
-            }
-        }
+		if ($certificadoValidado) {
+		    // Utilizar exclusivamente el certificado consultado y validado.
+		    for ($i = 1; $i <= 7; $i++) {
+		        $campo = 'refrendo_' . $i;
 
-        $ultimoRefrendo = empty($numerosRegistrados)
-            ? 0
-            : max($numerosRegistrados);
+		        if (trim((string) ($certificadoValidado->{$campo} ?? '')) !== '') {
+		            $numerosRegistrados[] = $i;
+		        }
+		    }
+		} else {
+		    // Conservar el comportamiento anterior para certificados vinculados.
+		    $resultado = $this->consultar($userId);
 
-        return [
-            'refrendo_actual' => $ultimoRefrendo + 1,
-            'numero_refrendo_asignado' => null,
-        ];
-    }
+		    foreach ($resultado['historial'] as $antecedente) {
+		        foreach ($antecedente['refrendos'] as $refrendo) {
+		            $numerosRegistrados[] = (int) $refrendo['numero'];
+		        }
+		    }
+		}
+
+	    $ultimoRefrendo = empty($numerosRegistrados)
+	        ? 0
+	        : max($numerosRegistrados);
+
+	    return [
+	        'refrendo_actual' => $ultimoRefrendo + 1,
+	        'numero_refrendo_asignado' => null,
+	    ];
+	}
 
 }

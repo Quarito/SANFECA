@@ -1,0 +1,144 @@
+<script setup>
+import { reactive, computed } from 'vue';
+
+const props = defineProps({
+    seleccion: {
+        type: Object,
+        default: () => ({})
+    },
+    antecedentes: {
+        type: Object,
+        default: () => ({})
+    }
+});
+
+const formulario = reactive({
+    certificacion: props.seleccion.certificacion ?? '',
+    tipo_personal: props.seleccion.tipo_personal ?? '',
+    area_certificacion: props.seleccion.area_certificacion ?? ''
+});
+
+const certificaciones = [
+    'ANFECA',
+    'CACSLA',
+    'CACECA'
+];
+
+const certificacionCoincide = computed(() => {
+    const certificacionGuardada =
+        props.antecedentes.certificacion_consultada ?? '';
+
+    return certificacionGuardada !== '' &&
+        formulario.certificacion === certificacionGuardada;
+});
+
+const tiposPersonal = [
+    'Tiempo Completo',
+    'Medio Tiempo',
+    'PAES'
+];
+
+const areasCertificacion = [
+    'Contaduría',
+    'Administración',
+    'Informática',
+    'Negocios Internacionales',
+    'Disciplinas vinculadas al ámbito...'
+];
+</script>
+
+<template>
+    <template>
+    <div class="certificacion-vue">
+
+        <!-- CONSULTA DE CERTIFICADO ANTERIOR -->
+        <section class="consulta-certificado-vue">
+            <h2>Consulta de certificado anterior</h2>
+
+            <p>
+                ¿Cuenta con un número de certificado anterior?
+                Ingréselo para consultar sus antecedentes históricos.
+            </p>
+
+            <div class="campo-consulta-certificado">
+                <label for="numero_certificado_anterior">
+                    Número de certificado
+                </label>
+
+                <div class="controles-consulta-certificado">
+                    <input
+                        id="numero_certificado_anterior"
+                        type="text"
+                        placeholder="Ingrese su número de certificado"
+                        autocomplete="off"
+                    >
+
+                    <button
+                        type="button"
+                        class="boton-consultar-certificado"
+                        disabled
+                        title="La consulta estará disponible próximamente"
+                    >
+                        Consultar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <div class="columnas-certificacion-vue">
+
+        <!-- ANTECEDENTES HISTÓRICOS DE CERTIFICACIÓN -->
+        <section
+            class="antecedentes-certificacion-vue"
+            aria-labelledby="titulo-antecedentes"
+        >
+            <h2 id="titulo-antecedentes">
+                Antecedentes históricos de certificación
+            </h2>
+
+            <p v-if="!formulario.certificacion">
+                Seleccione una certificación para consultar sus antecedentes.
+            </p>
+
+            <p v-else-if="!certificacionCoincide">
+                Para consultar los antecedentes de esta certificación,
+                primero debe guardar su selección.
+            </p>
+
+            <template v-else>
+                <div
+                    v-if="antecedentes.historial?.length"
+                    class="lista-antecedentes-vue"
+                >
+                    <article
+                        v-for="(registro, indice) in antecedentes.historial"
+                        :key="indice"
+                        class="registro-antecedente-vue"
+                    >
+                        <h3>{{ registro.certificacion }}</h3>
+
+                        <p v-if="registro.primera_vez">
+                            <strong>Primera certificación:</strong>
+                            {{ registro.primera_vez }}
+                        </p>
+
+                        <p
+                            v-for="refrendo in registro.refrendos || []"
+                            :key="refrendo.numero"
+                        >
+                            <strong>
+                                Refrendo {{ refrendo.numero }}:
+                            </strong>
+                            {{ refrendo.anio }}
+                        </p>
+                    </article>
+                </div>
+
+                <p v-else>
+                    No se encontraron antecedentes históricos
+                    verificados vinculados a esta certificación.
+                </p>
+            </template>
+        </section>
+    </div>
+</template>

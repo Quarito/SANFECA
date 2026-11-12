@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -12,7 +11,7 @@
     <link rel="stylesheet"
 	          href="{{ asset('css/certificacion.css') }}">
 	<link rel="stylesheet"
-	      href="{{ asset('css/certificacion-vue.css') }}">
+	      href="{{ asset('css/certificacion-vue.css') }}?v={{ filemtime(public_path('css/certificacion-vue.css')) }}">
 
     <link rel="stylesheet"
           href="{{ asset('css/barra-usuario-certificacion.css') }}">
@@ -85,7 +84,8 @@
 	<!-- SELECCIÓN DE CERTIFICACIÓN CON VUE 3 -->
 	<div
 	    id="vue-seleccion-certificacion"
-	    data-seleccion="{{ json_encode([
+	    data-numero-certificado-anterior="{{ old('numero_certificado_anterior', '') }}"
+		data-seleccion="{{ json_encode([
 	        'certificacion' => old(
 	            'certificacion',
 	            $seleccion?->certificacion

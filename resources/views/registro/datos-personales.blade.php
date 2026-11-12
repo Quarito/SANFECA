@@ -33,11 +33,24 @@
     </header>
 
     <div class="barra-usuario">
-        <span class="icono-usuario">◉</span>
-        <span>
-            Usuario: {{ auth()->user()?->name ?? 'Nuevo registro' }}
-        </span>
-    </div>
+	    <span class="icono-usuario">◉</span>
+
+	    <span>
+	        Usuario: {{ auth()->user()?->name ?? 'Nuevo registro' }}
+	    </span>
+
+	    @auth
+	        <form method="POST" action="{{ route('logout') }}"
+	              style="display:inline-block; margin-left:15px;">
+	            @csrf
+	            <button type="submit"
+	                    class="boton"
+	                    style="padding:6px 12px; font-size:12px;">
+	                Cerrar sesión
+	            </button>
+	        </form>
+	    @endauth
+	</div>
 
     <div class="cert-layout">
     @include('components.sidebar-certificacion')
@@ -80,12 +93,14 @@
 
             <div
                 id="vue-datos-personales"
-                data-datos="{{ json_encode([
+                data-autenticado="{{ auth()->check() ? '1' : '0' }}"
+		    data-datos="{{ json_encode([
                     'curp' => old('curp', $datos?->curp),
                     'rfc' => old('rfc', $datos?->rfc),
                     'nombres' => old('nombres', $datos?->nombres),
                     'apellido_paterno' => old('apellido_paterno', $datos?->apellido_paterno),
                     'apellido_materno' => old('apellido_materno', $datos?->apellido_materno),
+                    'genero' => old('genero', $datos?->genero),
                     'calle' => old('calle', $datos?->calle),
                     'numero_exterior' => old('numero_exterior', $datos?->numero_exterior),
                     'numero_interior' => old('numero_interior', $datos?->numero_interior),
@@ -99,15 +114,11 @@
                 ]) }}"
             ></div>
 
-            <div class="botones">
-                <a href="{{ route('login') }}" class="boton">
-                    Anterior
-                </a>
-
-                <button type="submit" class="boton">
-                    Guardar y continuar
-                </button>
-            </div>
+            <div class="botones" style="justify-content:flex-end;">
+		    <button type="submit" class="boton">
+		        Guardar y continuar
+		    </button>
+		</div>
         </form>
     </main>
 </div>

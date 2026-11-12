@@ -226,3 +226,127 @@
         padding: 14px;
     }
 }
+
+/* =========================================
+   CONSULTA DE CERTIFICADO ANTERIOR
+   ========================================= */
+
+.consulta-certificado-vue {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+
+    padding: 20px 24px;
+    margin: 18px 0 26px;
+
+    background: #fafafa;
+    border: 1px solid #dedede;
+    border-radius: 10px;
+}
+
+/* Información del buscador */
+
+.consulta-certificado-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.consulta-certificado-info h2 {
+    margin: 0 0 7px;
+    color: #9e0015;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.consulta-certificado-info p {
+    margin: 0;
+    color: #555;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Campo de búsqueda */
+
+.consulta-certificado-formulario {
+    flex: 1;
+    min-width: 0;
+}
+
+.consulta-certificado-formulario label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+.consulta-certificado-controles {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.consulta-certificado-controles input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+
+    border: 1px solid #c8c8c8;
+    border-radius: 6px;
+    background: #fff;
+
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.consulta-certificado-controles input:focus {
+    border-color: #a60018;
+    box-shadow: 0 0 0 2px rgba(166, 0, 24, 0.08);
+}
+
+/* Botón institucional */
+
+.consulta-certificado-controles .boton-consultar-certificado {
+    height: 40px;
+    padding: 0 24px;
+
+    background: #a60018;
+    color: white;
+
+    border: none;
+    border-radius: 6px;
+
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.consulta-certificado-controles .boton-consultar-certificado:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* Adaptación a pantallas pequeñas */
+
+@media (max-width: 850px) {
+    .consulta-certificado-vue {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        padding: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .consulta-certificado-controles {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .consulta-certificado-controles .boton-consultar-certificado {
+        width: 100%;
+    }
+}

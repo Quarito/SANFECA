@@ -88,6 +88,7 @@
 <!-- CAMPOS ACADÉMICOS E INSTITUCIÓN CON VUE 3 -->
 <div
     id="vue-formacion-academica"
+    data-es-refrendo="{{ $solicitud->tipo_tramite === 'refrendo' ? 'true' : 'false' }}"
     data-instituciones="{{ $instituciones->toJson() }}"
 	    
 	data-formacion="{{ json_encode([

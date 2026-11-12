@@ -23,34 +23,70 @@ class DocumentoProbatorioController extends Controller
         'comprobante_pago_archivo' => 'Comprobante de Pago',
     ];
 
-    private function solicitudActiva(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ): ?SolicitudCertificacion {
-        $userId = $request->user()->id;
+private function solicitudActiva(
+    Request $request,
+    ConsultaAntecedentesService $servicio
+): ?SolicitudCertificacion {
+    $userId = $request->user()->id;
 
-        $certificacion = SeleccionCertificacion::where(
-            'user_id',
-            $userId
-        )->value('certificacion');
+    $certificacion = SeleccionCertificacion::where(
+        'user_id',
+        $userId
+    )->value('certificacion');
 
-        if (!$certificacion) {
-            return null;
-        }
+    if (!$certificacion) {
+        return null;
+    }
 
-        $tipo = $servicio->determinarTipoTramite($userId);
+    $tipo = $servicio->determinarTipoTramite($userId);
 
-        if (!in_array($tipo, ['inicial', 'refrendo'], true)) {
-            return null;
-        }
-
-        return SolicitudCertificacion::where('user_id', $userId)
+    // Mantener el comportamiento original para trámites
+    // cuyo tipo puede determinarse normalmente.
+    if (in_array($tipo, ['inicial', 'refrendo'], true)) {
+        $solicitud = SolicitudCertificacion::where('user_id', $userId)
             ->where('certificacion', $certificacion)
             ->where('tipo_tramite', $tipo)
             ->where('estado', 'borrador')
             ->latest('id')
             ->first();
+
+        if ($solicitud) {
+            return $solicitud;
+        }
     }
+
+    // Recuperar únicamente un refrendo con certificado
+    // histórico asociado y validado.
+    $solicitudes = SolicitudCertificacion::where('user_id', $userId)
+        ->where('certificacion', $certificacion)
+        ->where('tipo_tramite', 'refrendo')
+        ->where('estado', 'borrador')
+        ->whereNotNull('certificado_historico_id')
+        ->latest('id')
+        ->get();
+
+    foreach ($solicitudes as $solicitud) {
+        $certificado = \App\Models\CertificadoHistorico::find(
+            $solicitud->certificado_historico_id
+        );
+
+        if (!$certificado) {
+            continue;
+        }
+
+        $validado = $servicio->validarCertificadoAnterior(
+            $userId,
+            $certificacion,
+            (string) $certificado->numero_certificado
+        );
+
+        if ($validado && (int) $validado->id === (int) $certificado->id) {
+            return $solicitud;
+        }
+    }
+
+    return null;
+}
 
     private function verificarSolicitud(
         Request $request,
@@ -73,11 +109,29 @@ class DocumentoProbatorioController extends Controller
                 ->with('error', 'Primero debe completar los datos de refrendo.');
         }
 
-        if (!$solicitud->formacionAcademica) {
-            return redirect()
-                ->route('registro.formacion')
-                ->with('error', 'Primero debe completar la formación académica.');
-        }
+	// Los refrendos por artículo 14 no requieren
+	// capturar nuevamente Formación académica.
+	$datosRefrendo = $solicitud->datosRefrendo;
+
+	$omiteFormacion = (
+	    $solicitud->tipo_tramite === 'refrendo'
+	    && $datosRefrendo !== null
+	    && (int) $datosRefrendo->aplica_articulo_14 === 1
+	    && in_array(
+	        $datosRefrendo->inciso_articulo_14,
+	        ['14.1', '14.2', '14.3', '14.4'],
+	        true
+	    )
+	);
+
+	if (!$omiteFormacion && !$solicitud->formacionAcademica) {
+	    return redirect()
+	        ->route('registro.formacion')
+	        ->with(
+	            'error',
+	            'Primero debe completar la formación académica.'
+	        );
+	}
 
         return $solicitud;
     }
