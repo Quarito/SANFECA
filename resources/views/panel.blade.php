@@ -47,6 +47,9 @@
         <div class="panel-contenedor">
 
             <h2>Panel del solicitante</h2>
+            @if(session('error'))
+                <p role="alert">{{ session('error') }}</p>
+            @endif
 
             <p class="panel-descripcion">
                 Consulta el avance de tu registro
@@ -91,6 +94,31 @@
                     </section>
                 @endforeach
             </div>
+
+            @if($solicitudesEnviadas->isNotEmpty())
+                <section aria-labelledby="titulo-acuses">
+                    <h2 id="titulo-acuses">Solicitudes enviadas y acuses</h2>
+                    @foreach($solicitudesEnviadas as $solicitud)
+                        <article class="tarjeta-etapa">
+                            <h3>Folio {{ $solicitud->id }} · {{ $solicitud->certificacion }}</h3>
+                            <p>{{ $solicitud->tipo_tramite === 'refrendo' ? 'Refrendo' : 'Primera vez' }}
+                                · Recepción: {{ $solicitud->fecha_envio->copy()->timezone('America/Mexico_City')->format('d/m/Y H:i') }}
+                                (hora de Ciudad de México)</p>
+                            @if($solicitud->acuse_exists)
+                                <a class="boton" href="{{ route('solicitudes.acuse', $solicitud->id) }}">Descargar acuse en PDF</a>
+                            @else
+                                <p>Acuse no disponible: solicitud enviada antes de habilitar esta función.</p>
+                            @endif
+                        </article>
+                    @endforeach
+                    @if($solicitudesEnviadas->previousPageUrl())
+                        <a class="boton" href="{{ $solicitudesEnviadas->previousPageUrl() }}">Anteriores</a>
+                    @endif
+                    @if($solicitudesEnviadas->nextPageUrl())
+                        <a class="boton" href="{{ $solicitudesEnviadas->nextPageUrl() }}">Siguientes</a>
+                    @endif
+                </section>
+            @endif
 
             <div class="panel-acciones">
                 <form method="POST"
