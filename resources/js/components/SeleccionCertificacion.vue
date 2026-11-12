@@ -65,17 +65,17 @@ const certificacionCoincide = computed(() => {
 });
 
 const tiposPersonal = [
-    'Tiempo Completo',
-    'Medio Tiempo',
-    'PAES'
+    'Profesoras y profesores de Tiempo Completo',
+    'Profesoras y profesores de Medio Tiempo',
+    'Profesoras y profesores de Asignatura',
 ];
 
 const areasCertificacion = [
-    'Contaduría',
+    'Contaduría Pública',
     'Administración',
-    'Informática',
+    'Informática Administrativa',
     'Negocios Internacionales',
-    'Disciplinas vinculadas al ámbito...'
+    'Disciplinas vinculadas al ámbito económico-administrativo',
 ];
 
 async function consultarCertificadoAnterior() {
