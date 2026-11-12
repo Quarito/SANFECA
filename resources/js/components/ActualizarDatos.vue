@@ -125,10 +125,14 @@ function cancelar() {
     editando.value = false;
 }
 
-const camposNombre = [
+const camposConFormato = [
     'nombres',
     'apellido_paterno',
     'apellido_materno',
+    'calle',
+    'colonia',
+    'municipio',
+    'entidad_federativa'
 ];
 
 const patronNombre = String.raw`(?=.*\p{Lu})(?=.*\p{Ll}).*`;
@@ -217,10 +221,10 @@ const indicacionNombre = 'Combine mayúsculas y minúsculas; por ejemplo: Diego 
                 "
                 :inputmode="esTelefono(nombre) ? 'numeric' : undefined"
                 @input="esTelefono(nombre) && validarTelefono(nombre, $event)"
-                :pattern="camposNombre.includes(nombre) ? patronNombre : undefined"
-                :title="camposNombre.includes(nombre) ? indicacionNombre : undefined"
+                :pattern="camposConFormato.includes(nombre) ? patronNombre : undefined"
+                :title="camposConFormato.includes(nombre) ? indicacionNombre : undefined"
                 :aria-describedby="
-                    camposNombre.includes(nombre)
+                    camposConFormato.includes(nombre)
                         ? 'indicacion-nombre-actualizacion'
                         : undefined
                 "

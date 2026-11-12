@@ -53,10 +53,14 @@ const comunicacion = [
     { name: 'telefono_celular', label: 'Teléfono Celular', type: 'tel' }
 ];
 
-const camposNombre = [
+const camposConFormato = [
     'nombres',
     'apellido_paterno',
     'apellido_materno',
+    'calle',
+    'colonia',
+    'municipio',
+    'entidad_federativa'
 ];
 
 const patronNombre = String.raw`(?=.*\p{Lu})(?=.*\p{Ll}).*`;
@@ -110,17 +114,17 @@ const indicacionNombre =
                         :maxlength="campo.maxlength"
                         :required="campo.required || false"
                         :pattern="
-                            camposNombre.includes(campo.name)
+                            camposConFormato.includes(campo.name)
                                 ? patronNombre
                                 : undefined
                         "
                         :title="
-                            camposNombre.includes(campo.name)
+                            camposConFormato.includes(campo.name)
                                 ? indicacionNombre
                                 : undefined
                         "
                         :aria-describedby="
-                            camposNombre.includes(campo.name)
+                            camposConFormato.includes(campo.name)
                                 ? 'indicacion-nombre-registro'
                                 : undefined
                         "
