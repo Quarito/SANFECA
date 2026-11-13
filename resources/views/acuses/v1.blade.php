@@ -94,14 +94,13 @@
         <h2>Institución de procedencia</h2>
         @if($datos['institucion'])
             <table class="datos">
-                <tr><td colspan="2"><span class="etiqueta">Institución</span><span class="valor">{{ $datos['institucion']['nombre'] }}</span></td></tr>
                 <tr>
                     <td><span class="etiqueta">Número de afiliación</span>{{ $datos['institucion']['numero_afiliacion'] ?: 'No registrado' }}</td>
                     <td><span class="etiqueta">Zona regional</span>{{ $datos['institucion']['zona_anfeca'] ?: 'No registrada' }}</td>
                 </tr>
+                <tr><td colspan="2"><span class="etiqueta">Institución</span><span class="valor">{{ $datos['institucion']['nombre'] }}</span></td></tr>
                 <tr>
-                    <td><span class="etiqueta">Campus</span><span class="valor">{{ ($datos['institucion']['campus'] ?? null) ?: 'No registrado' }}</span></td>
-                    <td><span class="etiqueta">Unidad</span><span class="valor">{{ ($datos['institucion']['unidad'] ?? null) ?: 'No registrada' }}</span></td>
+                    <td colspan="2"><span class="etiqueta">Campus</span><span class="valor">{{ ($datos['institucion']['campus'] ?? null) ?: 'No registrado' }}</span></td>
                 </tr>
                 <tr><td colspan="2"><span class="etiqueta">Sede</span><span class="valor">{{ $datos['institucion']['sede'] ?: 'No registrada' }}</span></td></tr>
             </table>
