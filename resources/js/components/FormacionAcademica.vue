@@ -405,6 +405,14 @@ const institucionSeleccionada = computed(() => {
                     </p>
 
                     <p>
+                        Campus:
+                        <strong>{{ institucionSeleccionada?.campus || '—' }}</strong>
+                    </p>
+                    <p>
+                        Unidad:
+                        <strong>{{ institucionSeleccionada?.unidad || '—' }}</strong>
+                    </p>
+                    <p>
                         Sede:
                         <strong>
                             {{ institucionSeleccionada?.sede || '—' }}

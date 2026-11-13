@@ -58,6 +58,7 @@ class AcuseSolicitudTest extends TestCase
             $institucion = InstitucionAfiliada::create([
                 'numero_afiliacion' => 'TEST-'.$user->id,
                 'nombre' => 'Universidad Nacional Autónoma de México',
+                'campus' => 'Ciudad Universitaria', 'unidad' => 'Unidad de Posgrado',
                 'sede' => 'Facultad de Contaduría y Administración', 'zona_anfeca' => 'Zona 7',
             ]);
             $archivos = [];
@@ -102,11 +103,19 @@ class AcuseSolicitudTest extends TestCase
         $this->assertSame('enviado', $solicitud->fresh()->estado);
         $this->assertSame('María de los Ángeles', $acuse->datos['persona']['nombres']);
         $this->assertSame('Universidad Nacional Autónoma de México', $acuse->datos['institucion']['nombre']);
+        $this->assertSame('Ciudad Universitaria', $acuse->datos['institucion']['campus']);
+        $this->assertSame('Unidad de Posgrado', $acuse->datos['institucion']['unidad']);
+        $this->assertCount(6, $acuse->datos['documentos']);
+        foreach ($acuse->datos['documentos'] as $documento) {
+            $this->assertTrue($documento['adjuntado']);
+            $this->assertTrue($documento['requerido']);
+        }
         $fecha = $solicitud->fresh()->fecha_envio->toISOString();
         $datos = $acuse->datos;
         DatosSolicitante::where('user_id', $solicitud->user_id)->update(['nombres' => 'Otro nombre']);
         SeleccionCertificacion::where('user_id', $solicitud->user_id)->update(['area_certificacion' => 'Otra área']);
-        InstitucionAfiliada::query()->update(['nombre' => 'Otra institución']);
+        InstitucionAfiliada::query()->update(['nombre' => 'Otra institución', 'campus' => 'Otro campus', 'unidad' => 'Otra unidad']);
+        Storage::disk('local')->delete($solicitud->formacionAcademica->titulo_origen_archivo);
         $this->travel(1)->days();
         $this->enviar($solicitud);
         $this->assertDatabaseCount('acuses_solicitud', 1);
@@ -128,6 +137,9 @@ class AcuseSolicitudTest extends TestCase
             $html = view('acuses.v1', ['datos' => $acuse->datos])->render();
             if ($articulo14) {
                 $this->assertNull($acuse->datos['formacion']);
+                $this->assertFalse($acuse->datos['documentos']['titulo_origen_archivo']['adjuntado']);
+                $this->assertFalse($acuse->datos['documentos']['titulo_origen_archivo']['requerido']);
+                $this->assertTrue($acuse->datos['documentos']['comprobante_pago_archivo']['adjuntado']);
                 $this->assertStringContainsString('No se requiere volver a presentar', $html);
             }
             $this->get(route('solicitudes.acuse', $solicitud->id))->assertOk()->assertHeader('Content-Type', 'application/pdf');
@@ -226,5 +238,33 @@ class AcuseSolicitudTest extends TestCase
         $html = view('acuses.v1', ['datos' => $solicitud->fresh()->acuse->datos])->render();
         $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
         $this->assertStringContainsString('&lt;script&gt;', $html);
+    }
+
+    public function test_inventario_distingue_archivos_ausentes_y_no_se_reconstruye(): void
+    {
+        $solicitud = $this->expediente('refrendo');
+        $solicitud->datosRefrendo->update(['aplica_articulo_14' => true, 'inciso_articulo_14' => '14.1']);
+        $solicitud->formacionAcademica->update(['titulo_ultimo_grado_archivo' => null]);
+        Storage::disk('local')->delete($solicitud->formacionAcademica->cedula_ultimo_grado_archivo);
+        $this->enviar($solicitud);
+        $datos = $solicitud->fresh()->acuse->datos;
+        $this->assertTrue($datos['documentos']['titulo_origen_archivo']['adjuntado']);
+        $this->assertTrue($datos['documentos']['cedula_origen_archivo']['adjuntado']);
+        $this->assertFalse($datos['documentos']['titulo_ultimo_grado_archivo']['adjuntado']);
+        $this->assertFalse($datos['documentos']['cedula_ultimo_grado_archivo']['adjuntado']);
+        $this->get(route('solicitudes.acuse', $solicitud->id))->assertOk();
+    }
+
+    public function test_plantilla_admite_acuses_previos_sin_inventario_ni_campus(): void
+    {
+        $solicitud = $this->expediente();
+        $this->enviar($solicitud);
+        $datos = $solicitud->fresh()->acuse->datos;
+        unset($datos['documentos'], $datos['institucion']['campus'], $datos['institucion']['unidad']);
+        $html = view('acuses.v1', ['datos' => $datos])->render();
+        $this->assertStringContainsString('Institución de procedencia', $html);
+        $this->assertStringContainsString('El inventario de documentos no se conservó', $html);
+        $this->assertStringContainsString('No registrado', $html);
+        $this->assertStringNotContainsString('Campus / Unidad / Sede', $html);
     }
 }
