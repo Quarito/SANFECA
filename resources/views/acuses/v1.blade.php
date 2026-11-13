@@ -158,4 +158,5 @@
     <p class="nota">La información corresponde al momento del envío. Conserve el folio para consultar su solicitud.</p>
     <footer>ANFECA · Folio {{ $datos['folio'] }} · Formato de acuse v1</footer>
 </body>
+
 </html>
