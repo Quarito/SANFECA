@@ -35,8 +35,8 @@ class AcuseSolicitudService
 
         $documentos = [];
         foreach ([
-            'titulo_origen_archivo' => ['Título profesional', $formacion, ! $omiteFormacion],
-            'cedula_origen_archivo' => ['Cédula profesional', $formacion, ! $omiteFormacion],
+            'titulo_origen_archivo' => ['Título profesional origen', $formacion, ! $omiteFormacion],
+            'cedula_origen_archivo' => ['Cédula profesional origen', $formacion, ! $omiteFormacion],
             'titulo_ultimo_grado_archivo' => ['Título de último grado', $formacion, ! $omiteFormacion],
             'cedula_ultimo_grado_archivo' => ['Cédula de último grado', $formacion, ! $omiteFormacion],
             'constancia_antiguedad_archivo' => ['Constancia de antigüedad', $solicitud->documentosProbatorios, true],

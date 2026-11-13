@@ -109,18 +109,29 @@
             <p>No se capturó una institución de procedencia en esta solicitud.</p>
         @endif
     </div>
-    <div class="aviso bloque">
-        <strong>Alcance de este acuse</strong><br>
-        Este documento acredita únicamente la recepción de la solicitud en el sistema.
-        Al momento del envío, la solicitud queda pendiente de revisión.
-        No implica aprobación, validación de los documentos ni otorgamiento de la certificación.
-    </div>
-    <p class="nota">La información corresponde al momento del envío. Conserve el folio para consultar su solicitud.</p>
     <div class="bloque">
         <h2>Documentos adjuntados al enviar la solicitud</h2>
         @if(isset($datos['documentos']))
             <table class="datos">
-                @foreach(array_chunk($datos['documentos'], 2) as $fila)
+                @php
+                    $ordenDocumentos = [
+                        'titulo_origen_archivo',
+                        'titulo_ultimo_grado_archivo',
+                        'constancia_antiguedad_archivo',
+                        'cedula_origen_archivo',
+                        'cedula_ultimo_grado_archivo',
+                        'comprobante_pago_archivo',
+                    ];
+
+                    $documentosOrdenados = [];
+
+                    foreach ($ordenDocumentos as $campo) {
+                        if (isset($datos['documentos'][$campo])) {
+                            $documentosOrdenados[] = $datos['documentos'][$campo];
+                        }
+                    }
+                @endphp
+                @foreach(array_chunk($documentosOrdenados, 3) as $fila)
                     <tr>
                         @foreach($fila as $documento)
                             <td>
@@ -139,6 +150,13 @@
             <p class="nota">El inventario de documentos no se conservó para este acuse.</p>
         @endif
     </div>
+    <div class="aviso bloque">
+        <strong>Alcance de este acuse</strong><br>
+        Este documento acredita únicamente la recepción de la solicitud en el sistema.
+        Al momento del envío, la solicitud queda pendiente de revisión.
+        No implica aprobación, validación de los documentos ni otorgamiento de la certificación.
+    </div>
+    <p class="nota">La información corresponde al momento del envío. Conserve el folio para consultar su solicitud.</p>
     <footer>ANFECA · Folio {{ $datos['folio'] }} · Formato de acuse v1</footer>
 </body>
 </html>
