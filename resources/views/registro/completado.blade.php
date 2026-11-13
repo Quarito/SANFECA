@@ -65,6 +65,14 @@
                     </p>
                 @endif
 
+                @if($errors->any())
+                    <div role="alert">
+                        @foreach($errors->all() as $error)
+                            <p>{{ $error }}</p>
+                        @endforeach
+                    </div>
+                @endif
+
                 @if($enviada ?? false)
 
                     <h2>Solicitud enviada correctamente</h2>
@@ -93,15 +101,21 @@
                         Fecha de envío:
                         <strong>
                             {{ $solicitud->fecha_envio
-                                ? $solicitud->fecha_envio->format('d/m/Y H:i')
+                                ? $solicitud->fecha_envio->copy()->timezone('America/Mexico_City')->format('d/m/Y H:i')
                                 : 'Pendiente de registro' }}
                         </strong>
                     </p>
 
-                    <p>
-                        Su solicitud fue enviada para su
-                        revisión correspondiente.
-                    </p>
+                    <p>Su solicitud fue recibida y queda pendiente de revisión.
+                        La recepción no implica aprobación ni otorgamiento de la certificación.</p>
+
+                    @if($acuseDisponible ?? false)
+                        <a href="{{ route('solicitudes.acuse', $solicitud->id) }}"
+                           class="boton-completado boton-descargar">Descargar acuse en PDF</a>
+                    @else
+                        <p>Esta solicitud no cuenta con un acuse disponible porque se envió
+                           antes de habilitar esta función.</p>
+                    @endif
 
                 @else
 
@@ -113,24 +127,10 @@
                             Puede confirmar el envío de su solicitud.
                         </p>
 
-                        <!-- DOCUMENTO GENERADO AUTOMATICAMENTE -->
-                        <div class="documento-simple">
-
-                            <button type="button"
-                                    class="boton-documento-generado"
-                                    disabled>
-                                Descargar documento
-                            </button>
-
-                            <p>
-                                El documento estará disponible próximamente.
-                            </p>
-
-                        </div>
-
                         <form method="POST"
                               action="{{ route('registro.completado.confirmar') }}">
                             @csrf
+                            <input type="hidden" name="solicitud_id" value="{{ $solicitud->id }}">
 
                             <button type="submit"
                                     class="boton-completado boton-finalizar">

@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\DatosSolicitante;
-use App\Models\SeleccionCertificacion;
 use App\Models\FormacionAcademica;
+use App\Models\SeleccionCertificacion;
+use App\Models\SolicitudCertificacion;
 use Illuminate\Http\Request;
 
 class PanelController extends Controller
@@ -26,27 +27,27 @@ class PanelController extends Controller
         )->exists();
 
         $etapas = [
-	    [
-	        'nombre' => 'Datos Personales',
-	        'descripcion' => 'Información personal, domicilio y contacto.',
-	        'completa' => $datosCompletos,
-	        'ruta' => $datosCompletos
-	            ? 'mis-datos.edit'
-	            : 'registro.datos',
-	    ],
-	    [
-	        'nombre' => 'Selección de Certificación',
-	        'descripcion' => 'Certificación, tipo de personal y área académica.',
-	        'completa' => $certificacionCompleta,
-	        'ruta' => 'registro.certificacion',
-	    ],
-	    [
-	        'nombre' => 'Formación Académica',
-	        'descripcion' => 'Grados académicos, documentos e institución.',
-	        'completa' => $formacionCompleta,
-	        'ruta' => 'registro.formacion',
-	    ],
-	];
+            [
+                'nombre' => 'Datos Personales',
+                'descripcion' => 'Información personal, domicilio y contacto.',
+                'completa' => $datosCompletos,
+                'ruta' => $datosCompletos
+                    ? 'mis-datos.edit'
+                    : 'registro.datos',
+            ],
+            [
+                'nombre' => 'Selección de Certificación',
+                'descripcion' => 'Certificación, tipo de personal y área académica.',
+                'completa' => $certificacionCompleta,
+                'ruta' => 'registro.certificacion',
+            ],
+            [
+                'nombre' => 'Formación Académica',
+                'descripcion' => 'Grados académicos, documentos e institución.',
+                'completa' => $formacionCompleta,
+                'ruta' => 'registro.formacion',
+            ],
+        ];
         $completadas = collect($etapas)
             ->where('completa', true)
             ->count();
@@ -55,7 +56,12 @@ class PanelController extends Controller
             ($completadas / count($etapas)) * 100
         );
 
+        $solicitudesEnviadas = SolicitudCertificacion::where('user_id', $userId)
+            ->whereNotNull('fecha_envio')->where('estado', '!=', 'borrador')
+            ->withExists('acuse')->latest('fecha_envio')->paginate(10);
+
         return view('panel', compact(
+            'solicitudesEnviadas',
             'etapas',
             'completadas',
             'porcentaje'
