@@ -13,19 +13,36 @@ const props = defineProps({
     linkInicial: {
         type: String,
         default: ''
+    },
+    // ART14_VUE_97186
+    esArticulo14: {
+        type: Boolean,
+        default: false
     }
 });
+
+const esArticulo14 = props.esArticulo14 ||
+    Object.prototype.hasOwnProperty.call(
+        props.nuevos,
+        'solicitud_articulo_14_archivo'
+    );
 
 const link = ref(props.linkInicial);
 
 const archivos = ref({
     constancia_antiguedad_archivo: null,
-    comprobante_pago_archivo: null
+    comprobante_pago_archivo: null,
+    solicitud_articulo_14_archivo: null,
+    constancia_articulo_14_archivo: null
 });
 
 const probatorios = [
     'constancia_antiguedad_archivo',
-    'comprobante_pago_archivo'
+    'comprobante_pago_archivo',
+    ...(esArticulo14 ? [
+        'solicitud_articulo_14_archivo',
+        'constancia_articulo_14_archivo'
+    ] : [])
 ];
 
 function documento(campo) {
@@ -38,7 +55,10 @@ function seleccionarArchivo(event, campo) {
 </script>
 
 <template>
-    <div class="documentos-vue documentos-anfeca">
+    <div
+        class="documentos-vue documentos-anfeca"
+        :class="{ 'documentos-refrendo-articulo': esArticulo14 }"
+    >
 
         <section class="seccion-documentos">
 
@@ -65,6 +85,16 @@ function seleccionarArchivo(event, campo) {
                             {{ documento(campo).nombre }}
                         </span>
 
+                        <a
+                            v-if="campo === 'solicitud_articulo_14_archivo'"
+                            href="/formatos/solicitud-articulo-14-prueba.pdf"
+                            download="Solicitud_Articulo_14_Prueba.pdf"
+                            class="accion-documento"
+                            style="margin-right: 12px;"
+                        >
+                            Descargar formato Art. 14
+                        </a>
+
                         <div class="acciones-documento">
                             <a
                                 v-if="documento(campo).disponible"
@@ -79,7 +109,7 @@ function seleccionarArchivo(event, campo) {
                                 class="accion-documento"
                             >
                                 {{ documento(campo).disponible
-                                    ? 'Cambiar'
+                                    ? 'Actualizar'
                                     : 'Añadir' }}
                             </label>
                         </div>
@@ -105,7 +135,7 @@ function seleccionarArchivo(event, campo) {
                 </div>
 
                 <!-- COLUMNA DERECHA: LINK -->
-                <div class="grupo-link">
+                <div v-if="!esArticulo14" class="grupo-link">
                     <label for="link_probatorio">Link</label>
 
                     <input
@@ -115,6 +145,7 @@ function seleccionarArchivo(event, campo) {
                         type="url"
                         placeholder="https://ejemplo.com"
                         maxlength="2048"
+                        required
                     >
                 </div>
 

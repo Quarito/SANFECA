@@ -15,6 +15,9 @@
           href="{{ asset('css/registro-completado.css') . '?v=639' }}">
     <link rel="stylesheet"
           href="{{ asset('css/barra-usuario-certificacion.css') }}">
+
+    <!-- tipografia-global-97159 -->
+    <link rel="stylesheet" href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97159">
 </head>
 
 <body @if(request()->is('preview/*')) class="modo-preview" @endif>
@@ -90,10 +93,10 @@
                     </p>
 
                     <p>
-                        Fecha de envío:
+                        Fecha de registro:
                         <strong>
                             {{ $solicitud->fecha_envio
-                                ? $solicitud->fecha_envio->format('d/m/Y H:i')
+                                ? $solicitud->fecha_envio->copy()->timezone('America/Mexico_City')->format('d/m/Y H:i')
                                 : 'Pendiente de registro' }}
                         </strong>
                     </p>
@@ -102,6 +105,23 @@
                         Su solicitud fue enviada para su
                         revisión correspondiente.
                     </p>
+
+                    <p>
+                        <a href="{{ route('registro.acuse.descargar', ['solicitudId' => $solicitud->id]) }}"
+                           class="boton-completado boton-descargar">
+                            Descargar acuse de recepción (PDF)
+                        </a>
+                    </p>
+
+                    @if(session('descargar_acuse_solicitud_id') == $solicitud->id)
+                        <iframe
+                            src="{{ route('registro.acuse.descargar', ['solicitudId' => $solicitud->id]) }}"
+                            title="Descarga automática del acuse"
+                            aria-hidden="true"
+                            tabindex="-1"
+                            style="display:none">
+                        </iframe>
+                    @endif
 
                 @else
 
@@ -112,21 +132,6 @@
                         <p>
                             Puede confirmar el envío de su solicitud.
                         </p>
-
-                        <!-- DOCUMENTO GENERADO AUTOMATICAMENTE -->
-                        <div class="documento-simple">
-
-                            <button type="button"
-                                    class="boton-documento-generado"
-                                    disabled>
-                                Descargar documento
-                            </button>
-
-                            <p>
-                                El documento estará disponible próximamente.
-                            </p>
-
-                        </div>
 
                         <form method="POST"
                               action="{{ route('registro.completado.confirmar') }}">
@@ -156,10 +161,8 @@
 
                 @endif
 
-                <a href="{{ route('panel') }}"
-                   class="boton-completado boton-finalizar">
-                    Regresar al panel
-                </a>
+                <a href="{{ route('mis-datos.edit') }}"
+                   class="boton-completado boton-finalizar">Revisar mi registro</a>
 
             </section>
         </main>

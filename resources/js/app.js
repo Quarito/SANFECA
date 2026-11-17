@@ -61,11 +61,14 @@ if (contenedorFormacion) {
         contenedorFormacion.dataset.formacion || '{}'
     );
 const esRefrendo = contenedorFormacion.dataset.esRefrendo === 'true';
+const formacionBloqueada =
+    contenedorFormacion.dataset.formacionBloqueada === 'true';
 
      createApp(FormacionAcademica, {
         instituciones,
         formacion,
-        esRefrendo
+        esRefrendo,
+        formacionBloqueada
     }).mount(contenedorFormacion);
 }
 // PANTALLA 5: DOCUMENTOS PROBATORIOS
@@ -83,11 +86,14 @@ if (contenedorDocumentos) {
     );
 
     const linkInicial = contenedorDocumentos.dataset.link || '';
+    const esArticulo14 =
+        contenedorDocumentos.dataset.esArticulo14 === '1';
 
     createApp(DocumentosProbatorios, {
         academicos,
         nuevos,
-        linkInicial
+        linkInicial,
+        esArticulo14
     }).mount(contenedorDocumentos);
 }
 // Recuperación de contraseña

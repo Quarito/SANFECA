@@ -9,6 +9,7 @@ function seleccionarArchivoAcademico(event, campo) {
 }
 
 const props = defineProps({
+    formacionBloqueada: { type: Boolean, default: false },
     instituciones: {
         type: Array,
         default: () => []
@@ -24,9 +25,11 @@ const props = defineProps({
 });
 
 const titulosOrigen = [
-    'Informática',
     'Administración',
-    'Negocios Internacionales'
+    'Contaduría',
+    'Informática',
+    'Negocios Internacionales',
+    'Otro'
 ];
 
 const niveles = [
@@ -68,7 +71,7 @@ const institucionSeleccionada = computed(() => {
         <div class="columnas columnas-formacion">
 
             <!-- FORMACIÓN ACADÉMICA DE ORIGEN -->
-            <section class="seccion">
+            <section class="seccion mejora-columnas-97153">
 		<h2>Formación Académica de Origen</h2>
 		<div class="campo">
 		    <label for="nivel_origen_visible">
@@ -82,7 +85,7 @@ const institucionSeleccionada = computed(() => {
 		    </select>
 
 		    <input
-			    v-if="!esRefrendo"
+			    
 			    type="hidden"
 			    name="nivel_origen"
 			    value="Licenciatura"
@@ -95,10 +98,10 @@ const institucionSeleccionada = computed(() => {
 
 			<select
 			    id="titulo_origen"
-			    :name="esRefrendo ? undefined : 'titulo_origen'"
+			    name="titulo_origen"
 			    v-model="tituloOrigen"
-			    :disabled="esRefrendo"
-			    :required="!esRefrendo"
+			    :disabled="formacionBloqueada || (esRefrendo && Boolean(formacion?.titulo_origen))"
+			    :required="!formacion?.titulo_origen"
 			>
 		        <option value="">Seleccione</option>
 
@@ -135,17 +138,17 @@ const institucionSeleccionada = computed(() => {
 		                </a>
 
 		                <label
-		                    v-if="!esRefrendo || !formacion?.titulo_origen_archivo"
+		                    v-if="!formacionBloqueada && (!esRefrendo || !formacion?.titulo_origen_archivo)"
 		                    for="titulo_origen_archivo"
 		                    class="accion-documento"
 		                >
-		                    {{ formacion?.titulo_origen_archivo ? 'Cambiar' : 'Añadir' }}
+		                    {{ formacion?.titulo_origen_archivo ? 'Actualizar' : 'Añadir' }}
 		                </label>
 		            </div>
 		        </div>
 
 		        <input
-		            v-if="!esRefrendo || !formacion?.titulo_origen_archivo"
+		            v-if="!formacionBloqueada && (!esRefrendo || !formacion?.titulo_origen_archivo)"
 		            id="titulo_origen_archivo"
 		            type="file"
 		            class="archivo-oculto"
@@ -163,7 +166,7 @@ const institucionSeleccionada = computed(() => {
 		        </small>
 
 		        <small
-		            v-if="!esRefrendo || !formacion?.titulo_origen_archivo"
+		            v-if="!formacionBloqueada && (!esRefrendo || !formacion?.titulo_origen_archivo)"
 		            class="ayuda-documento"
 		        >
 		            PDF, JPG o PNG. Máximo 5 MB.
@@ -189,17 +192,17 @@ const institucionSeleccionada = computed(() => {
 		                </a>
 
 		                <label
-		                    v-if="!esRefrendo || !formacion?.cedula_origen_archivo"
+		                    v-if="!formacionBloqueada && (!esRefrendo || !formacion?.cedula_origen_archivo)"
 		                    for="cedula_origen_archivo"
 		                    class="accion-documento"
 		                >
-		                    {{ formacion?.cedula_origen_archivo ? 'Cambiar' : 'Añadir' }}
+		                    {{ formacion?.cedula_origen_archivo ? 'Actualizar' : 'Añadir' }}
 		                </label>
 		            </div>
 		        </div>
 
 		        <input
-		            v-if="!esRefrendo || !formacion?.cedula_origen_archivo"
+		            v-if="!formacionBloqueada && (!esRefrendo || !formacion?.cedula_origen_archivo)"
 		            id="cedula_origen_archivo"
 		            type="file"
 		            class="archivo-oculto"
@@ -217,7 +220,7 @@ const institucionSeleccionada = computed(() => {
 		        </small>
 
 		        <small
-		            v-if="!esRefrendo || !formacion?.cedula_origen_archivo"
+		            v-if="!formacionBloqueada && (!esRefrendo || !formacion?.cedula_origen_archivo)"
 		            class="ayuda-documento"
 		        >
 		            PDF, JPG o PNG. Máximo 5 MB.
@@ -228,7 +231,7 @@ const institucionSeleccionada = computed(() => {
 	</section>
 
             <!-- ÚLTIMO GRADO DE ESTUDIOS -->
-            <section class="seccion">
+            <section class="seccion mejora-columnas-97153">
                 <h2>Último Grado de Estudios</h2>
 		<div class="campo">
 		    <label for="nivel_ultimo_grado">
@@ -238,7 +241,7 @@ const institucionSeleccionada = computed(() => {
 		    <select
 		        id="nivel_ultimo_grado"
 		        name="nivel_ultimo_grado"
-		        v-model="nivelUltimoGrado"
+		        v-model="nivelUltimoGrado" :disabled="formacionBloqueada"
 		        required
 		    >
 		        <option value="">Seleccione</option>
@@ -261,7 +264,7 @@ const institucionSeleccionada = computed(() => {
 		    <select
 		        id="titulo_ultimo_grado"
 		        name="titulo_ultimo_grado"
-		        v-model="tituloUltimoGrado"
+		        v-model="tituloUltimoGrado" :disabled="formacionBloqueada"
 		        required
 		    >
 		        <option value="">Seleccione</option>
@@ -292,17 +295,15 @@ const institucionSeleccionada = computed(() => {
                 Ver
             </a>
 
-            <label
-                for="titulo_ultimo_grado_archivo"
+            <label v-if="!formacionBloqueada" for="titulo_ultimo_grado_archivo"
                 class="accion-documento"
             >
-                {{ formacion?.titulo_ultimo_grado_archivo ? 'Cambiar' : 'Añadir' }}
+                {{ formacion?.titulo_ultimo_grado_archivo ? 'Actualizar' : 'Añadir' }}
             </label>
         </div>
     </div>
 
-    <input
-        id="titulo_ultimo_grado_archivo"
+    <input v-if="!formacionBloqueada" id="titulo_ultimo_grado_archivo"
         type="file"
         class="archivo-oculto"
         name="titulo_ultimo_grado_archivo"
@@ -318,7 +319,7 @@ const institucionSeleccionada = computed(() => {
         {{ archivosSeleccionados['titulo_ultimo_grado_archivo'] }}
     </small>
 
-    <small class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
+    <small v-if="!formacionBloqueada" class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
 </div>
 
 		    <div class="campo campo-documento">
@@ -336,17 +337,15 @@ const institucionSeleccionada = computed(() => {
                 Ver
             </a>
 
-            <label
-                for="cedula_ultimo_grado_archivo"
+            <label v-if="!formacionBloqueada" for="cedula_ultimo_grado_archivo"
                 class="accion-documento"
             >
-                {{ formacion?.cedula_ultimo_grado_archivo ? 'Cambiar' : 'Añadir' }}
+                {{ formacion?.cedula_ultimo_grado_archivo ? 'Actualizar' : 'Añadir' }}
             </label>
         </div>
     </div>
 
-    <input
-        id="cedula_ultimo_grado_archivo"
+    <input v-if="!formacionBloqueada" id="cedula_ultimo_grado_archivo"
         type="file"
         class="archivo-oculto"
         name="cedula_ultimo_grado_archivo"
@@ -362,7 +361,7 @@ const institucionSeleccionada = computed(() => {
         {{ archivosSeleccionados['cedula_ultimo_grado_archivo'] }}
     </small>
 
-    <small class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
+    <small v-if="!formacionBloqueada" class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
 </div>
 		</div>
             </section>
@@ -381,7 +380,7 @@ const institucionSeleccionada = computed(() => {
                     <select
                         id="institucion_afiliada_id"
                         name="institucion_afiliada_id"
-                        v-model="institucionId"
+                        v-model="institucionId" :disabled="formacionBloqueada"
                         required
                     >
                         <option value="">Seleccione</option>
@@ -401,6 +400,13 @@ const institucionSeleccionada = computed(() => {
                         Institución:
                         <strong>
                             {{ institucionSeleccionada?.nombre || '—' }}
+                        </strong>
+                    </p>
+
+                    <p>
+                        Campus:
+                        <strong>
+                            {{ institucionSeleccionada?.campus || '—' }}
                         </strong>
                     </p>
 

@@ -20,6 +20,7 @@ class FormacionAcademicaSolicitud extends Model
         'cedula_origen_archivo',
         'titulo_ultimo_grado_archivo',
         'cedula_ultimo_grado_archivo',
+        'formacion_completada_at',
     ];
 
     public function solicitud(): BelongsTo

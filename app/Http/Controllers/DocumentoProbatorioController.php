@@ -23,6 +23,26 @@ class DocumentoProbatorioController extends Controller
         'comprobante_pago_archivo' => 'Comprobante de Pago',
     ];
 
+    // ARTICULO_14_DOCUMENTOS_97182
+    private const ARTICULO_14 = [
+        'solicitud_articulo_14_archivo' => 'Solicitud de artículo',
+        'constancia_articulo_14_archivo' => 'Constancia probatoria de artículo',
+    ];
+
+    private function esArticulo14(SolicitudCertificacion $solicitud): bool
+    {
+        $datos = $solicitud->datosRefrendo;
+
+        return $solicitud->tipo_tramite === 'refrendo'
+            && $datos !== null
+            && (int) $datos->aplica_articulo_14 === 1
+            && in_array(
+                $datos->inciso_articulo_14,
+                ['13.1', '14', '14.1', '14.2', '14.3'],
+                true
+            );
+    }
+
 private function solicitudActiva(
     Request $request,
     ConsultaAntecedentesService $servicio
@@ -119,19 +139,26 @@ private function solicitudActiva(
 	    && (int) $datosRefrendo->aplica_articulo_14 === 1
 	    && in_array(
 	        $datosRefrendo->inciso_articulo_14,
-	        ['14.1', '14.2', '14.3', '14.4'],
+	        ['13.1', '14', '14.1', '14.2', '14.3'],
 	        true
 	    )
 	);
 
-	if (!$omiteFormacion && !$solicitud->formacionAcademica) {
-	    return redirect()
-	        ->route('registro.formacion')
-	        ->with(
-	            'error',
-	            'Primero debe completar la formación académica.'
-	        );
-	}
+    if (!$omiteFormacion) {
+        $formacion = $solicitud->formacionAcademica;
+
+        if (
+            !$formacion
+            || $formacion->formacion_completada_at === null
+        ) {
+            return redirect()
+                ->route('registro.formacion')
+                ->with(
+                    'error',
+                    'Primero debes guardar y autorizar tu formación académica.'
+                );
+        }
+    }
 
         return $solicitud;
     }
@@ -168,7 +195,12 @@ private function solicitudActiva(
 
         $nuevos = [];
 
-        foreach (self::NUEVOS as $campo => $nombre) {
+        $esArticulo14 = $this->esArticulo14($solicitud);
+        $camposDocumentos = $esArticulo14
+            ? array_merge(self::NUEVOS, self::ARTICULO_14)
+            : self::NUEVOS;
+
+        foreach ($camposDocumentos as $campo => $nombre) {
             $ruta = $documentos?->{$campo};
             $disponible = !empty($ruta)
                 && Storage::disk('local')->exists($ruta);
@@ -186,6 +218,7 @@ private function solicitudActiva(
             'academicos' => $academicos,
             'nuevos' => $nuevos,
             'link' => old('link', $documentos?->link ?? ''),
+            'esArticulo14' => $esArticulo14,
         ]);
     }
 
@@ -202,11 +235,19 @@ private function solicitudActiva(
         $solicitud = $resultado;
         $actual = $solicitud->documentosProbatorios;
 
+        $esArticulo14 = $this->esArticulo14($solicitud);
+
+        $camposDocumentos = $esArticulo14
+            ? array_merge(self::NUEVOS, self::ARTICULO_14)
+            : self::NUEVOS;
+
         $reglas = [
-            'link' => ['nullable', 'url:http,https', 'max:2048'],
+            'link' => $esArticulo14
+                ? ['exclude']
+                : ['required', 'url:http,https', 'max:2048'],
         ];
 
-        foreach (self::NUEVOS as $campo => $nombre) {
+        foreach ($camposDocumentos as $campo => $nombre) {
             $reglas[$campo] = [
                 empty($actual?->{$campo}) ? 'required' : 'nullable',
                 'file',
@@ -217,14 +258,14 @@ private function solicitudActiva(
 
         $datos = $request->validate($reglas);
 
-        foreach (array_keys(self::NUEVOS) as $campo) {
+        foreach (array_keys($camposDocumentos) as $campo) {
             unset($datos[$campo]);
         }
 
         $archivosNuevos = [];
 
         try {
-            foreach (self::NUEVOS as $campo => $nombre) {
+            foreach ($camposDocumentos as $campo => $nombre) {
                 if ($request->hasFile($campo)) {
                     $archivosNuevos[$campo] = $request
                         ->file($campo)
@@ -273,7 +314,13 @@ private function solicitudActiva(
 
         if (array_key_exists($campo, self::ACADEMICOS)) {
             $registro = $solicitud->formacionAcademica;
-        } elseif (array_key_exists($campo, self::NUEVOS)) {
+        } elseif (
+            array_key_exists($campo, self::NUEVOS)
+            || (
+                $this->esArticulo14($solicitud)
+                && array_key_exists($campo, self::ARTICULO_14)
+            )
+        ) {
             $registro = $solicitud->documentosProbatorios;
         } else {
             abort(404);

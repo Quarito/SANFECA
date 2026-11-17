@@ -123,14 +123,10 @@ Route::get('/registro/datos-personales', [
     'create'
 ])->name('registro.datos');
 
-Route::middleware('guest')->group(function () {
-
-    Route::post('/registro/datos-personales', [
-        DatosSolicitanteController::class,
-        'store'
-    ])->name('registro.datos.guardar');
-
-});
+Route::post('/registro/datos-personales', [
+    DatosSolicitanteController::class,
+    'store'
+])->name('registro.datos.guardar');
 
 /*
 |--------------------------------------------------------------------------
@@ -257,6 +253,12 @@ Route::post('/registro/certificacion/consultar', [
         'store'
     ])->name('registro.formacion.guardar');
 
+    Route::post('/registro/formacion-academica/autorizar', [
+        FormacionAcademicaController::class,
+        'autorizar'
+    ])->name('registro.formacion.autorizar');
+
+
 
     /*
     |--------------------------------------------------------------------------
@@ -295,6 +297,12 @@ Route::post('/registro/certificacion/consultar', [
      )->name('registro.completado');
 
     Route::post('/registro/completado/confirmar', [RegistroCompletadoController::class, 'confirmar'])->name('registro.completado.confirmar');
+
+    // Descarga del acuse de una solicitud enviada.
+    Route::get(
+        '/registro/acuse/{solicitudId}',
+        [\App\Http\Controllers\AcuseRecepcionController::class, 'descargar']
+    )->whereNumber('solicitudId')->name('registro.acuse.descargar');
 });
 
 }); // Fin de rutas protegidas por autorización de datos
@@ -326,6 +334,7 @@ if (app()->environment('local')) {
                 return view('registro.formacion-academica', [
                     'formacion' => null,
                     'instituciones' => collect(),
+                    'solicitud' => null,
                 ]);
             })->name('formacion');
 

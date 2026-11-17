@@ -103,7 +103,7 @@ const comunicacion = [
 
                     </div>
 
-                    <div v-if="true" class="campo-datos">
+                    <div v-if="!autenticado" class="campo-datos">
 			<label for="password">Contraseña*</label>
                         <input
                             id="password"
@@ -115,7 +115,7 @@ const comunicacion = [
                         >
                     </div>
 
-                    <div v-if="true" class="campo-datos">
+                    <div v-if="!autenticado" class="campo-datos">
                         <label for="password_confirmation">
                             Confirmación contraseña*
                         </label>

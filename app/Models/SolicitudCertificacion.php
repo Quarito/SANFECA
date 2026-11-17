@@ -17,6 +17,8 @@ class SolicitudCertificacion extends Model
     'estado',
     'fecha_envio',
     'certificado_historico_id',
+    'tipo_personal',
+    'area_certificacion',
 ];
 
     protected $casts = [

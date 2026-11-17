@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, computed, ref, watch } from 'vue';
+import { reactive, computed, ref, watch, onMounted } from 'vue';
 
 
 
@@ -26,6 +26,7 @@ const formulario = reactive({
 const numeroCertificadoAnterior = ref(props.numeroCertificadoInicial);
 const consultandoCertificado = ref(false);
 const mensajeConsulta = ref('');
+const tipoMensajeConsulta = ref('error');
 const historialConsultado = ref(null);
 
 let versionConsulta = 0;
@@ -45,6 +46,13 @@ watch(
     },
     { flush: 'sync' }
 );
+
+// Recuperar automáticamente la validación al regresar.
+onMounted(async () => {
+    if (numeroCertificadoAnterior.value.trim()) {
+        await consultarCertificadoAnterior();
+    }
+});
 
 const certificaciones = [
     'ANFECA',
@@ -67,7 +75,8 @@ const certificacionCoincide = computed(() => {
 const tiposPersonal = [
     'Profesoras y profesores de Tiempo Completo',
     'Profesoras y profesores de Medio Tiempo',
-    'Profesoras y profesores de Asignatura',
+    'Profesoras y profesores de Asignatura de Educación Superior',
+
 ];
 
 const areasCertificacion = [
@@ -82,6 +91,7 @@ async function consultarCertificadoAnterior() {
     const numero = numeroCertificadoAnterior.value.trim();
 
     mensajeConsulta.value = '';
+    tipoMensajeConsulta.value = 'error';
     historialConsultado.value = null;
 
     if (!numero) {
@@ -136,6 +146,7 @@ const versionActual = ++versionConsulta;
 		actualizandoCertificacionHistorica = false;
 
 		historialConsultado.value = resultado.historial;
+		tipoMensajeConsulta.value = 'exito';
 		mensajeConsulta.value = resultado.mensaje;
 
 		consultandoCertificado.value = false;
@@ -183,9 +194,13 @@ const versionActual = ++versionConsulta;
 		name="numero_certificado_anterior"
 		 v-model="numeroCertificadoAnterior"
 		 type="text"
-                placeholder="Ingrese su número de certificado"
                 autocomplete="off"
-            >
+                inputmode="numeric"
+                pattern="[0-9]{1,7}"
+                maxlength="7"
+                placeholder="Ingrese hasta 7 dígitos"
+                @input="numeroCertificadoAnterior = $event.target.value.replace(/[^0-9]/g, '').slice(0, 7)"
+>
 
 		<button
 		    type="button"
@@ -195,13 +210,24 @@ const versionActual = ++versionConsulta;
 		>
 		    {{ consultandoCertificado ? 'Consultando...' : 'Consultar' }}
 		</button>
-		<p
+		<div
     v-if="mensajeConsulta"
-    class="mensaje-consulta-certificado"
-    role="status"
+    class="aviso-certificado"
+    :class="tipoMensajeConsulta === 'exito' ? 'aviso-certificado-exito' : 'aviso-certificado-error'"
+    :role="tipoMensajeConsulta === 'exito' ? 'status' : 'alert'"
 >
-    {{ mensajeConsulta }}
-</p>
+    <span class="aviso-certificado-icono">
+        {{ tipoMensajeConsulta === 'exito' ? '✓' : '!' }}
+    </span>
+    <div class="aviso-certificado-contenido">
+        <strong>
+            {{ tipoMensajeConsulta === 'exito'
+                ? 'Certificado validado correctamente'
+                : 'No fue posible validar el certificado' }}
+        </strong>
+        <p>{{ mensajeConsulta }}</p>
+    </div>
+</div>
         </div>
     </div>
 
@@ -218,6 +244,15 @@ const versionActual = ++versionConsulta;
                     Seleccione la Certificación Académica
                     a la que se aspira
                 </p>
+
+                <!-- FIX_CERTIFICACION_DISABLED_97195 -->
+                <!-- Enviar la certificación aunque los radios estén bloqueados. -->
+                <input
+                    v-if="certificacionBloqueada"
+                    type="hidden"
+                    name="certificacion"
+                    :value="formulario.certificacion"
+                >
 
                 <div class="opciones-certificacion">
                     <label
@@ -329,3 +364,64 @@ const versionActual = ++versionConsulta;
         </section>
     </div>
 </template>
+
+<style scoped>
+.aviso-certificado {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.aviso-certificado-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-weight: 700;
+}
+
+.aviso-certificado-contenido {
+    flex: 1;
+    min-width: 0;
+}
+
+.aviso-certificado-contenido strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.aviso-certificado-contenido p {
+    margin: 0;
+}
+
+.aviso-certificado-exito {
+    background: #ecfdf3;
+    border-color: #a6e5bd;
+    color: #166534;
+}
+
+.aviso-certificado-exito .aviso-certificado-icono {
+    background: #166534;
+    color: #fff;
+}
+
+.aviso-certificado-error {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    color: #9f1239;
+}
+
+.aviso-certificado-error .aviso-certificado-icono {
+    background: #be123c;
+    color: #fff;
+}
+</style>

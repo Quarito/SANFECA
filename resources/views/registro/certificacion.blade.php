@@ -15,6 +15,11 @@
 
     <link rel="stylesheet"
           href="{{ asset('css/barra-usuario-certificacion.css') }}">
+
+    <!-- tipografia-global-97159 -->
+    <link rel="stylesheet"
+          href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97163">
+
 </head>
 <body @if(request()->is("preview/*")) class="modo-preview" @endif>
 
@@ -84,7 +89,7 @@
 	<!-- SELECCIÓN DE CERTIFICACIÓN CON VUE 3 -->
 	<div
 	    id="vue-seleccion-certificacion"
-	    data-numero-certificado-anterior="{{ old('numero_certificado_anterior', '') }}"
+	    data-numero-certificado-anterior="{{ old('numero_certificado_anterior', $numeroCertificadoGuardado ?? '') }}"
 		data-seleccion="{{ json_encode([
 	        'certificacion' => old(
 	            'certificacion',

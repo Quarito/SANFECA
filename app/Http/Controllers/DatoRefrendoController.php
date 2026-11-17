@@ -94,53 +94,40 @@ class DatoRefrendoController extends Controller
     ) {
         $userId = $request->user()->id;
 
-	$certificacion = SeleccionCertificacion::where(
-	    'user_id',
-	    $userId
-	)->value('certificacion');
-
-	$certificadoValidado = $certificacion
-	    ? $this->certificadoValidadoEnSesion(
-	        $request,
-	        $consultaAntecedentes,
-	        $userId,
-	        $certificacion
-	    )
-	    : null;
-
-	$tipoTramite = $consultaAntecedentes
-	    ->determinarTipoTramite($userId);
-
-	if ($tipoTramite !== 'refrendo' && !$certificadoValidado) {
-            return redirect()
-                ->route('registro.certificacion')
-                ->with(
-                    'error',
-                    'No es posible acceder a los datos de refrendo. Verifique sus antecedentes de certificación.'
-                );
-        }
-
-        $certificacion = SeleccionCertificacion::where('user_id', $userId)
-            ->value('certificacion');
-
-        if (!$certificacion) {
-            return redirect()->route('registro.certificacion')
-                ->with('error', 'Primero debe seleccionar una certificación.');
-        }
-
+        // PASO 1002: recuperar exclusivamente el borrador activo.
         $solicitud = SolicitudCertificacion::where('user_id', $userId)
-            ->where('certificacion', $certificacion)
-            ->where('tipo_tramite', 'refrendo')
             ->where('estado', 'borrador')
             ->latest('id')
             ->first();
 
-        if (!$solicitud) {
+        if (
+            !$solicitud ||
+            $solicitud->tipo_tramite !== 'refrendo'
+        ) {
             return redirect()
                 ->route('registro.certificacion')
                 ->with(
                     'error',
-                    'Primero debe guardar su selección de certificación para iniciar el refrendo.'
+                    'No existe un refrendo activo. Primero debe guardar su selección de certificación.'
+                );
+        }
+
+        $certificacion = $solicitud->certificacion;
+
+        // Validar nuevamente el certificado histórico vinculado.
+        $certificadoValidado = $this->certificadoValidadoEnSesion(
+            $request,
+            $consultaAntecedentes,
+            $userId,
+            $certificacion
+        );
+
+        if (!$certificadoValidado) {
+            return redirect()
+                ->route('registro.certificacion')
+                ->with(
+                    'error',
+                    'No fue posible validar el certificado histórico del refrendo.'
                 );
         }
 
@@ -165,51 +152,43 @@ class DatoRefrendoController extends Controller
     ) {
         $userId = $request->user()->id;
 
-	$certificacion = SeleccionCertificacion::where(
-	    'user_id',
-	    $userId
-	)->value('certificacion');
-
-	$certificadoValidado = $certificacion
-	    ? $this->certificadoValidadoEnSesion(
-	        $request,
-	        $consultaAntecedentes,
-	        $userId,
-	        $certificacion
-	    )
-	    : null;
-
-	$tipoTramite = $consultaAntecedentes
-	    ->determinarTipoTramite($userId);
-
-	if ($tipoTramite !== 'refrendo' && !$certificadoValidado) {
-	    return redirect()
-	        ->route('registro.certificacion')
-	        ->with('error', 'El trámite no está autorizado como refrendo.');
-	}
-
-        $certificacion = SeleccionCertificacion::where('user_id', $userId)
-            ->value('certificacion');
-
-        if (!$certificacion) {
-            return redirect()->route('registro.certificacion')
-                ->with('error', 'Primero debe seleccionar una certificación.');
-        }
-
+	// PASO 1004: guardar únicamente el refrendo activo.
         $solicitud = SolicitudCertificacion::where('user_id', $userId)
-            ->where('certificacion', $certificacion)
-            ->where('tipo_tramite', 'refrendo')
             ->where('estado', 'borrador')
             ->latest('id')
             ->first();
 
-        if (!$solicitud) {
+        if (
+            !$solicitud ||
+            $solicitud->tipo_tramite !== 'refrendo'
+        ) {
             return redirect()
                 ->route('registro.certificacion')
-                ->with('error', 'No se encontró una solicitud de refrendo válida.');
+                ->with(
+                    'error',
+                    'No existe una solicitud de refrendo activa.'
+                );
         }
 
-	        $datosAutomaticos = $consultaAntecedentes
+        $certificacion = $solicitud->certificacion;
+
+        $certificadoValidado = $this->certificadoValidadoEnSesion(
+            $request,
+            $consultaAntecedentes,
+            $userId,
+            $certificacion
+        );
+
+        if (!$certificadoValidado) {
+            return redirect()
+                ->route('registro.certificacion')
+                ->with(
+                    'error',
+                    'No fue posible validar el certificado histórico del refrendo.'
+                );
+        }
+
+        $datosAutomaticos = $consultaAntecedentes
 	    ->obtenerDatosRefrendo(
 	        $userId,
 	        $certificadoValidado
@@ -222,15 +201,19 @@ class DatoRefrendoController extends Controller
         }
 
         $datos = $request->validate([
-            'aplica_articulo_14' => ['required', 'boolean'],
+            'aplica_articulo_14' => [
+                'required',
+                'boolean',
+            ],
             'inciso_articulo_14' => [
                 'nullable',
                 'required_if:aplica_articulo_14,1',
-                'in:14.1,14.2,14.3,14.4',
+                'in:13.1,14.1,14.2,14.3',
             ],
         ]);
 
-        if (!$datos['aplica_articulo_14']) {
+        // Cuando responde No, el inciso no aplica.
+        if ((int) $datos['aplica_articulo_14'] === 0) {
             $datos['inciso_articulo_14'] = null;
         }
 
@@ -251,17 +234,7 @@ class DatoRefrendoController extends Controller
             $datos
         );
 
-        // Artículo 14: omitir Formación académica.
-	if ((int) $datos['aplica_articulo_14'] === 1) {
-	    return redirect()
-	        ->route('registro.documentos')
-	        ->with(
-	            'success',
-	            'Datos de refrendo guardados correctamente. Continúe con Documentos probatorios.'
-	        );
-	}
-
-	// Trámite ordinario: continuar con Formación académica.
+	// ETAPA 1: todos los refrendos, incluido artículo 14, continúan a Formación académica.
 	return redirect()
 	    ->route('registro.formacion')
 	    ->with('success', 'Datos de refrendo guardados correctamente.');

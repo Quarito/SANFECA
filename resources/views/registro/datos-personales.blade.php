@@ -11,6 +11,9 @@
 
     <link rel="stylesheet" href="{{ asset('css/certificacion.css') }}">
     <link rel="stylesheet" href="{{ asset('css/datos-personales-vue.css') }}">
+
+    <!-- tipografia-global-97159 -->
+    <link rel="stylesheet" href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97159">
 </head>
 <body @if(request()->is("preview/*")) class="modo-preview" @endif>
 <div class="pagina-anfeca">

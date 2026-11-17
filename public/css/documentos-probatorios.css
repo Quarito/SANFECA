@@ -377,3 +377,90 @@
         min-height: auto;
     }
 }
+
+
+/* ==================================================
+   ANFECA - REFRENDO POR ARTICULO 13 O 14
+   Centrado exclusivo de los cuatro documentos
+   ================================================== */
+
+/* Centrar el contenedor principal solo en refrendos por artículo */
+.cert-main .vista-refrendo-articulo .documentos-vue {
+    width: 100%;
+    max-width: 760px;
+    margin: 35px auto 0;
+}
+
+/* Una sola columna centrada para los cuatro documentos */
+.cert-main .vista-refrendo-articulo .probatorios-contenido,
+.cert-main .vista-refrendo-articulo .documentos-anfeca .probatorios-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+    gap: 0;
+}
+
+/* Centrar el listado completo */
+.cert-main .vista-refrendo-articulo .lista-documentos {
+    width: 100%;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Conservar la adaptación a pantallas pequeñas */
+@media (max-width: 650px) {
+    .cert-main .vista-refrendo-articulo .documentos-vue,
+    .cert-main .vista-refrendo-articulo .probatorios-contenido,
+    .cert-main .vista-refrendo-articulo .lista-documentos {
+        max-width: 100%;
+    }
+}
+
+/* AJUSTE FINAL: CENTRADO EXCLUSIVO DE REFRENDO POR ARTICULO */
+
+.cert-main .vista-refrendo-articulo > .documentos-vue {
+    width: 100%;
+    max-width: 760px;
+    margin: 35px auto 0;
+}
+
+.cert-main .vista-refrendo-articulo > .documentos-vue
+.probatorios-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+/* ================================================
+   CENTRADO EXCLUSIVO - REFRENDO ARTICULO 13 O 14
+   ================================================ */
+
+.cert-main .documentos-vue.documentos-refrendo-articulo {
+    width: 100%;
+    max-width: 760px;
+    margin: 35px auto 0;
+}
+
+.cert-main .documentos-vue.documentos-refrendo-articulo
+.probatorios-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    gap: 0;
+}
+
+.cert-main .documentos-vue.documentos-refrendo-articulo
+.lista-documentos {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+}
+

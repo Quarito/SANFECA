@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps({
     datos: {
@@ -11,6 +11,8 @@ const props = defineProps({
         default: () => ({})
     }
 });
+
+const incisos = ['13.1', '14.1', '14.2', '14.3'];
 
 const aplicaArticulo14 = ref(
     props.datos.aplica_articulo_14 === null ||
@@ -27,23 +29,38 @@ const mostrarInciso = computed(
     () => aplicaArticulo14.value === '1'
 );
 
-const incisos = ['14.1', '14.2', '14.3', '14.4'];
-
-
+watch(aplicaArticulo14, (nuevoValor) => {
+    if (nuevoValor !== '1') {
+        incisoArticulo14.value = '';
+    }
+});
 
 const refrendoActual = computed(
     () => `Refrendo número: ${props.automaticos.refrendo_actual ?? ''}`
 );
 </script>
 
-
 <template>
     <div class="formulario formulario-refrendo">
 
-        <!-- Selección de artículo 14 -->
+        <!-- Próximo refrendo calculado automáticamente -->
+        <div class="campo">
+            <label for="refrendo_actual">
+                Próximo refrendo
+            </label>
+
+            <input
+                id="refrendo_actual"
+                type="text"
+                :value="refrendoActual"
+                readonly
+            >
+        </div>
+
+        <!-- Pregunta principal -->
         <div class="campo">
             <label for="aplica_articulo_14">
-                ¿Corresponde a refrendo por artículo 14? *
+                ¿Corresponde a refrendo por artículo 13 o 14? *
             </label>
 
             <select
@@ -58,10 +75,10 @@ const refrendoActual = computed(
             </select>
         </div>
 
-        <!-- Inciso, únicamente cuando corresponde -->
+        <!-- Catálogo visible únicamente al seleccionar Sí -->
         <div v-if="mostrarInciso" class="campo">
             <label for="inciso_articulo_14">
-                Inciso del artículo 14 *
+                Seleccione el inciso del artículo 13 o 14 *
             </label>
 
             <select
@@ -82,27 +99,12 @@ const refrendoActual = computed(
             </select>
         </div>
 
-        <!-- Próximo refrendo calculado automáticamente -->
-        <div class="campo">
-            <label for="refrendo_actual">
-                Próximo refrendo
-            </label>
-
-            <input
-                id="refrendo_actual"
-                type="text"
-                :value="refrendoActual"
-                readonly
-            >
-        </div>
-
-        <!-- Mensaje para quienes no aplican al artículo 14 -->
         <div
             v-if="aplicaArticulo14 === '0'"
             class="mensaje-no-articulo-14"
             role="status"
         >
-            Usted no está por Art. 14
+            No corresponde a refrendo por artículo 13 o 14.
         </div>
 
     </div>

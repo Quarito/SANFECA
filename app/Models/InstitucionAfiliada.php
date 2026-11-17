@@ -11,6 +11,7 @@ class InstitucionAfiliada extends Model
     protected $fillable = [
         'numero_afiliacion',
         'nombre',
+        'campus',
         'sede',
         'zona_anfeca',
     ];

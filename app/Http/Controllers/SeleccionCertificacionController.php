@@ -27,12 +27,59 @@ class SeleccionCertificacionController extends Controller
         $request->user()->id
     );
 
+    // PASO 961: recuperar exclusivamente la solicitud activa.
+    $solicitudActiva = SolicitudCertificacion::where(
+        'user_id',
+        $request->user()->id
+    )
+        ->where('estado', 'borrador')
+        ->latest('id')
+        ->first();
+
+    if (!$solicitudActiva) {
+        // No reutilizar datos de solicitudes enviadas.
+        $seleccion = null;
+    } else {
+        // La certificación debe corresponder a la solicitud activa.
+        if (
+            !$seleccion ||
+            $seleccion->certificacion !== $solicitudActiva->certificacion
+        ) {
+            $seleccion = null;
+        }
+
+        // Dar prioridad a los datos guardados en la solicitud.
+        // Compatibilidad con borradores anteriores al paso 959.
+        $seleccion = (object) [
+            'certificacion' => $solicitudActiva->certificacion,
+            'tipo_personal' =>
+                $solicitudActiva->tipo_personal,
+            'area_certificacion' =>
+                $solicitudActiva->area_certificacion,
+        ];
+    }
+
     $resultadoAntecedentes['certificacion_consultada'] =
         $seleccion?->certificacion;
+
+    // Recuperar únicamente el certificado histórico
+    // vinculado a la solicitud activa de refrendo.
+    $numeroCertificadoGuardado = '';
+
+    if (
+        $solicitudActiva &&
+        $solicitudActiva->tipo_tramite === 'refrendo' &&
+        $solicitudActiva->certificado_historico_id !== null
+    ) {
+        $numeroCertificadoGuardado =
+            $solicitudActiva->certificadoHistorico
+                ?->numero_certificado ?? '';
+    }
 
     return view('registro.certificacion', [
         'seleccion' => $seleccion,
         'resultadoAntecedentes' => $resultadoAntecedentes,
+        'numeroCertificadoGuardado' => $numeroCertificadoGuardado,
     ]);
 }
 
@@ -42,7 +89,7 @@ public function consultarCertificadoAnterior(Request $request)
         'numero_certificado' => [
             'required',
             'string',
-            'max:100',
+            'regex:/^[0-9]{1,7}$/',
         ],
     ]);
 
@@ -146,12 +193,33 @@ public function consultarCertificadoAnterior(Request $request)
                 'required', 'string', 'max:150',
             ],
 		'numero_certificado_anterior' => [
-  		  'nullable', 'string', 'max:100',
+  		  'nullable', 'string', 'regex:/^[0-9]{1,7}$/',
 ],
 
         ]);
 
         $userId = $request->user()->id;
+
+        // PASO 987: impedir duplicar trámites en borrador.
+        $borradorActivo = SolicitudCertificacion::where(
+            'user_id', $userId
+        )
+            ->where('estado', 'borrador')
+            ->latest('id')
+            ->first();
+
+        if (
+            $borradorActivo &&
+            $borradorActivo->certificacion !== $datos['certificacion']
+        ) {
+            return redirect()
+                ->route('registro.certificacion')
+                ->withErrors([
+                    'certificacion' =>
+                        'Ya tiene una solicitud en proceso. Debe continuarla antes de iniciar otra certificación.',
+                ]);
+        }
+
 
 	// Proteger los refrendos existentes en borrador.
 	$refrendoExistente = SolicitudCertificacion::with('certificadoHistorico')
@@ -249,6 +317,28 @@ public function consultarCertificadoAnterior(Request $request)
 	    }
 	}
 
+        // PASO 995: validar la vigencia de un refrendo nuevo.
+        // Los borradores existentes conservan su continuidad.
+        if ($certificadoValidado && !$refrendoExistente) {
+            $vigencia = $consultaAntecedentes
+                ->verificarVigenciaRefrendo($certificadoValidado);
+
+            if (!$vigencia['elegible']) {
+                $mensaje = ($vigencia['motivo'] ?? '') === 'certificado_vigente'
+                    ? 'El certificado todavía está vigente. Podrá solicitar el siguiente refrendo a partir del año '
+                        . $vigencia['proximo_anio'] . '.'
+                    : 'No fue posible determinar la vigencia del certificado histórico. Se requiere revisión.';
+
+                return back()
+                    ->withErrors([
+                        'numero_certificado_anterior' => $mensaje,
+                    ])
+                    ->withInput();
+            }
+        }
+
+
+
 	try {
         $tipoTramite = DB::transaction(function () use (
             $userId,
@@ -256,13 +346,18 @@ public function consultarCertificadoAnterior(Request $request)
             $consultaAntecedentes,
 	    $certificadoValidado        
 ) {
+            // PASO 998-A: evitar solicitudes simultáneas.
+            \App\Models\User::whereKey($userId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $solicitudesEnviadas = SolicitudCertificacion::where(
                 'user_id', $userId
             )->where('certificacion', $datos['certificacion'])
              ->where('estado', '!=', 'borrador')
              ->exists();
 
-            if ($solicitudesEnviadas) {
+            if ($solicitudesEnviadas && $certificadoValidado === null) {
                 return 'solicitud_existente';
             }
 
@@ -275,9 +370,35 @@ public function consultarCertificadoAnterior(Request $request)
 		    ]
 		);
 
-            $tipo = $certificadoValidado
-		    ? 'refrendo'
-		    : $consultaAntecedentes->determinarTipoTramite($userId);
+            // PASO 999-A: conservar el tipo del borrador activo.
+            $borradorEnTransaccion = SolicitudCertificacion::where(
+                'user_id', $userId
+            )
+                ->where('estado', 'borrador')
+                ->lockForUpdate()
+                ->first();
+
+            if ($borradorEnTransaccion) {
+                if (
+                    $borradorEnTransaccion->certificacion !==
+                    $datos['certificacion']
+                ) {
+                    throw new \RuntimeException('borrador_incompatible');
+                }
+
+                if (
+                    $borradorEnTransaccion->tipo_tramite === 'inicial' &&
+                    $certificadoValidado !== null
+                ) {
+                    throw new \RuntimeException('borrador_incompatible');
+                }
+
+                $tipo = $borradorEnTransaccion->tipo_tramite;
+            } else {
+                $tipo = $certificadoValidado
+                    ? 'refrendo'
+                    : $consultaAntecedentes->determinarTipoTramite($userId);
+            }
 
 		// No permitir un refrendo sin certificado histórico validado.
 		if ($tipo === 'refrendo' && $certificadoValidado === null) {
@@ -288,12 +409,44 @@ public function consultarCertificadoAnterior(Request $request)
 		    throw new \RuntimeException('revision_pendiente');
 		}
 
-		$solicitud = SolicitudCertificacion::firstOrCreate([
-		    'user_id' => $userId,
-		    'certificacion' => $datos['certificacion'],
-		    'tipo_tramite' => $tipo,
-		    'estado' => 'borrador',
-		]);
+		$solicitud = SolicitudCertificacion::where('user_id', $userId)
+                    ->where('estado', 'borrador')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($solicitud) {
+                    if (
+                        $solicitud->certificacion !== $datos['certificacion'] ||
+                        $solicitud->tipo_tramite !== $tipo
+                    ) {
+                        throw new \RuntimeException('borrador_incompatible');
+                    }
+
+                    if (
+                        $solicitud->tipo_tramite === 'refrendo' &&
+                        $solicitud->certificado_historico_id !== null &&
+                        (
+                            $certificadoValidado === null ||
+                            (int) $solicitud->certificado_historico_id !==
+                            (int) $certificadoValidado->id
+                        )
+                    ) {
+                        throw new \RuntimeException('borrador_incompatible');
+                    }
+                } else {
+                    $solicitud = SolicitudCertificacion::create([
+                        'user_id' => $userId,
+                        'certificacion' => $datos['certificacion'],
+                        'tipo_tramite' => $tipo,
+                        'estado' => 'borrador',
+                    ]);
+                }
+
+                // PASO 959: guardar los datos en la solicitud actual.
+                $solicitud->update([
+                    'tipo_personal' => $datos['tipo_personal'],
+                    'area_certificacion' => $datos['area_certificacion'],
+                ]);
 
 		// Conservar la vinculación histórica existente.
 		// Solo actualizarla cuando se haya validado un certificado.
@@ -306,6 +459,15 @@ public function consultarCertificadoAnterior(Request $request)
             return $tipo;
         });
         } catch (\RuntimeException $e) {
+            if ($e->getMessage() === 'borrador_incompatible') {
+                return redirect()
+                    ->route('registro.certificacion')
+                    ->withErrors([
+                        'certificacion' =>
+                            'Ya existe una solicitud en proceso. Debe continuarla antes de iniciar otra.',
+                    ]);
+            }
+
             if ($e->getMessage() !== 'revision_pendiente') {
                 throw $e;
             }

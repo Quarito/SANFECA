@@ -53,6 +53,66 @@
 }
 </style>
 
+
+<style id="compactacion-mis-datos-97166">
+
+/* Diseño compacto de la pantalla Mis Datos */
+.cert-main .panel-contenedor {
+    font-size: 12px;
+}
+
+/* Etiquetas y valores */
+.cert-main .panel-contenedor label,
+.cert-main .panel-contenedor p,
+.cert-main .panel-contenedor span,
+.cert-main .panel-contenedor strong {
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Títulos */
+.cert-main .panel-contenedor h2,
+.cert-main .panel-contenedor h3 {
+    font-size: 15px;
+    line-height: 1.3;
+}
+
+/* Campos */
+.cert-main .panel-contenedor input:not([type="radio"]):not([type="checkbox"]),
+.cert-main .panel-contenedor select,
+.cert-main .panel-contenedor textarea {
+    font-size: 12px;
+    min-height: 32px;
+    box-sizing: border-box;
+}
+
+/* Botones */
+.cert-main .panel-contenedor button,
+.cert-main .panel-contenedor .boton {
+    font-size: 12px;
+    min-height: 32px;
+}
+
+/* Reducir espacios de los contenedores */
+.cert-main .panel-contenedor {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+    .cert-main .panel-contenedor input,
+    .cert-main .panel-contenedor select,
+    .cert-main .panel-contenedor textarea {
+        font-size: 16px;
+    }
+}
+</style>
+
+
+    <!-- CSS global de homologación ANFECA -->
+    <link rel="stylesheet"
+          href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97170">
+
 </head>
 
 <style>

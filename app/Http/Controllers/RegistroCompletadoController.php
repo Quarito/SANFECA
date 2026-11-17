@@ -145,13 +145,13 @@ private function obtenerSolicitud(
 	// Identificar refrendos que aplican al artículo 14.
 	$datosRefrendo = $solicitud->datosRefrendo;
 
-	$omiteFormacion = (
+	$esArticulo14 = (
 	    $solicitud->tipo_tramite === 'refrendo'
 	    && $datosRefrendo !== null
 	    && (int) $datosRefrendo->aplica_articulo_14 === 1
 	    && in_array(
 	        $datosRefrendo->inciso_articulo_14,
-	        ['14.1', '14.2', '14.3', '14.4'],
+	        ['13.1', '14', '14.1', '14.2', '14.3'],
 	        true
 	    )
 	);
@@ -169,13 +169,29 @@ private function obtenerSolicitud(
                     $solicitud->tipo_tramite === 'refrendo'
                     && $solicitud->datosRefrendo !== null
                 ),
-            'formacion_academica' => $omiteFormacion || $formacion !== null,
+            'formacion_academica' => $formacion !== null,
             'documentos_probatorios' => $documentos !== null,
         ];
 
-        // Los refrendos por artículo 14 no requieren
-	// volver a presentar documentación académica.
-	if (!$omiteFormacion) {
+        // Todos los trámites requieren datos académicos completos.
+        $camposAcademicos = [
+            'nivel_origen',
+            'titulo_origen',
+            'nivel_ultimo_grado',
+            'titulo_ultimo_grado',
+            'institucion_afiliada_id',
+        ];
+
+        foreach ($camposAcademicos as $campo) {
+            $valor = $formacion?->{$campo};
+
+            if ($valor === null || trim((string) $valor) === '') {
+                $resultado['formacion_academica'] = false;
+            }
+        }
+
+        // Todos los trámites requieren los cuatro documentos
+        // académicos, incluidos los refrendos del artículo 14.
 	    foreach (self::ACADEMICOS as $campo) {
 	        $ruta = $formacion?->{$campo};
 
@@ -186,9 +202,22 @@ private function obtenerSolicitud(
 	            $resultado['formacion_academica'] = false;
 	        }
 	    }
-	}
 
-        foreach (self::PROBATORIOS as $campo) {
+        // VALIDACION_ART14_97184
+        // Artículo 14 exige cuatro documentos probatorios.
+        $camposProbatorios = self::PROBATORIOS;
+
+        if ($esArticulo14) {
+            $camposProbatorios = array_merge(
+                $camposProbatorios,
+                [
+                    'solicitud_articulo_14_archivo',
+                    'constancia_articulo_14_archivo',
+                ]
+            );
+        }
+
+        foreach ($camposProbatorios as $campo) {
             $ruta = $documentos?->{$campo};
 
             if (
@@ -259,14 +288,14 @@ private function obtenerSolicitud(
                 ->with('error', 'Debe completar todos los requisitos antes del envío.');
         }
 
-        DB::transaction(function () use ($solicitud, $servicio) {
+        $envioRealizado = DB::transaction(function () use ($solicitud, $servicio) {
             $actual = SolicitudCertificacion::whereKey($solicitud->id)
                 ->where('user_id', $solicitud->user_id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             if ($actual->estado !== 'borrador') {
-                return;
+                return false;
             }
 
 		if (
@@ -278,14 +307,44 @@ private function obtenerSolicitud(
 		    ]);
 		}
 
+            // Conservar los datos de certificación al momento del envío.
+            $seleccion = \App\Models\SeleccionCertificacion::where(
+                'user_id',
+                $actual->user_id
+            )->where(
+                'certificacion',
+                $actual->certificacion
+            )->first();
+
+            if (
+                !$seleccion
+                || !filled($seleccion->tipo_personal)
+                || !filled($seleccion->area_certificacion)
+            ) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'solicitud' => 'Debe revisar la selección de certificación antes del envío.',
+                ]);
+            }
+
             $actual->update([
                 'estado' => 'enviado',
                 'fecha_envio' => now(),
+                'tipo_personal' => $seleccion->tipo_personal,
+                'area_certificacion' => $seleccion->area_certificacion,
             ]);
+
+            return true;
         });
+
+        if (!$envioRealizado) {
+            return redirect()
+                ->route('registro.completado')
+                ->with('success', 'La solicitud ya fue enviada.');
+        }
 
         return redirect()
             ->route('registro.completado')
-            ->with('success', 'Solicitud enviada correctamente.');
+            ->with('success', 'Solicitud enviada correctamente.')
+            ->with('descargar_acuse_solicitud_id', $solicitud->id);
     }
 }

@@ -378,4 +378,77 @@ function cancelar() {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* compactacion-mis-datos-97168 */
+
+/* Distribución de las tarjetas */
+.panel-etapas {
+    gap: 12px !important;
+    margin-bottom: 12px !important;
+}
+
+/* Tarjetas de información */
+.tarjeta-etapa {
+    padding: 12px 16px !important;
+}
+
+/* Campos de consulta */
+.campo-actualizacion {
+    margin-bottom: 8px !important;
+    gap: 3px !important;
+    font-size: 12px !important;
+}
+
+.campo-actualizacion label,
+.campo-actualizacion strong,
+.campo-actualizacion span {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+}
+
+/* Campos editables */
+.campo-actualizacion input,
+.campo-actualizacion select {
+    min-height: 32px !important;
+    font-size: 12px !important;
+}
+
+/* Botones */
+.panel-acciones {
+    margin: 10px 0 !important;
+    gap: 8px !important;
+}
+
+.panel-acciones .boton {
+    font-size: 12px !important;
+    padding: 8px 16px !important;
+    min-height: 32px !important;
+}
+
+/* Recuadro de autorización */
+.seccion-autorizacion {
+    padding: 12px 16px !important;
+    margin-top: 12px !important;
+}
+
+/* Mensaje de autorización */
+.mensaje-autorizado {
+    font-size: 12px !important;
+    margin: 0 0 8px !important;
+    line-height: 1.4 !important;
+}
+
+/* Confirmación */
+.confirmacion-datos {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+}
+
+@media (max-width: 768px) {
+    .campo-actualizacion input,
+    .campo-actualizacion select {
+        font-size: 16px !important;
+    }
+}
+
 </style>

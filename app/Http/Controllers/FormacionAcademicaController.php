@@ -11,6 +11,7 @@ use App\Models\InstitucionAfiliada;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class FormacionAcademicaController extends Controller
 {
@@ -91,14 +92,28 @@ class FormacionAcademicaController extends Controller
 	    return $solicitud;
 	}
 
-    public function create(Request $request, ConsultaAntecedentesService $servicio)
+    
+    // BLOQUEO DEFINITIVO DE FORMACION ACADEMICA
+    private function formacionEstaCompletada(?FormacionAcademicaSolicitud $formacion): bool
+    {
+        return $formacion !== null
+            && $formacion->formacion_completada_at !== null;
+    }
+
+
+
+public function create(Request $request, ConsultaAntecedentesService $servicio)
     {
         $solicitud = $this->verificarSolicitud($request, $servicio);
         if (!$solicitud) return redirect()->route("registro.certificacion")->with("error", "No existe una solicitud válida para continuar.");
         if ($solicitud->tipo_tramite === "refrendo" && !$solicitud->datosRefrendo) return redirect()->route("registro.refrendo")->with("error", "Primero debe completar los datos de refrendo.");
         $formacion = $solicitud->formacionAcademica;
 
+        
+        $formacionBloqueada = $this->formacionEstaCompletada($formacion);
+
         return view('registro.formacion-academica', [
+            'formacionBloqueada' => $formacionBloqueada,
             'solicitud' => $solicitud,
             'formacion' => $formacion,
             'instituciones' => InstitucionAfiliada::orderBy(
@@ -115,7 +130,19 @@ class FormacionAcademicaController extends Controller
             if ($solicitud->tipo_tramite === "refrendo" && !$solicitud->datosRefrendo) return redirect()->route("registro.refrendo")->with("error", "Primero debe completar los datos de refrendo.");
             $formacion = $solicitud->formacionAcademica;
 
-		$esRefrendo = $solicitud->tipo_tramite === 'refrendo';
+		
+            // BLOQUEO DEFINITIVO DE FORMACION ACADEMICA
+            if ($this->formacionEstaCompletada($formacion)) {
+                if ($request->except(['_token']) !== [] || $request->allFiles() !== []) {
+                    return redirect()
+                        ->route('registro.formacion')
+                        ->with('error', 'La formación académica está finalizada y no puede modificarse.');
+                }
+
+                return redirect()->route('registro.documentos');
+            }
+
+            $esRefrendo = $solicitud->tipo_tramite === 'refrendo';
 
 	    // Los cuatro documentos académicos se verifican
 		// tanto en certificación inicial como en refrendo.
@@ -152,12 +179,15 @@ class FormacionAcademicaController extends Controller
 		}
 
 	    $reglas = [
-	        'nivel_origen' => $esRefrendo
-		    ? ['prohibited']
-		    : ['required', Rule::in(['Licenciatura'])],
-	        'titulo_origen' => $esRefrendo
-		    ? ['prohibited']
-		    : ['required', 'string', 'max:200'],
+	        'nivel_origen' => [
+                    'required',
+                    Rule::in(['Licenciatura']),
+                ],
+                'titulo_origen' => (
+                    $esRefrendo && !empty($formacion?->titulo_origen)
+                )
+                    ? ['prohibited']
+                    : ['required', 'string', 'max:200'],
 
 	        'nivel_ultimo_grado' => [
 	            'required',
@@ -193,16 +223,12 @@ class FormacionAcademicaController extends Controller
 
 	    $datos = $request->validate($reglas);
 
-		if ($esRefrendo) {
-		    unset($datos['nivel_origen'], $datos['titulo_origen']);
+		if ($esRefrendo && !empty($formacion?->titulo_origen)) {
+                    // Conservar el título de origen ya registrado.
+                    unset($datos['titulo_origen']);
+                }
 
-		    if ($formacion === null || empty($formacion->titulo_origen)) {
-		        return back()->withErrors([
-		            'titulo_origen' =>
-		                'No existe un título académico de origen registrado para este refrendo.',
-		        ]);
-		    }
-		}
+            
 
 	    // Las rutas se generan en el servidor,
 	    // no se aceptan directamente del formulario.
@@ -224,10 +250,63 @@ class FormacionAcademicaController extends Controller
 	            }
 	        }
 
-	        FormacionAcademicaSolicitud::updateOrCreate(
-	            ['solicitud_id' => $solicitud->id],
-	            array_merge($datos, $nuevosArchivos)
-	        );
+	        $guardadoBloqueado = DB::transaction(function () use (
+                $solicitud, $datos, $nuevosArchivos
+            ) {
+                SolicitudCertificacion::whereKey(
+                    $solicitud->id
+                )->lockForUpdate()->firstOrFail();
+
+                $formacionActual = FormacionAcademicaSolicitud::where(
+                    'solicitud_id',
+                    $solicitud->id
+                )->lockForUpdate()->first();
+
+                if ($this->formacionEstaCompletada($formacionActual)) {
+                    return true;
+                }
+
+                foreach ([
+                    'titulo_ultimo_grado_archivo',
+                    'cedula_ultimo_grado_archivo'
+                ] as $campo) {
+                    $anterior = $formacionActual?->{$campo};
+
+                    if (
+                        isset($nuevosArchivos[$campo]) &&
+                        !empty($anterior) &&
+                        $anterior !== $nuevosArchivos[$campo]
+                    ) {
+                        DB::table('historial_documentos_academicos')->insert([
+                            'solicitud_id' => $solicitud->id,
+                            'tipo_documento' => $campo,
+                            'ruta_archivo' => $anterior,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+
+                FormacionAcademicaSolicitud::updateOrCreate(
+                    ['solicitud_id' => $solicitud->id],
+                    array_merge($datos, $nuevosArchivos)
+                );
+
+                return false;
+            });
+
+            if ($guardadoBloqueado) {
+                foreach ($nuevosArchivos as $ruta) {
+                    Storage::disk('local')->delete($ruta);
+                }
+
+                return redirect()
+                    ->route('registro.formacion')
+                    ->with(
+                        'error',
+                        'La formación académica ya fue autorizada y no puede modificarse.'
+                    );
+            }
 	    } catch (\Throwable $e) {
 	        // Si falla la operación, limpiar archivos recién subidos.
 	        foreach ($nuevosArchivos as $ruta) {
@@ -245,12 +324,118 @@ class FormacionAcademicaController extends Controller
 	    }
 
 	    return redirect()
-	        ->route('registro.documentos')
-	        ->with(
-	            'success',
-	            'Formación académica guardada correctamente.'
-	        );
+                ->route('registro.formacion')
+                ->with(
+                    'success',
+                    'Formación académica guardada. Revisa tus datos y autorízalos para continuar.'
+                );
 	}
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTORIZACIÓN DE FORMACIÓN ACADÉMICA
+    |--------------------------------------------------------------------------
+    */
+    public function autorizar(
+        Request $request,
+        ConsultaAntecedentesService $servicio
+    ) {
+        $solicitud = $this->verificarSolicitud($request, $servicio);
+
+        if (!$solicitud) {
+            return redirect()
+                ->route('registro.certificacion')
+                ->with('error', 'No existe una solicitud válida.');
+        }
+
+        if (
+            $solicitud->tipo_tramite === 'refrendo'
+            && !$solicitud->datosRefrendo
+        ) {
+            return redirect()
+                ->route('registro.refrendo')
+                ->with('error', 'Primero debe completar los datos de refrendo.');
+        }
+
+        $request->validate([
+            'confirmacion_formacion' => ['required', 'accepted'],
+        ], [
+            'confirmacion_formacion.required' =>
+                'Debes confirmar que tu formación académica es correcta.',
+            'confirmacion_formacion.accepted' =>
+                'Debes aceptar la confirmación de tu formación académica.',
+        ]);
+
+        return DB::transaction(function () use ($solicitud) {
+            SolicitudCertificacion::whereKey(
+                $solicitud->id
+            )->lockForUpdate()->firstOrFail();
+
+            $formacion = FormacionAcademicaSolicitud::where(
+                'solicitud_id',
+                $solicitud->id
+            )->lockForUpdate()->first();
+
+            if (!$formacion) {
+                return redirect()
+                    ->route('registro.formacion')
+                    ->with('error', 'Primero guarda tu formación académica.');
+            }
+
+            if ($this->formacionEstaCompletada($formacion)) {
+                return redirect()->route('registro.documentos');
+            }
+
+            foreach ([
+                'nivel_origen',
+                'titulo_origen',
+                'nivel_ultimo_grado',
+                'titulo_ultimo_grado',
+                'institucion_afiliada_id',
+            ] as $campo) {
+                if (blank($formacion->{$campo})) {
+                    return redirect()
+                        ->route('registro.formacion')
+                        ->with(
+                            'error',
+                            'Completa todos los datos académicos antes de autorizar.'
+                        );
+                }
+            }
+
+            foreach ([
+                'titulo_origen_archivo',
+                'cedula_origen_archivo',
+                'titulo_ultimo_grado_archivo',
+                'cedula_ultimo_grado_archivo',
+            ] as $campo) {
+                $ruta = $formacion->{$campo};
+
+                if (
+                    blank($ruta)
+                    || !Storage::disk('local')->exists($ruta)
+                ) {
+                    return redirect()
+                        ->route('registro.formacion')
+                        ->with(
+                            'error',
+                            'Debes contar con los cuatro documentos académicos antes de autorizar.'
+                        );
+                }
+            }
+
+            $formacion->formacion_completada_at = now();
+            $formacion->save();
+
+            return redirect()
+                ->route('registro.documentos')
+                ->with(
+                    'success',
+                    'Tu formación académica ha sido autorizada correctamente.'
+                );
+        });
+    }
 
 }
 

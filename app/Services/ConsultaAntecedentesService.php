@@ -15,7 +15,7 @@ class ConsultaAntecedentesService
     ): ?CertificadoHistorico {
         $numeroCertificado = trim($numeroCertificado);
 
-        if ($numeroCertificado === '') {
+        if (!preg_match('/^[0-9]{1,7}$/', $numeroCertificado)) {
             return null;
         }
 
@@ -270,5 +270,73 @@ class ConsultaAntecedentesService
 	        'numero_refrendo_asignado' => null,
 	    ];
 	}
+
+
+    /**
+     * PASO 992: verificar elegibilidad para refrendo.
+     * La vigencia se calcula por año, porque el histórico
+     * únicamente almacena años de certificación.
+     */
+    public function verificarVigenciaRefrendo(
+        CertificadoHistorico $certificado
+    ): array {
+        $ultimoAnio = null;
+        $ultimoRefrendo = 0;
+
+        $anioInicial = trim(
+            (string) ($certificado->primera_vez ?? '')
+        );
+
+        if (preg_match('/^[0-9]{4}$/', $anioInicial)) {
+            $ultimoAnio = (int) $anioInicial;
+        }
+
+        for ($i = 1; $i <= 7; $i++) {
+            $campo = 'refrendo_' . $i;
+
+            $valor = trim(
+                (string) ($certificado->{$campo} ?? '')
+            );
+
+            if ($valor === '') {
+                continue;
+            }
+
+            if (!preg_match('/^[0-9]{4}$/', $valor)) {
+                return [
+                    'elegible' => false,
+                    'motivo' => 'fecha_historica_invalida',
+                ];
+            }
+
+            $anio = (int) $valor;
+
+            if ($ultimoAnio === null || $anio > $ultimoAnio) {
+                $ultimoAnio = $anio;
+            }
+
+            $ultimoRefrendo = max($ultimoRefrendo, $i);
+        }
+
+        if ($ultimoAnio === null) {
+            return [
+                'elegible' => false,
+                'motivo' => 'sin_fecha_historica',
+            ];
+        }
+
+        $anioActual = (int) now()->year;
+        $proximoAnio = $ultimoAnio + 3;
+
+        return [
+            'elegible' => $anioActual >= $proximoAnio,
+            'ultimo_anio' => $ultimoAnio,
+            'proximo_anio' => $proximoAnio,
+            'refrendo_correspondiente' => $ultimoRefrendo + 1,
+            'motivo' => $anioActual >= $proximoAnio
+                ? 'vigencia_cumplida'
+                : 'certificado_vigente',
+        ];
+    }
 
 }

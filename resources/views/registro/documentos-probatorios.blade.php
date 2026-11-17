@@ -1,3 +1,6 @@
+@php
+    $esArticulo14 = $esArticulo14 ?? false;
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -20,6 +23,9 @@
 	<link rel="stylesheet"
 	      href="{{ asset('css/barra-usuario-certificacion.css') }}">
 
+
+    <!-- tipografia-global-97159 -->
+    <link rel="stylesheet" href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97159">
 </head>
 
 <body @if(request()->is("preview/*")) class="modo-preview" @endif>
@@ -89,13 +95,17 @@
 
             <div
                 id="vue-documentos-probatorios"
+                class="{{ $esArticulo14 ? 'vista-refrendo-articulo' : '' }}"
                 data-academicos="{{ json_encode($academicos) }}"
                 data-nuevos="{{ json_encode($nuevos) }}"
                 data-link="{{ $link }}"
+                data-es-articulo-14="{{ $esArticulo14 ? '1' : '0' }}"
             ></div>
 
             <div class="botones">
-                <a href="{{ route('registro.formacion') }}"
+                <a href="{{ $esArticulo14
+                    ? route('registro.refrendo')
+                    : route('registro.formacion') }}"
                    class="boton">
                     Anterior
                 </a>

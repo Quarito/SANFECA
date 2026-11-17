@@ -2,7 +2,6 @@
     $esPreview = request()->is('preview/*');
     $tieneDatos = false;
     $esRefrendo = false;
-
     if (!$esPreview && auth()->check()) {
         $tieneDatos = \App\Models\DatosSolicitante::where(
             'user_id', auth()->id()
@@ -16,6 +15,8 @@
             ->first();
 
         $esRefrendo = $solicitudMenu?->tipo_tramite === 'refrendo';
+
+
     }
 
     $etapas = [
@@ -106,6 +107,8 @@
 
                 $anterior = $indiceActual !== false
                     && $indice < $indiceActual;
+
+
             @endphp
 
             @if ($existe)

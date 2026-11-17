@@ -81,4 +81,99 @@ defineProps({
         font-size: 14px;
     }
 }
+
+/* encabezado-tenue-97156 */
+
+/* Contenedor principal del encabezado */
+.encabezado-proceso,
+.encabezado-pantalla,
+.titulo-proceso {
+    background: linear-gradient(
+        110deg,
+        #FFFFFF 0%,
+        #FFFFFF 60%,
+        #FDFBFC 85%,
+        #FAF6F7 100%
+    ) !important;
+
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    min-height: 0 !important;
+}
+
+/* Título */
+.encabezado-proceso h1,
+.encabezado-proceso h2,
+.encabezado-pantalla h1,
+.encabezado-pantalla h2,
+.titulo-proceso h1,
+.titulo-proceso h2 {
+    color: #980D22 !important;
+    font-size: 19px !important;
+    line-height: 1.3 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* encabezado compacto en pantallas pequeñas */
+@media (max-width: 768px) {
+    .encabezado-proceso,
+    .encabezado-pantalla,
+    .titulo-proceso {
+        padding: 10px !important;
+    }
+}
+
+
+/* encabezado-compacto-97160 */
+
+/* Reducir el espacio total */
+.encabezado-proceso {
+    margin: 0 auto 12px !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+/* Encabezado institucional más compacto */
+.encabezado-proceso__titulo {
+    padding: 10px 16px !important;
+    background: linear-gradient(
+        110deg,
+        #FFFFFF 0%,
+        #FFFFFF 60%,
+        #FDFBFC 85%,
+        #FAF6F7 100%
+    ) !important;
+    border-left: 3px solid #A30917;
+    border-radius: 8px;
+}
+
+/* Título */
+.encabezado-proceso__titulo h2 {
+    font-size: 17px !important;
+    line-height: 1.25 !important;
+    font-weight: 600 !important;
+}
+
+/* Descripción */
+.encabezado-proceso__descripcion {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    margin: 8px auto 0 !important;
+    padding: 0 8px !important;
+}
+
+/* Línea decorativa */
+.encabezado-proceso__descripcion::after {
+    width: 55px !important;
+    height: 2px !important;
+    margin: 7px auto 0 !important;
+}
+
+@media (max-width: 768px) {
+    .encabezado-proceso__titulo {
+        padding: 9px 12px !important;
+    }
+}
+
 </style>

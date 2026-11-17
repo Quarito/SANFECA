@@ -13,6 +13,8 @@ class DocumentoProbatorioSolicitud extends Model
         'solicitud_id',
         'constancia_antiguedad_archivo',
         'comprobante_pago_archivo',
+        'solicitud_articulo_14_archivo',
+        'constancia_articulo_14_archivo',
         'link',
     ];
 
