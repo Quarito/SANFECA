@@ -1,5 +1,7 @@
 # Mapeo PDM (PowerDesigner) ↔ Laravel — ANFECA
 
+> **Nota (20/11/2026):** en la rama de integración, las tablas marcadas como «servidor» ya están en las migraciones de `desarrollo/anfeca-pruebas`. El mapeo ejecutable actualizado está en `config/anfeca_modelo.php`; el diagnóstico real se obtiene con `php artisan anfeca:modelo-verificar`.
+
 > Rama `ANFECA_BD_final` · 20/11/2026 · Fuente PDM: `database/sql/anfeca_modelo/anfeca_certifica_1.original.sql`
 > Inventario completo de columnas y FK del PDM: `database/sql/anfeca_modelo/ANFECA_PDM_CATALOGO_TABLAS.json`.
 > El mapeo ejecutable está en `config/anfeca_modelo.php` y se contrasta contra la BD con `php artisan anfeca:modelo-verificar`.

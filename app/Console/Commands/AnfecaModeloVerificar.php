@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Services\AnfecaModeloInspector;
 use Illuminate\Console\Command;
+use Illuminate\Database\QueryException;
+use PDOException;
 
 /**
  * SOLO LECTURA. Inventario del esquema aislado del PDM y comparación del
@@ -17,6 +19,19 @@ class AnfecaModeloVerificar extends Command
     protected $description = 'Inventario del esquema anfeca_modelo y divergencias PDM ↔ Laravel (solo lectura)';
 
     public function handle(): int
+    {
+        try {
+            return $this->procesar();
+        } catch (QueryException|PDOException $e) {
+            // Sin conexión o sin permisos: mensaje breve, sin traza ni credenciales.
+            $this->error('No fue posible consultar la base de datos: '.strtok($e->getMessage(), "\n"));
+            $this->line('Revise que PostgreSQL esté activo y que .env apunte a la base correcta. No se modificó nada.');
+
+            return self::FAILURE;
+        }
+    }
+
+    private function procesar(): int
     {
         $esquema = (string) config('anfeca_modelo.esquema');
         $esperado = (array) config('anfeca_modelo.esperado');

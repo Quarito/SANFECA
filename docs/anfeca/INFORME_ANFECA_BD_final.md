@@ -1,5 +1,7 @@
 # Informe técnico — ANFECA_BD_final
 
+> **Nota (20/11/2026):** este informe se elaboró sobre `main` (03/nov). El estado vigente del código, los parches y las vulnerabilidades está en `INFORME_INTEGRACION.md`, sobre `desarrollo/anfeca-pruebas` @ `6c873c2`.
+
 **Proyecto:** Sistema de Registro, Certificación y Refrendo Académico ANFECA (ANFECA_PRUEBAS)
 **Fecha:** 20/11/2026 · **Rama:** `ANFECA_BD_final` (desde `main`, commit `8549d09`)
 **Alcance acordado:** solo cambios **aditivos**. Integración aislada del PDM, verificación, documentación, parches propuestos y evaluación de vulnerabilidades.

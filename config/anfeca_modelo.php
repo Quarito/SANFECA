@@ -37,16 +37,16 @@ return [
     |--------------------------------------------------------------------------
     | "laravel" = tabla en public; "campos" = [columna PDM => columna Laravel].
     | Un valor null significa "sin equivalente directo todavía".
-    | "origen": repo = existe en las migraciones del repositorio;
-    |           servidor = documentada en /var/www/ANFECA_PRUEBAS (04–19/nov), aún no subida al repo;
-    |           futuro = módulo administrativo de etapa posterior.
+    | "origen": vigente = tabla de las migraciones de desarrollo/anfeca-pruebas
+    |           (flujo por solicitud, 04–19/nov);
+    |           legado = tabla antigua por usuario que aún se consulta (no borrar).
     | Las tablas PDM llevan nombres en minúsculas porque PostgreSQL pliega los
     | identificadores sin comillas.
     */
     'mapeo' => [
         'persona' => [
             'laravel' => 'datos_solicitantes',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => [
                 'pers_nombre' => 'nombres',
                 'pers_apellido_paterno' => 'apellido_paterno',
@@ -60,7 +60,7 @@ return [
         ],
         'usuario' => [
             'laravel' => 'users',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => [
                 'usua_nombre' => 'email',
                 'usua_contrasenia' => 'password',
@@ -70,7 +70,7 @@ return [
         ],
         'domicilio' => [
             'laravel' => 'datos_solicitantes',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => [
                 'domi_calle' => 'calle',
                 'domi_numero_ext' => 'numero_exterior',
@@ -80,14 +80,14 @@ return [
         ],
         'comunicacion' => [
             'laravel' => 'datos_solicitantes',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => [
                 'comu_valor' => 'telefono_particular',
             ],
         ],
         'colonia' => [
             'laravel' => 'datos_solicitantes',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => [
                 'colo_nombre' => 'colonia',
                 'colo_codigo_postal' => 'codigo_postal',
@@ -95,12 +95,12 @@ return [
         ],
         'alcaldia_municipio' => [
             'laravel' => 'datos_solicitantes',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => ['almu_nombre' => 'municipio'],
         ],
         'institucion' => [
             'laravel' => 'instituciones_afiliadas',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => [
                 'inst_numero_afiliacion' => 'numero_afiliacion',
                 'inst_nombre' => 'nombre',
@@ -110,47 +110,65 @@ return [
         ],
         'sede' => [
             'laravel' => 'instituciones_afiliadas',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => ['sede_descripcion' => 'sede'],
         ],
         'rol' => [
             'laravel' => 'roles',
-            'origen' => 'servidor',
-            'campos' => [],
+            'origen' => 'vigente',
+            'campos' => ['rol_nombre' => 'nombre'],
         ],
         'privilegio' => [
             'laravel' => 'privilegios',
-            'origen' => 'servidor',
-            'campos' => [],
+            'origen' => 'vigente',
+            'campos' => [
+                'priv_nombre' => 'nombre',
+                'priv_descripcion' => 'descripcion',
+            ],
         ],
         'rol_privilegio' => [
             'laravel' => 'rol_privilegio',
-            'origen' => 'servidor',
-            'campos' => [],
+            'origen' => 'vigente',
+            'campos' => [
+                'ropr_id_rol' => 'rol_id',
+                'ropr_id_privilegio' => 'privilegio_id',
+            ],
         ],
         'solicitud' => [
             'laravel' => 'solicitudes_certificacion',
-            'origen' => 'servidor',
+            'origen' => 'vigente',
             'campos' => [
                 'soli_id_persona' => 'user_id',
-                'soli_numero_certificado' => null,
                 'soli_id_area_certificacion' => 'area_certificacion',
                 'soli_id_tipo_personal_academico' => 'tipo_personal',
+                'soli_id_convocatoria' => 'certificacion',
+                'soli_fecha_registro_solicitud' => 'created_at',
+                'soli_numero_certificado' => null,
+                'soli_folio_solicitud' => null,
+            ],
+        ],
+        'estado_solicitud' => [
+            'laravel' => 'solicitudes_certificacion',
+            'origen' => 'vigente',
+            'campos' => [
+                'esso_descripcion' => 'estado',
+                'esso_fecha' => 'fecha_envio',
+                'esso_motivo_rechazo' => null,
             ],
         ],
         'area_certificacion' => [
             'laravel' => 'selecciones_certificacion',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => ['area_descripcion' => 'area_certificacion'],
         ],
         'tipo_personal_academico' => [
             'laravel' => 'selecciones_certificacion',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => ['tipa_descripcion' => 'tipo_personal'],
         ],
         'historico_certificado' => [
             'laravel' => 'certificados_historicos',
-            'origen' => 'repo',
+            'origen' => 'vigente',
             'campos' => [
                 'hice_curp' => 'curp_historica',
                 'hice_numero_certificacion' => 'numero_certificado',
@@ -160,12 +178,17 @@ return [
         ],
         'refrendo_certificado' => [
             'laravel' => 'datos_refrendo',
-            'origen' => 'servidor',
-            'campos' => [],
+            'origen' => 'vigente',
+            'campos' => [
+                'rece_numero_refrendo' => 'numero_refrendo_asignado',
+                'rece_art14' => 'aplica_articulo_14',
+                'rece_id_certificado' => null,
+                'rece_anio_refrendo' => null,
+            ],
         ],
         'persona_estudio_profesional' => [
-            'laravel' => 'formaciones_academicas',
-            'origen' => 'repo',
+            'laravel' => 'formaciones_academicas_solicitud',
+            'origen' => 'vigente',
             'campos' => [
                 'pees_url_titulo' => 'titulo_origen_archivo',
                 'pees_url_cedula' => 'cedula_origen_archivo',
@@ -173,31 +196,34 @@ return [
             ],
         ],
         'estudio_profesional' => [
-            'laravel' => 'formaciones_academicas',
-            'origen' => 'repo',
+            'laravel' => 'formaciones_academicas_solicitud',
+            'origen' => 'vigente',
             'campos' => ['espr_nombre' => 'titulo_origen'],
         ],
         'nivel_profesional' => [
-            'laravel' => 'formaciones_academicas',
-            'origen' => 'repo',
+            'laravel' => 'formaciones_academicas_solicitud',
+            'origen' => 'vigente',
             'campos' => ['nipr_nivel_profesional' => 'nivel_origen'],
         ],
         'solicitud_documento' => [
-            'laravel' => 'documentos_probatorios',
-            'origen' => 'repo',
-            'campos' => [],
+            'laravel' => 'documentos_probatorios_solicitud',
+            'origen' => 'vigente',
+            'campos' => ['socu_id_solicitud' => 'solicitud_id'],
         ],
         'pago' => [
-            'laravel' => 'documentos_probatorios',
-            'origen' => 'repo',
-            'campos' => ['pago_url_comprobante' => 'comprobante_pago_archivo'],
+            'laravel' => 'documentos_probatorios_solicitud',
+            'origen' => 'vigente',
+            'campos' => [
+                'pago_id_solicitud' => 'solicitud_id',
+                'pago_url_comprobante' => 'comprobante_pago_archivo',
+            ],
         ],
     ],
 
     // Tablas del PDM sin contraparte Laravel por ahora (etapa posterior).
     'sin_contraparte' => [
         'acta', 'certificado', 'convocatoria', 'tipo_convocatoria', 'c_estado_solicitud',
-        'estado_solicitud', 'documento', 'estado_documento', 'estado_solicitud_documento',
+        'documento', 'estado_documento', 'estado_solicitud_documento',
         'evaluacion', 'dictamen', 'tipo_dictamen', 'articulo_subindice',
         'entidad_federativa', 'tipo_comunicacion',
     ],

@@ -2,7 +2,8 @@
 
 > Aplica **solo** en `/var/www/ANFECA_PRUEBAS` con la BD `bd_laravelanfeca_pruebas`. **No** en `/var/www/ANFECA`.
 > Ejecuta los bloques **uno por uno**. Comparte la salida (sin contraseñas ni `.env`) antes de pasar al siguiente.
-> Nada de esto modifica tablas de `public` ni el código existente: solo agrega archivos nuevos y un esquema nuevo.
+> Nada de esto modifica tablas de `public` ni el código existente: solo agrega archivos nuevos y, **en el paso 5 y solo con respaldo verificado**, un esquema nuevo.
+> Los pasos 0 a 4 son de diagnóstico: no ejecutan el SQL del PDM.
 
 ## Paso 0 — Diagnóstico (solo lectura)
 
@@ -58,43 +59,72 @@ tar --exclude=vendor --exclude=node_modules -czf "$HOME/ANFECA_RESPALDOS/codigo_
 - `pg_restore -l` lista objetos.
 - El conteo de `users` en la BD restaurada coincide con el de la BD de pruebas.
 
-## Paso 2 — Traer solo los archivos nuevos de la rama, sin tocar tu trabajo local
+## Paso 2 — Revisar la rama de integración en un worktree aparte (no toca `/var/www/ANFECA_PRUEBAS`)
 
-No uses `git checkout ANFECA_BD_final`, `git stash`, `reset` ni `clean`: tienes cambios sin commit. Trae únicamente los archivos nuevos.
+La rama `integracion/anfeca-bd-final` parte de `desarrollo/anfeca-pruebas` (`6c873c2`) y solo **agrega** archivos.
+**No** fusiones `ANFECA_BD_final` directamente: parte de un `main` anterior y eliminaría trabajo.
 
 ```bash
-git fetch origin ANFECA_BD_final
+cd /var/www/ANFECA_PRUEBAS && git fetch origin integracion/anfeca-bd-final
+```
+
+Confirmar que solo hay archivos agregados (`A`) y ninguno modificado o borrado:
+
+```bash
+git diff --name-status desarrollo/anfeca-pruebas origin/integracion/anfeca-bd-final
+```
+
+Crear el worktree de revisión fuera del directorio servido por Apache:
+
+```bash
+git worktree add "$HOME/anfeca_revision_integracion" origin/integracion/anfeca-bd-final
+```
+
+## Paso 3 — Pruebas en el worktree (SQLite en memoria, sin tocar PostgreSQL)
+
+```bash
+cd "$HOME/anfeca_revision_integracion" && composer install --no-interaction && cp .env.example .env && php artisan key:generate
 ```
 
 ```bash
-git diff --stat HEAD origin/ANFECA_BD_final
+php artisan test
 ```
 
-```bash
-git checkout origin/ANFECA_BD_final -- config/anfeca_modelo.php app/Services/AnfecaModeloInspector.php app/Console/Commands/AnfecaModeloInstalar.php app/Console/Commands/AnfecaModeloVerificar.php database/sql/anfeca_modelo tests/Feature/AnfecaModeloSqlTest.php docs/anfeca
-```
+**Esperado:**
+- 31/32 pruebas pasan. Solo falla `Tests\Feature\ExampleTest` (preexistente, parche P9).
+- Las 18 pruebas de `RegresionAnfecaTest` y las 10 de `AnfecaModeloSqlTest` pasan.
+- El `.env` del worktree usa SQLite, nunca la BD del servidor.
+
+Si todo pasa, fusiona por *pull request* `integracion/anfeca-bd-final` → `desarrollo/anfeca-pruebas`; es de avance rápido.
+Después, en el directorio del servidor, con `git status` limpio:
 
 ```bash
-git status --short | grep -i anfeca_modelo
-```
-
-**Esperado:** solo aparecen archivos **nuevos** (`A`). Si alguno sale como modificado (`M`), detente y comparte la salida.
-
-## Paso 3 — Comprobaciones sin BD
-
-```bash
-php -l app/Console/Commands/AnfecaModeloInstalar.php && php -l app/Console/Commands/AnfecaModeloVerificar.php && php -l app/Services/AnfecaModeloInspector.php
-```
-
-```bash
-php artisan test --filter=AnfecaModeloSqlTest
+cd /var/www/ANFECA_PRUEBAS && git status --short && git pull --ff-only origin desarrollo/anfeca-pruebas
 ```
 
 ```bash
 php artisan list anfeca
 ```
 
-**Esperado:** las 10 pruebas pasan y se listan `anfeca:modelo-instalar` y `anfeca:modelo-verificar`.
+**Esperado:** aparecen `anfeca:modelo-instalar`, `anfeca:modelo-verificar` y `anfeca:reiniciar-demo`.
+
+Para retirar el worktree de revisión (no afecta al servidor):
+
+```bash
+git -C /var/www/ANFECA_PRUEBAS worktree remove "$HOME/anfeca_revision_integracion"
+```
+
+## Paso 3b — Diagnóstico PowerDesigner (solo lectura; no ejecuta el SQL)
+
+```bash
+cd /var/www/ANFECA_PRUEBAS && php artisan anfeca:modelo-verificar
+```
+
+**Esperado:**
+- `El esquema anfeca_modelo no existe`.
+- Una tabla de mapeo con 22 entradas, ninguna `FALTA TABLA LARAVEL` y 8 `DIVERGE`, todas por conceptos del PDM sin equivalente.
+
+Si aparece alguna `falta <tabla>.<columna>`, el esquema del servidor difiere de las migraciones: compártelo.
 
 ## Paso 4 — Instalación en seco (no modifica nada)
 

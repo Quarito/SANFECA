@@ -1,209 +1,108 @@
-# Parches pendientes — aplicar sobre el código VIGENTE del servidor
+# Parches: comparación contra el código vigente
 
-> Rama `ANFECA_BD_final` · 20/11/2026.
-> Estos parches se detectaron leyendo el repositorio, que se quedó en el commit del **03/nov**. **No se aplicaron**: por decisión acordada, en esta rama solo hay cambios aditivos, porque el servidor `/var/www/ANFECA_PRUEBAS` tiene código más reciente (04–19/nov) sin subir.
-> Antes de aplicar cada parche:
-> 1. Comprueba que el problema sigue existiendo en el archivo actual del servidor.
-> 2. Haz un respaldo del archivo (`cp archivo archivo.antes_parcheN`).
-> 3. Aplica el parche y ejecuta `php -l`.
-> 4. Haz la prueba indicada y anota Pasa, Falla o No probado.
+> Rama `integracion/anfeca-bd-final` · base `desarrollo/anfeca-pruebas` @ `6c873c2` · 20/11/2026.
+> La versión anterior de este documento se escribió sobre `main` (03/nov). Aquí cada parche se volvió a revisar contra el código vigente; los marcados como **confirmado** se reprodujeron con pruebas temporales sobre SQLite en memoria.
+> **Ningún parche se aplicó.** Esta rama solo agrega archivos. Aplica cada parche en una rama propia, de uno en uno, con respaldo previo.
 
-| # | Prioridad | Archivo | Problema |
+## Resumen
+
+| # | Problema original (03/nov) | Estado en `6c873c2` | Acción |
 |---|---|---|---|
-| P1 | **Crítica** | `DatosSolicitanteController::store` | Usa variables no definidas → el registro de usuarios nuevos falla con error 500 |
-| P2 | **Alta** | `DatosSolicitanteController::update` + `ActualizarDatos.vue` | La regla de edición está invertida respecto a la acordada |
-| P3 | Alta | `store` / `update` | Falta exigir al menos un teléfono (`required_without`) |
-| P4 | Media | `routes/web.php` | `/registro` apunta a la vista `registro.create`, que no existe (error 500) |
-| P5 | Media | `routes/web.php` | `GET /registro/datos-personales` sin `guest`, mientras el POST sí lo tiene |
-| P6 | Media | `RecuperacionPasswordController` | Mínimo de 8 caracteres en la recuperación frente a 12 en el registro |
-| P7 | Baja | `SeleccionCertificacionController::create` | Calcula los antecedentes y los descarta (consulta inútil) |
-| P8 | Media | `FormacionAcademicaController` / `DocumentoProbatorioController` | Al reemplazar un archivo, el anterior queda huérfano y sin registro de versión |
-| P9 | Baja | `ExampleTest` | Prueba de plantilla que espera 200 en `/`, pero la app redirige a login (302) |
+| P1 | `store()` usaba variables no definidas → registro con 500 | **Resuelto.** La prueba `test_registro_nuevo_crea_usuario_y_datos` pasa. | Ninguna |
+| P2 | Regla de «Modificar datos» invertida | **Resuelto.** Backend: tras autorizar se rechaza; antes, solo domicilio y teléfonos. Vue: `puedeEditar()` y el botón solo sin autorizar. Lo cubren 3 pruebas. | Ninguna |
+| P3 | Faltaba exigir al menos un teléfono | **Resuelto** en `store`, `update` y `autorizar` (`required_without` + `digits:10`) | Ninguna |
+| P4 | `/registro` → vista `registro.create` inexistente | **Sigue: confirmado 500** | Aplicar P4 |
+| P5 | `GET /registro/datos-personales` sin `guest` | **Cambió.** Ahora es intencional (un usuario con sesión y sin datos completa su registro), pero un usuario que **ya tiene datos** puede reenviar el POST → **500** por unicidad de `datos_solicitantes.user_id` (confirmado) | Aplicar P5 (nuevo) |
+| P6 | Mínimo de 8 caracteres en la recuperación frente a 12 en el registro | **Sigue: confirmado** (se aceptó una contraseña de 9 caracteres) | Aplicar P6 |
+| P7 | Antecedentes calculados y descartados | **Resuelto.** `resultadoAntecedentes` se pasa a la vista. | Ninguna |
+| P8 | Sin historial al reemplazar archivos | **Parcial.** Título y cédula del último grado quedan en `historial_documentos_academicos` y el archivo previo se conserva. Los probatorios conservan el archivo en Storage, pero **no** registran la versión anterior, y el origen tampoco. | Aplicar P8 (reducido) |
+| P9 | `ExampleTest` espera 200 en `/` | **Sigue** | Aplicar P9 |
 
 ---
 
-## P1 — Registro roto por variables no definidas (crítica)
+## P4 — `/registro` (sigue)
 
-**Dónde:** `app/Http/Controllers/DatosSolicitanteController.php`, método `store()`, bloque *«Si la identidad está autorizada…»*.
-
-**Problema:**
-- `store()` usa `$identidadAutorizada` y `$camposActualizables`, que solo existen en `update()`.
-- En PHP 8, Laravel convierte el aviso «Undefined variable» en una `ErrorException`.
-- Resultado: `POST /registro/datos-personales` responde **500** y nadie puede registrarse.
-- En `store()` el usuario siempre es nuevo, así que ese bloque no tiene sentido ahí.
-
-**Cambio:** eliminar el bloque y validar directamente.
-
-```php
-// ANTES (eliminar)
-	if ($identidadAutorizada) {
-	    $reglas = array_intersect_key(
-	        $reglas,
-	        array_flip($camposActualizables)
-	    );
-	}
-
-// DESPUÉS
-        $datos = $request->validate($reglas);
-```
-
-**Prueba:**
-1. Registrar un usuario ficticio nuevo → redirige a Certificación y crea la fila en `users` y en `datos_solicitantes`.
-2. Revisar `storage/logs/laravel.log`: no debe haber `Undefined variable`.
-
----
-
-## P2 — Regla de «Modificar datos» (confirmada el 20/nov)
-
-**Regla acordada:**
-- **Antes de autorizar:** solo se pueden editar los 7 campos de domicilio (calle, número exterior e interior, colonia, municipio, entidad, código postal) y `telefono_particular` y `telefono_celular`. CURP, RFC, cédula, nombres, apellidos y correo son **solo lectura**.
-- **Después de autorizar:** no se muestra «Modificar datos» y el servidor **rechaza** cualquier `PUT /mis-datos`.
-
-**Código actual del repo (al revés):**
-- Antes de autorizar, todo es editable.
-- Después de autorizar, se pueden editar domicilio y teléfonos.
-
-**Backend:** en `DatosSolicitanteController::update()` sustituye todo el cuerpo:
-
-```php
-public function update(Request $request)
-{
-    $solicitante = DatosSolicitante::where('user_id', $request->user()->id)
-        ->firstOrFail();
-
-    // Después de autorizar no se permite ninguna edición en esta etapa.
-    if ($solicitante->datos_autorizados) {
-        return redirect()
-            ->route('mis-datos.edit')
-            ->with('error', 'Tus datos ya fueron autorizados y no pueden modificarse.');
-    }
-
-    // Antes de autorizar: solo domicilio y teléfonos.
-    // Cualquier otro campo enviado se ignora: no se valida ni se guarda.
-    $datos = $request->validate([
-        'calle' => ['required', 'string', 'max:200'],
-        'numero_exterior' => ['required', 'string', 'max:20'],
-        'numero_interior' => ['nullable', 'string', 'max:20'],
-        'colonia' => ['required', 'string', 'max:150'],
-        'municipio' => ['required', 'string', 'max:150'],
-        'entidad_federativa' => ['required', 'string', 'max:100'],
-        'codigo_postal' => ['required', 'digits:5'],
-        'telefono_particular' => ['nullable', 'string', 'max:20', 'required_without:telefono_celular'],
-        'telefono_celular' => ['nullable', 'string', 'max:20', 'required_without:telefono_particular'],
-    ], [
-        'telefono_particular.required_without' => 'Captura al menos un teléfono (particular o celular).',
-        'telefono_celular.required_without' => 'Captura al menos un teléfono (particular o celular).',
-    ]);
-
-    $solicitante->update($datos);
-
-    return redirect()
-        ->route('mis-datos.edit')
-        ->with('success', 'Datos actualizados correctamente.');
-}
-```
-
-Con esto ya no se modifican `users.name` ni `users.email` desde esta pantalla, porque el correo es de solo lectura.
-
-**Frontend:** en `resources/js/components/ActualizarDatos.vue`:
-
-```js
-// Campos editables ANTES de autorizar (después: ninguno).
-const camposEditables = [
-    'calle', 'numero_exterior', 'numero_interior', 'colonia',
-    'municipio', 'entidad_federativa', 'codigo_postal',
-    'telefono_particular', 'telefono_celular',
-];
-
-function puedeEditar(nombre) {
-    return !props.autorizadoInicialmente && camposEditables.includes(nombre);
-}
-```
-
-Y en el botón «Modificar datos» cambia `v-else` por `v-else-if="!autorizadoInicialmente"`.
-
-Verifica también en el servidor el bloque `v-if="editando && autorizadoInicialmente"` de la línea ~126, que deja de tener sentido.
-
-**Prueba:**
-1. Con un usuario sin autorizar: editar el domicilio → se guarda.
-2. Mismo usuario: enviar un `PUT` manipulado con otra CURP (DevTools o `curl` con la cookie de sesión) → la CURP **no cambia**.
-3. Autorizar: el botón «Modificar datos» desaparece.
-4. Tras autorizar, un `PUT` manipulado → mensaje de error y ningún cambio en la BD.
-5. Ningún otro usuario se ve afectado.
-
----
-
-## P3 — Al menos un teléfono
-
-Incluido en P2 para `update()`. En `store()` agrega lo mismo:
-
-```php
-'telefono_particular' => ['nullable', 'string', 'max:20', 'required_without:telefono_celular'],
-'telefono_celular' => ['nullable', 'string', 'max:20', 'required_without:telefono_particular'],
-```
-
-Usa los mismos mensajes personalizados. En la vista, `array_unique($errors->all())` evita que el mensaje salga duplicado.
-
----
-
-## P4 — `/registro` → vista inexistente
+`routes/web.php`, sección «REGISTRO INICIAL»:
 
 ```php
 // ANTES
-Route::view('/registro', 'registro.create')->name('registro.create');
-// DESPUÉS (conserva el nombre de la ruta por si algún enlace lo usa)
-Route::redirect('/registro', '/registro/datos-personales')->name('registro.create');
+Route::view('/registro', 'registro.create')
+    ->name('registro.create');
+
+// DESPUÉS (conserva el nombre de la ruta)
+Route::redirect('/registro', '/registro/datos-personales')
+    ->name('registro.create');
 ```
 
-Antes de cambiarlo, comprueba con `grep -rn "registro.create" resources/ app/` que nadie dependa de la vista.
+**Antes de aplicar:**
 
----
+```bash
+grep -rn "registro.create\|url('/registro')\|\"/registro\"" resources/ app/ routes/
+```
 
-## P5 — `GET /registro/datos-personales` sin `guest`
+**Prueba:** `GET /registro` → 302 hacia `/registro/datos-personales`.
 
-Mueve el `GET` dentro del grupo `Route::middleware('guest')` del `POST`.
+## P5 — Registro duplicado con sesión iniciada (nuevo)
 
-Un usuario con sesión iniciada que abra la URL será redirigido. Configura el destino con `redirectUsersTo` en `bootstrap/app.php`, apuntando a `mis-datos.edit`, en lugar de mostrarle un formulario que fallará.
+En `DatosSolicitanteController::store()`, al inicio del método:
 
----
+```php
+if ($request->user()
+    && DatosSolicitante::where('user_id', $request->user()->id)->exists()) {
+    return redirect()
+        ->route('mis-datos.edit')
+        ->with('error', 'Ya existe un registro de datos personales para esta cuenta.');
+}
+```
 
-## P6 — Contraseña mínima uniforme (12)
+En `create()` aplica la misma redirección, para no mostrar un formulario de alta a quien ya tiene datos.
 
-En `RecuperacionPasswordController::guardarNuevaPassword()`:
+**Prueba:** un usuario ficticio con datos que hace el POST debe ser redirigido a `mis-datos.edit` (sin 500) y no debe crearse una segunda fila.
+
+## P6 — Contraseña mínima uniforme (sigue)
+
+`app/Http/Controllers/Auth/RecuperacionPasswordController.php`, método `guardarNuevaPassword()`:
 
 ```php
 PasswordRule::min(12),
 ```
 
-**Prueba:** en la recuperación, una contraseña de 10 caracteres debe ser rechazada con un mensaje en español.
+Revisa también que `NuevaPassword.vue` indique «mínimo 12 caracteres».
+
+**Prueba:** un restablecimiento con 9 caracteres debe rechazarse; con 12 o más, aceptarse.
+
+## P8 — Historial de probatorios (reducido)
+
+Lo vigente cumple el requisito explícito: el título y la cédula del **último grado** se conservan como historial. Para completar la trazabilidad:
+
+- En `DocumentoProbatorioController::store()`, dentro de la transacción y antes de `updateOrCreate`, registra cada archivo reemplazado.
+- Mantén la regla actual de no borrar nada de Storage.
+
+**Opciones:**
+1. **Reutilizar** `historial_documentos_academicos`, con `tipo_documento` = nombre del campo. Sin migración. La tabla se llama «académicos», pero ya es genérica: `solicitud_id`, `tipo_documento`, `ruta_archivo`.
+2. **Crear una tabla nueva** `historial_documentos_solicitud`: requiere una migración aditiva.
+
+Se recomienda la opción 1, porque no cambia el esquema.
+
+## P9 — Prueba de plantilla (sigue)
+
+`tests/Feature/ExampleTest.php`:
+
+```php
+$this->get('/')->assertRedirect(route('login'));
+```
+
+Con este cambio, `php artisan test` queda en verde: 32/32 en el entorno de integración.
 
 ---
 
-## P7 — Consulta de antecedentes sin uso
+## Observaciones nuevas (sin parche propuesto todavía)
 
-En `SeleccionCertificacionController::create()`, o se pasa `'antecedentes' => $resultadoAntecedentes` a la vista, o se elimina la llamada.
-
-En el servidor este controlador cambió mucho (refrendo y validación del certificado), así que revisa allí antes de tocarlo.
-
----
-
-## P8 — Historial de versiones de archivos
-
-**Requisito:** si se sustituye un documento, en especial el del último grado, el archivo anterior se conserva como historial.
-
-**Situación:**
-- En el repo, `updateOrCreate` sobrescribe la ruta y el archivo anterior queda huérfano en Storage, sin registro.
-- En el servidor existe `historial_documentos_academicos` (14/nov).
-
-**Propuesta:**
-1. Antes de `updateOrCreate`, por cada campo reemplazado, insertar en el historial: `user_id`, `solicitud_id`, campo, ruta anterior, `sha256` y fecha.
-2. No borrar nada de Storage.
-3. Extender lo mismo a los probatorios.
-
----
-
-## P9 — Prueba de plantilla
-
-`tests/Feature/ExampleTest.php` espera 200 en `/`, pero la app redirige a `/login`. Cámbiala a `assertRedirect(route('login'))`.
-
-Es la única prueba que falla hoy en `php artisan test`.
+1. **`update()` con identidad incompleta.**
+   - `update()` valida CURP, RFC y correo **guardados** como `required`.
+   - Si un expediente ficticio se creó con CURP nula (la migración del 30/oct la permite), el usuario no podrá guardar ni su domicilio y verá un error de un campo que no puede editar.
+   - Revisarlo con un caso ficticio antes de corregir.
+2. **Mensajes de validación en inglés en las pruebas.**
+   - Con `APP_LOCALE=en` (valor de `.env.example`), un mensaje sin texto personalizado sale en inglés, por ejemplo «The link field is required.».
+   - En el servidor, confirma que `.env` tenga `APP_LOCALE=es` (existe `lang/es`).
+3. **Patrón de `MigracionesAnfecaTest`.** Ver `PRUEBAS_REGRESION.md`. Funciona hoy, pero falla si la clase crece.
