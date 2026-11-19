@@ -12,8 +12,19 @@ use Illuminate\Validation\Rule;
 
 class DatosSolicitanteController extends Controller
 {
+    private function yaTieneDatos(Request $request): bool
+    {
+        return $request->user() !== null
+            && DatosSolicitante::where('user_id', $request->user()->id)->exists();
+    }
+
     public function create(Request $request)
 {
+    // P5: una cuenta que ya tiene datos personales no vuelve al alta.
+    if ($this->yaTieneDatos($request)) {
+        return redirect()->route('mis-datos.edit');
+    }
+
     $datos = $request->user()
         ? DatosSolicitante::where(
             'user_id',
@@ -28,6 +39,13 @@ class DatosSolicitanteController extends Controller
 
     public function store(Request $request)
     {
+        // P5: evitar un segundo registro (error 500 por unicidad de user_id).
+        if ($this->yaTieneDatos($request)) {
+            return redirect()
+                ->route('mis-datos.edit')
+                ->with('error', 'Ya existe un registro de datos personales para esta cuenta.');
+        }
+
         // Convertir CURP y RFC a mayúsculas.
         $request->merge([
             'curp' => strtoupper(trim($request->input('curp', ''))),
