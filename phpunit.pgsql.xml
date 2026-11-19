@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Pruebas de integración del modelo PowerDesigner contra PostgreSQL AISLADO.
+
+    php artisan test -c phpunit.pgsql.xml
+
+    - Base por omisión: bd_anfeca_pruebas_pg (debe terminar en _pruebas_pg; ver tests/Pdm/PdmTestCase.php).
+    - Usuario, contraseña y puerto se toman del entorno o de .env (no se escriben aquí).
+    - La preparación BORRA y recrea el contenido de esa base aislada: nunca apunte a bd_laravelanfeca_pruebas.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Pdm">
+            <directory>tests/Pdm</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="DB_CONNECTION" value="pgsql"/>
+        <env name="DB_DATABASE" value="bd_anfeca_pruebas_pg"/>
+        <env name="DB_URL" value=""/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="ANFECA_PDM_MODO" value="apagado"/>
+    </php>
+</phpunit>
