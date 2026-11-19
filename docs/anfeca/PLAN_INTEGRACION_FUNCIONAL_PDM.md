@@ -236,6 +236,20 @@ Leyenda de transformación:
 
 ## 5. Decisiones que requieren tu autorización
 
+### Decisiones ya tomadas (20/11/2026)
+
+| ID | Decisión |
+|---|---|
+| D-1 | **A:** `public.users` sigue como tabla técnica de autenticación, 1:1 con `USUARIO` (mismo ID y rol). Pasar el login a `USUARIO` se revisa en F5. |
+| D-2 | **Autorizadas** las extensiones aditivas de la sección 6. Se entregará el SQL para actualizar el `.pdm`. |
+| Transición | **Por modos** `apagado → espejo → principal → exclusivo`, con conciliación obligatoria antes de cada cambio |
+| Seguridad | Autorizadas y entregadas en la rama `fix/seguridad-anfeca`: volcados fuera de Git, P4, P5, P6, P9, V8 y guías de V1/V2 |
+
+**Pendientes:**
+- D-3 y D-7 a D-10: si no hay objeción, se toma la recomendación de la tabla.
+- D-4, D-5 y D-11: se cierran con el resultado de las consultas de la sección 12.
+- D-12: depende de que existan convocatorias reales.
+
 | ID | Decisión | Recomendación |
 |---|---|---|
 | **D-1** | Autenticación. A: `public.users` se mantiene como tabla técnica de autenticación, 1:1 con `USUARIO` (mismo ID, hash sincronizado). B: el modelo `User` se mueve a `anfeca_modelo.usuario` (requiere `usua_remember_token`). | **A** hasta F4. **B** en F5, si se aprueba. |
