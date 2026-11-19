@@ -129,22 +129,8 @@ private function solicitudActiva(
                 ->with('error', 'Primero debe completar los datos de refrendo.');
         }
 
-	// Los refrendos por artículo 14 no requieren
-	// capturar nuevamente Formación académica.
-	$datosRefrendo = $solicitud->datosRefrendo;
-
-	$omiteFormacion = (
-	    $solicitud->tipo_tramite === 'refrendo'
-	    && $datosRefrendo !== null
-	    && (int) $datosRefrendo->aplica_articulo_14 === 1
-	    && in_array(
-	        $datosRefrendo->inciso_articulo_14,
-	        ['13.1', '14', '14.1', '14.2', '14.3'],
-	        true
-	    )
-	);
-
-    if (!$omiteFormacion) {
+        // FORMACION_OBLIGATORIA_ETAPA_1_ANFECA
+        // Aplica también a refrendos del artículo 14.
         $formacion = $solicitud->formacionAcademica;
 
         if (
@@ -155,10 +141,9 @@ private function solicitudActiva(
                 ->route('registro.formacion')
                 ->with(
                     'error',
-                    'Primero debes guardar y autorizar tu formación académica.'
+                    'Primero debe guardar y autorizar su formación académica.'
                 );
         }
-    }
 
         return $solicitud;
     }
@@ -310,9 +295,13 @@ private function solicitudActiva(
                 ]);
         }
 
+        // NAVEGACION_COMPROMISO_ANFECA_20261119
         return redirect()
-            ->route('registro.completado')
-            ->with('success', 'Documentos guardados correctamente. Revise su solicitud antes de enviarla.');
+            ->route('registro.compromiso')
+            ->with(
+                'success',
+                'Documentos guardados correctamente. Revise y acepte el compromiso de entrega de documentación para continuar.'
+            );
     }
 
     public function ver(

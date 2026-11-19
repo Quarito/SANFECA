@@ -532,6 +532,22 @@ body {
     No representa validación de su contenido.
 </div>
 
+{{-- COMPROMISO_ACUSE_ANFECA_20261119 --}}
+@if($solicitud->compromiso_aceptado ?? false)
+<div class="seccion">
+    Compromiso de entrega de documentación
+</div>
+
+<div class="aviso">
+    Para completar su solicitud, deberá entregar las fotografías
+    indicadas en la convocatoria y el comprobante de pago original.
+
+    <div style="margin-top: 5px;">
+        <strong>Compromiso aceptado por el solicitante.</strong>
+    </div>
+</div>
+@endif
+
 <div class="aviso">
     <strong>Alcance de este acuse</strong><br>
     Este documento acredita únicamente la recepción de la solicitud en el

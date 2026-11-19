@@ -69,6 +69,12 @@
             'preview' => 'preview.documentos',
         ],
         [
+            'nombre' => 'Aceptación y compromiso',
+            'descripcion' => 'Compromiso de entrega de documentación',
+            'ruta' => 'registro.compromiso',
+            'preview' => 'preview.compromiso',
+        ],
+        [
             'nombre' => 'Finalización',
             'descripcion' => 'Registro completado',
             'ruta' => 'registro.completado',

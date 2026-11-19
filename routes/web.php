@@ -311,6 +311,17 @@ Route::post('/registro/certificacion/consultar', [
     |--------------------------------------------------------------------------
     */
 
+    // ACEPTACION Y COMPROMISO
+    Route::get(
+        '/registro/compromiso',
+        [\App\Http\Controllers\AceptacionCompromisoController::class, 'index']
+    )->name('registro.compromiso');
+
+    Route::post(
+        '/registro/compromiso/guardar',
+        [\App\Http\Controllers\AceptacionCompromisoController::class, 'guardar']
+    )->name('registro.compromiso.guardar');
+
     Route::get(
     '/registro/completado',
     [RegistroCompletadoController::class, 'index']

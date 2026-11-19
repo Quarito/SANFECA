@@ -243,6 +243,20 @@ private function obtenerSolicitud(
                 ->with('error', 'No se encontró una solicitud para revisar.');
         }
 
+        // BLOQUEO_FINALIZACION_COMPROMISO_20261119
+        // Las solicitudes históricas enviadas conservan su acceso.
+        if (
+            $solicitud->estado === 'borrador'
+            && !$solicitud->compromiso_aceptado
+        ) {
+            return redirect()
+                ->route('registro.compromiso')
+                ->with(
+                    'error',
+                    'Debe aceptar el compromiso de entrega de documentación antes de acceder a Finalización.'
+                );
+        }
+
         $requisitos = $this->requisitos($solicitud);
 
         return view('registro.completado', [
@@ -288,6 +302,16 @@ private function obtenerSolicitud(
                 ->with('error', 'Debe completar todos los requisitos antes del envío.');
         }
 
+        // VALIDACION_COMPROMISO_ANFECA_20261119
+        if (!$solicitud->compromiso_aceptado) {
+            return redirect()
+                ->route('registro.compromiso')
+                ->with(
+                    'error',
+                    'Debe aceptar el compromiso de entrega de documentación antes de enviar su solicitud.'
+                );
+        }
+
         $envioRealizado = DB::transaction(function () use ($solicitud, $servicio) {
             $actual = SolicitudCertificacion::whereKey($solicitud->id)
                 ->where('user_id', $solicitud->user_id)
@@ -306,6 +330,14 @@ private function obtenerSolicitud(
 		        'solicitud' => 'La solicitud requiere una nueva revisión antes del envío.',
 		    ]);
 		}
+
+            // VALIDACION_COMPROMISO_ANFECA_20261119
+            if (!$actual->compromiso_aceptado) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'compromiso_aceptado' =>
+                        'Debe aceptar el compromiso antes de confirmar el envío.',
+                ]);
+            }
 
             // Conservar los datos de certificación al momento del envío.
             $seleccion = \App\Models\SeleccionCertificacion::where(

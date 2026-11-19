@@ -183,3 +183,19 @@ document.querySelectorAll('[data-vue-encabezado]').forEach(
         }).mount(contenedor);
     }
 );
+
+
+// PANTALLA 7: ACEPTACION Y COMPROMISO
+import AceptacionCompromiso from './components/AceptacionCompromiso.vue';
+
+const contenedorCompromiso = document.getElementById(
+    'vue-aceptacion-compromiso'
+);
+
+if (contenedorCompromiso) {
+    createApp(AceptacionCompromiso, {
+        accion: contenedorCompromiso.dataset.accion,
+        csrf: contenedorCompromiso.dataset.csrf,
+        urlRegresar: contenedorCompromiso.dataset.urlRegresar
+    }).mount(contenedorCompromiso);
+}

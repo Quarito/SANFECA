@@ -19,10 +19,14 @@ class SolicitudCertificacion extends Model
     'certificado_historico_id',
     'tipo_personal',
     'area_certificacion',
+    'compromiso_aceptado',
+    'compromiso_aceptado_en',
 ];
 
     protected $casts = [
         'fecha_envio' => 'datetime',
+        'compromiso_aceptado' => 'boolean',
+        'compromiso_aceptado_en' => 'datetime',
     ];
 
     public function usuario(): BelongsTo
