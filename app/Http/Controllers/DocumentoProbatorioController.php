@@ -25,7 +25,7 @@ class DocumentoProbatorioController extends Controller
 
     // ARTICULO_14_DOCUMENTOS_97182
     private const ARTICULO_14 = [
-        'solicitud_articulo_14_archivo' => 'Solicitud de artículo',
+        'solicitud_articulo_14_archivo' => 'Solicitud por artículo',
         'constancia_articulo_14_archivo' => 'Constancia probatoria de artículo',
     ];
 
@@ -276,9 +276,25 @@ private function solicitudActiva(
                 }
             }
 
-            DocumentoProbatorioSolicitud::updateOrCreate(
-                ['solicitud_id' => $solicitud->id],
-                array_merge($datos, $archivosNuevos)
+            \Illuminate\Support\Facades\DB::transaction(
+                function () use ($solicitud, $datos, $archivosNuevos) {
+                    $solicitudBloqueada = SolicitudCertificacion::query()
+                        ->whereKey($solicitud->id)
+                        ->where('user_id', $solicitud->user_id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    if ($solicitudBloqueada->estado !== 'borrador') {
+                        throw new \RuntimeException(
+                            'La solicitud ya no admite modificaciones.'
+                        );
+                    }
+
+                    DocumentoProbatorioSolicitud::updateOrCreate(
+                        ['solicitud_id' => $solicitudBloqueada->id],
+                        array_merge($datos, $archivosNuevos)
+                    );
+                }
             );
         } catch (\Throwable $e) {
             foreach ($archivosNuevos as $ruta) {

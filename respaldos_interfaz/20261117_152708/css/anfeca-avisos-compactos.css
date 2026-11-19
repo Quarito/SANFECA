@@ -1,0 +1,79 @@
+
+/* ANFECA - Avisos compactos */
+.anfeca-aviso {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 9px;
+    margin: 5px 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.35;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.anfeca-aviso-error {
+    color: #9b0014;
+    background: #fff1f2;
+    border-color: #ffc2c9;
+}
+
+.anfeca-aviso-exito {
+    color: #176534;
+    background: #eef8ef;
+    border-color: #b8dfbf;
+}
+
+.anfeca-aviso-advertencia {
+    color: #805400;
+    background: #fff8e6;
+    border-color: #f0d99c;
+}
+
+.anfeca-aviso-info {
+    color: #165580;
+    background: #eef6fc;
+    border-color: #bdd9ed;
+}
+
+/* Evitar que los avisos desplacen u oculten los campos */
+.anfeca-consulta-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.anfeca-consulta-campo {
+    flex: 1 1 180px;
+    min-width: 0;
+}
+
+.anfeca-consulta-mensaje {
+    flex: 1 1 180px;
+    min-width: 0;
+}
+
+.anfeca-consulta-campo input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.anfeca-consulta-mensaje .anfeca-aviso {
+    margin-top: 0;
+}
+
+@media (max-width: 768px) {
+    .anfeca-consulta-fila {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .anfeca-consulta-mensaje {
+        width: 100%;
+    }
+}

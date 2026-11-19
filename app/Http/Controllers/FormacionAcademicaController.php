@@ -115,6 +115,12 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
         return view('registro.formacion-academica', [
             'formacionBloqueada' => $formacionBloqueada,
             'solicitud' => $solicitud,
+            'areaCertificacion' => $solicitud->area_certificacion,
+            'titulosPermitidos' => config(
+                'anfeca_equivalencias.areas.'
+                . $solicitud->area_certificacion,
+                []
+            ),
             'formacion' => $formacion,
             'instituciones' => InstitucionAfiliada::orderBy(
                 'numero_afiliacion'
@@ -187,7 +193,29 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                     $esRefrendo && !empty($formacion?->titulo_origen)
                 )
                     ? ['prohibited']
-                    : ['required', 'string', 'max:200'],
+                    : [
+                        'required',
+                        'string',
+                        Rule::in(
+                            config(
+                                'anfeca_equivalencias.areas.'
+                                . $solicitud->area_certificacion,
+                                []
+                            )
+                        ),
+                    ],
+
+                'titulo_origen_otro' => (
+                    $esRefrendo && !empty($formacion?->titulo_origen)
+                )
+                    ? ['prohibited']
+                    : [
+                        'required_if:titulo_origen,Otro',
+                        'prohibited_unless:titulo_origen,Otro',
+                        'nullable',
+                        'string',
+                        'max:200',
+                    ],
 
 	        'nivel_ultimo_grado' => [
 	            'required',
@@ -199,8 +227,25 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 	            ]),
 	        ],
 	        'titulo_ultimo_grado' => [
-	            'required', 'string', 'max:200',
-	        ],
+    'required',
+    'string',
+    Rule::in([
+        'Administración',
+        'Contaduría',
+        'Informática',
+        'Negocios Internacionales',
+        'Otro',
+    ]),
+],
+
+'titulo_ultimo_grado_otro' => [
+    'required_if:titulo_ultimo_grado,Otro',
+    'prohibited_unless:titulo_ultimo_grado,Otro',
+    'nullable',
+    'string',
+    'max:200',
+],
+
 	        'institucion_afiliada_id' => [
 	            'required',
 	            'exists:instituciones_afiliadas,id',
@@ -221,14 +266,26 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 		    ];
 		}
 
-	    $datos = $request->validate($reglas);
+            $datos = $request->validate($reglas);
 
-		if ($esRefrendo && !empty($formacion?->titulo_origen)) {
-                    // Conservar el título de origen ya registrado.
-                    unset($datos['titulo_origen']);
+            if ($esRefrendo && !empty($formacion?->titulo_origen)) {
+                // Conservar ambos valores históricos del título.
+                unset(
+                    $datos['titulo_origen'],
+                    $datos['titulo_origen_otro']
+                );
+            } else {
+                // Limpiar el valor personalizado si ya no es Otro.
+                if (($datos['titulo_origen'] ?? null) !== 'Otro') {
+                    $datos['titulo_origen_otro'] = null;
                 }
+            }
 
-            
+            // El título personalizado del último grado
+            // solo se conserva cuando se selecciona Otro.
+            if (($datos['titulo_ultimo_grado'] ?? null) !== 'Otro') {
+                $datos['titulo_ultimo_grado_otro'] = null;
+            }
 
 	    // Las rutas se generan en el servidor,
 	    // no se aceptan directamente del formulario.
@@ -253,9 +310,15 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 	        $guardadoBloqueado = DB::transaction(function () use (
                 $solicitud, $datos, $nuevosArchivos
             ) {
-                SolicitudCertificacion::whereKey(
-                    $solicitud->id
-                )->lockForUpdate()->firstOrFail();
+                $solicitudBloqueada = SolicitudCertificacion::query()
+                    ->whereKey($solicitud->id)
+                    ->where('user_id', $solicitud->user_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($solicitudBloqueada->estado !== 'borrador') {
+                    return true;
+                }
 
                 $formacionActual = FormacionAcademicaSolicitud::where(
                     'solicitud_id',
@@ -429,11 +492,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
             $formacion->save();
 
             return redirect()
-                ->route('registro.documentos')
-                ->with(
-                    'success',
-                    'Tu formación académica ha sido autorizada correctamente.'
-                );
+                ->route('registro.documentos');
         });
     }
 

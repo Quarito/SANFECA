@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,6 +19,12 @@
 
     <!-- tipografia-global-97159 -->
     <link rel="stylesheet" href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97159">
+<link rel="stylesheet"
+      href="{{ asset('css/anfeca-layout-compacto.css') }}?v=2">
+
+
+<link rel="stylesheet" href="{{ asset('css/anfeca-layout-compacto-v3.css') }}?v=3">
+    <link rel="stylesheet" href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
 </head>
 
 <body @if(request()->is('preview/*')) class="modo-preview" @endif>
@@ -161,8 +168,10 @@
 
                 @endif
 
-                <a href="{{ route('mis-datos.edit') }}"
-                   class="boton-completado boton-finalizar">Revisar mi registro</a>
+                @if(!($enviada ?? false))
+                    <a href="{{ route('mis-datos.edit') }}"
+                       class="boton-completado boton-finalizar">Revisar mi registro</a>
+                @endif
 
             </section>
         </main>
@@ -185,5 +194,117 @@
     </footer>
 
 </div>
+
+@if(($enviada ?? false) && auth()->check())
+<div id="aviso-cierre-acuse"
+     role="status"
+     aria-live="polite"
+     hidden
+     style="position:fixed;bottom:20px;right:20px;
+            z-index:9999;max-width:380px;
+            background:#fff;border:1px solid #d5d5d5;
+            border-left:5px solid #bb1025;
+            border-radius:10px;padding:18px;
+            box-shadow:0 8px 24px rgba(0,0,0,.15);">
+
+    <strong>Acuse de recepción</strong>
+
+    <p style="margin:10px 0;">
+        Se ha iniciado la descarga de su acuse.
+        Por seguridad, su sesión se cerrará en
+        <strong id="segundos-cierre">15</strong> segundos.
+    </p>
+
+    <p style="font-size:13px;">
+        Haga clic en cualquier parte de la página
+        para permanecer en su sesión.
+    </p>
+
+    <button type="button"
+            id="cancelar-cierre-acuse"
+            style="background:#bb1025;color:white;
+                   border:0;border-radius:6px;
+                   padding:8px 12px;cursor:pointer;">
+        Permanecer en la sesión
+    </button>
+</div>
+
+<form id="form-cierre-automatico"
+      method="POST"
+      action="{{ route('logout') }}"
+      hidden>
+    @csrf
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const aviso = document.getElementById('aviso-cierre-acuse');
+    const contador = document.getElementById('segundos-cierre');
+    const formulario = document.getElementById('form-cierre-automatico');
+    const botonCancelar = document.getElementById('cancelar-cierre-acuse');
+    const enlaceDescarga = document.querySelector('.boton-descargar[href*="/acuse/"]');
+    const descargaAutomatica = document.querySelector(
+        'iframe[title="Descarga automática del acuse"]'
+    );
+
+    let intervalo = null;
+    let segundos = 15;
+
+    function cancelarCierre() {
+        if (!intervalo) return;
+
+        clearInterval(intervalo);
+        intervalo = null;
+        aviso.hidden = true;
+    }
+
+    function iniciarCierre() {
+        if (intervalo) clearInterval(intervalo);
+
+        segundos = 15;
+        contador.textContent = segundos;
+        aviso.hidden = false;
+
+        intervalo = setInterval(function () {
+            segundos--;
+            contador.textContent = segundos;
+
+            if (segundos <= 0) {
+                clearInterval(intervalo);
+                intervalo = null;
+                formulario.submit();
+            }
+        }, 1000);
+    }
+
+    document.addEventListener('click', function (evento) {
+        if (!intervalo) return;
+
+        if (enlaceDescarga && enlaceDescarga.contains(evento.target)) {
+            return;
+        }
+
+        cancelarCierre();
+    });
+
+    document.addEventListener('keydown', cancelarCierre);
+
+    botonCancelar.addEventListener('click', cancelarCierre);
+
+    if (enlaceDescarga) {
+        enlaceDescarga.addEventListener('click', function () {
+            iniciarCierre();
+        });
+    }
+
+    // Primer envío: el iframe ya solicita la descarga automática.
+    // No depender del evento load de una respuesta PDF descargable.
+    if (descargaAutomatica) {
+        iniciarCierre();
+    }
+});
+</script>
+@endif
+
 </body>
 </html>

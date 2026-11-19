@@ -255,6 +255,9 @@
 }
 </style>
 
+
+<link rel="stylesheet" href="{{ asset('css/anfeca-layout-compacto-v3.css') }}?v=3">
+    <link rel="stylesheet" href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
 </head>
 
 <body @if(request()->is("preview/*")) class="modo-preview" @endif>
@@ -328,17 +331,21 @@
     id="vue-formacion-academica"
     data-formacion-bloqueada="{{ $formacionBloqueada ? 'true' : 'false' }}"
     data-es-refrendo="{{ $solicitud?->tipo_tramite === 'refrendo' ? 'true' : 'false' }}"
+    data-area-certificacion="{{ $areaCertificacion }}"
+    data-titulos-permitidos="{{ json_encode($titulosPermitidos) }}"
     data-instituciones="{{ $instituciones->toJson() }}"
 	    
 	data-formacion="{{ json_encode([
 	    'titulo_origen' => old('titulo_origen', $formacion?->titulo_origen),
+	    'titulo_origen_otro' => old('titulo_origen_otro', $formacion?->titulo_origen_otro),
 	    'nivel_ultimo_grado' => old('nivel_ultimo_grado', $formacion?->nivel_ultimo_grado),
 	    'titulo_ultimo_grado' => old('titulo_ultimo_grado', $formacion?->titulo_ultimo_grado),
+        'titulo_ultimo_grado_otro' => old('titulo_ultimo_grado_otro', $formacion?->titulo_ultimo_grado_otro),
 	    'institucion_afiliada_id' => old('institucion_afiliada_id', $formacion?->institucion_afiliada_id),
-	    'titulo_origen_archivo' => $formacion?->titulo_origen_archivo && \Illuminate\Support\Facades\Storage::disk('local')->exists($formacion->titulo_origen_archivo),
-	    'cedula_origen_archivo' => $formacion?->cedula_origen_archivo && \Illuminate\Support\Facades\Storage::disk('local')->exists($formacion->cedula_origen_archivo),
-	    'titulo_ultimo_grado_archivo' => $formacion?->titulo_ultimo_grado_archivo && \Illuminate\Support\Facades\Storage::disk('local')->exists($formacion->titulo_ultimo_grado_archivo),
-	    'cedula_ultimo_grado_archivo' => $formacion?->cedula_ultimo_grado_archivo && \Illuminate\Support\Facades\Storage::disk('local')->exists($formacion->cedula_ultimo_grado_archivo),
+	    'titulo_origen_archivo' => !empty($formacion?->titulo_origen_archivo),
+	    'cedula_origen_archivo' => !empty($formacion?->cedula_origen_archivo),
+	    'titulo_ultimo_grado_archivo' => !empty($formacion?->titulo_ultimo_grado_archivo),
+	    'cedula_ultimo_grado_archivo' => !empty($formacion?->cedula_ultimo_grado_archivo),
             'titulo_origen_archivo_url' => route('registro.documentos.ver', 'titulo_origen_archivo'),
             'cedula_origen_archivo_url' => route('registro.documentos.ver', 'cedula_origen_archivo'),
             'titulo_ultimo_grado_archivo_url' => route('registro.documentos.ver', 'titulo_ultimo_grado_archivo'),
@@ -448,16 +455,43 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    const aviso = document.createElement('p');
+    const aviso = document.createElement('div');
     aviso.id = 'aviso-cambios-formacion-1183';
-    aviso.textContent =
-        'Hay cambios sin guardar. Selecciona "Guardar y revisar" antes de autorizar.';
-    aviso.style.color = '#a33';
-    aviso.style.fontSize = '12px';
-    aviso.style.marginTop = '10px';
-    aviso.hidden = true;
+    aviso.setAttribute('role', 'status');
+    aviso.setAttribute('aria-live', 'polite');
 
-    confirmacion.closest('.confirmacion-formacion').appendChild(aviso);
+    aviso.innerHTML = `
+        <strong>Cambios pendientes de guardar</strong>
+        <span>
+            Has modificado información de tu formación académica.
+            Selecciona <b>Guardar y revisar</b> antes de autorizar.
+        </span>
+    `;
+
+    Object.assign(aviso.style, {
+        position: 'fixed',
+        top: '24px',
+        right: '24px',
+        width: 'min(360px, calc(100vw - 32px))',
+        boxSizing: 'border-box',
+        backgroundColor: '#fff',
+        color: '#333',
+        border: '1px solid #e7b5b5',
+        borderLeft: '5px solid #a30d18',
+        borderRadius: '10px',
+        padding: '16px',
+        boxShadow: '0 6px 24px rgba(0,0,0,0.15)',
+        zIndex: '9999',
+        fontSize: '13px',
+        lineHeight: '1.5',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        pointerEvents: 'none'
+    });
+
+    aviso.hidden = true;
+    document.body.appendChild(aviso);
 
     // Esperar a que Vue termine de montar los controles.
     const iniciar = function () {
@@ -485,15 +519,29 @@ document.addEventListener('DOMContentLoaded', function () {
         let cambiosPendientes = false;
 
         function revisarCambios() {
-            cambiosPendientes = campos.some(function (campo) {
+            const camposActuales = Array.from(
+                formularioCaptura.querySelectorAll(
+                    'input, select, textarea'
+                )
+            ).filter(function (campo) {
+                return campo.name &&
+                    campo.name !== '_token';
+            });
+
+            cambiosPendientes = camposActuales.some(function (campo) {
                 if (campo.type === 'file') {
                     return campo.files && campo.files.length > 0;
+                }
+
+                if (!valoresIniciales.has(campo)) {
+                    return campo.value !== '';
                 }
 
                 return campo.value !== valoresIniciales.get(campo);
             });
 
             aviso.hidden = !cambiosPendientes;
+            aviso.style.display = cambiosPendientes ? 'flex' : 'none';
 
             if (cambiosPendientes) {
                 confirmacion.checked = false;

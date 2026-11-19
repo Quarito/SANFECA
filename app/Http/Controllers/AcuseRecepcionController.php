@@ -73,7 +73,7 @@ class AcuseRecepcionController extends Controller
             ? $solicitud->fecha_envio
                 ->copy()
                 ->timezone('America/Mexico_City')
-                ->format('d/m/Y H:i')
+                ->format('d/m/Y H:i:s')
             : 'No registrada';
 
         $pdf = Pdf::loadView('registro.acuse-recepcion', [
@@ -83,7 +83,7 @@ class AcuseRecepcionController extends Controller
             'institucion' => $institucion,
             'documentosRecibidos' => $documentosRecibidos,
             'fechaRecepcion' => $fechaRecepcion,
-        ])->setPaper('a4', 'portrait');
+        ])->setPaper('letter', 'portrait');
 
         return $pdf->download(
             'acuse_anfeca_' . $solicitud->id . '.pdf'

@@ -354,7 +354,7 @@ public function consultarCertificadoAnterior(Request $request)
             $solicitudesEnviadas = SolicitudCertificacion::where(
                 'user_id', $userId
             )->where('certificacion', $datos['certificacion'])
-             ->where('estado', '!=', 'borrador')
+             ->where('estado', 'enviado')
              ->exists();
 
             if ($solicitudesEnviadas && $certificadoValidado === null) {

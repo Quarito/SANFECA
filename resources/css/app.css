@@ -8,3 +8,277 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* ANFECA - Distribución de datos institucionales */
+.detalle-institucion {
+    min-width: 0;
+}
+
+.anfeca-institucion-principal {
+    margin-bottom: 16px;
+}
+
+.anfeca-institucion-principal span {
+    display: block;
+    overflow-wrap: anywhere;
+    margin-top: 4px;
+}
+
+.anfeca-institucion-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px 20px;
+}
+
+.anfeca-institucion-campo {
+    min-width: 0;
+}
+
+.anfeca-institucion-campo span {
+    display: block;
+    margin-top: 4px;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+    .anfeca-institucion-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ANFECA - Etiqueta y valor en la misma línea */
+
+.institucion .institucion-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.institucion .institucion-datos > .campo {
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.institucion .detalle-institucion {
+    width: 100%;
+    min-width: 0;
+}
+
+.institucion .anfeca-institucion-principal,
+.institucion .anfeca-institucion-campo {
+    display: block;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+/* Etiqueta y valor juntos */
+.institucion .anfeca-institucion-principal strong,
+.institucion .anfeca-institucion-campo strong,
+.institucion .anfeca-institucion-principal span,
+.institucion .anfeca-institucion-campo span {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+/* Distribución en dos columnas */
+.institucion .anfeca-institucion-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 20px;
+    margin-top: 8px;
+}
+
+/* Adaptación a pantallas pequeñas */
+@media (max-width: 600px) {
+    .institucion .anfeca-institucion-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}
+
+/* ANFECA - Institución de Procedencia compacta */
+
+.institucion .institucion-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.institucion .institucion-datos > .campo {
+    margin: 0 auto 4px;
+    width: 100%;
+    max-width: 340px;
+    text-align: center;
+}
+
+.institucion .institucion-datos > .campo label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.institucion .detalle-institucion {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.institucion .anfeca-institucion-principal {
+    margin: 0;
+    padding: 0;
+    line-height: 1.3;
+}
+
+.institucion .anfeca-institucion-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 16px;
+    margin-top: 4px;
+}
+
+.institucion .anfeca-institucion-campo {
+    display: block;
+    margin: 0;
+    padding: 0;
+    line-height: 1.3;
+}
+
+.institucion .anfeca-institucion-principal strong,
+.institucion .anfeca-institucion-principal span,
+.institucion .anfeca-institucion-campo strong,
+.institucion .anfeca-institucion-campo span {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    line-height: inherit;
+}
+
+@media (max-width: 600px) {
+    .institucion .anfeca-institucion-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+}
+
+/* =========================================
+   ANFECA - FORMACIÓN ACADÉMICA COMPACTA
+   ========================================= */
+
+/* Reducir espacio entre campos */
+.formacion-academica .campo,
+.formacion .campo {
+    margin-bottom: 10px;
+}
+
+/* Etiquetas más cercanas a los selectores */
+.formacion-academica .campo label,
+.formacion .campo label {
+    margin-bottom: 4px;
+    line-height: 1.25;
+}
+
+/* Selectores ligeramente más compactos */
+.formacion-academica select,
+.formacion select {
+    min-height: 34px;
+}
+
+/* Reducir espacio entre título y contenido */
+.formacion-academica h2,
+.formacion h2 {
+    margin-bottom: 12px;
+}
+
+/* Mensajes de ayuda */
+.formacion-academica small,
+.formacion .ayuda-documento {
+    margin-top: 3px;
+    margin-bottom: 3px;
+    line-height: 1.25;
+}
+
+/* Espacio entre documentos */
+.formacion-academica .documento,
+.formacion .documento {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+/* Evitar separaciones excesivas entre párrafos */
+.formacion-academica p,
+.formacion p {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+
+/* ==========================================
+   ANFECA - FORMACIÓN ACADÉMICA COMPACTA V2
+   ========================================== */
+
+/* Reducir espacio debajo de los encabezados */
+.columnas-formacion > .seccion.mejora-columnas-97153 h2 {
+    margin-bottom: 10px !important;
+}
+
+/* Reducir separación entre los campos */
+.columnas-formacion > .seccion.mejora-columnas-97153 > .campo {
+    margin-top: 0 !important;
+    margin-bottom: 10px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Etiquetas más próximas a los selectores */
+.columnas-formacion > .seccion.mejora-columnas-97153 > .campo > label {
+    margin-top: 0 !important;
+    margin-bottom: 4px !important;
+    line-height: 1.25 !important;
+}
+
+/* Mantener selectores cómodos */
+.columnas-formacion > .seccion.mejora-columnas-97153 > .campo > select {
+    height: 34px;
+    min-height: 34px;
+}
+
+/* Reducir espacio antes de documentos */
+.columnas-formacion .documentos-vue.documentos-anfeca {
+    margin-top: 8px !important;
+    padding-top: 0 !important;
+}
+
+/* Compactar cada documento */
+.columnas-formacion .documentos-anfeca .campo-documento {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+}
+
+/* Alinear icono, nombre y botón */
+.columnas-formacion .documentos-anfeca .fila-documento {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 34px;
+}
+
+/* Acercar descripción al documento */
+.columnas-formacion .documentos-anfeca .ayuda-documento {
+    display: block;
+    margin-top: 3px !important;
+    margin-bottom: 0 !important;
+    line-height: 1.25 !important;
+}
+
+/* Compactar separadores entre documentos */
+.columnas-formacion .documentos-anfeca .campo-documento + .campo-documento {
+    margin-top: 0 !important;
+}

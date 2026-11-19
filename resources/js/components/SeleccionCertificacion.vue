@@ -151,8 +151,10 @@ const versionActual = ++versionConsulta;
 
 		consultandoCertificado.value = false;
 	} else {
-	    mensajeConsulta.value =
-	        'No fue posible verificar el certificado anterior.';
+	    tipoMensajeConsulta.value = 'error';
+            mensajeConsulta.value =
+                resultado.mensaje ??
+                'No fue posible verificar un certificado con los datos proporcionados.';
 	}
 
     } catch (error) {
@@ -173,6 +175,12 @@ const versionActual = ++versionConsulta;
 
 <!-- CONSULTA DE CERTIFICADO ANTERIOR -->
 <section class="consulta-certificado-vue">
+    <div class="anfeca-refrendo-titulo">
+        <strong><u>Sólo refrendo</u></strong>
+    </div>
+
+
+    
 
     <div class="consulta-certificado-info">
         <h2>Consulta de certificado anterior</h2>
@@ -183,52 +191,56 @@ const versionActual = ++versionConsulta;
         </p>
     </div>
 
+
     <div class="consulta-certificado-formulario">
-        <label for="numero_certificado_anterior">
-            Número de certificado
-        </label>
+
+        <div class="anfeca-certificado-encabezado">
+            <label for="numero_certificado_anterior">
+                Número de certificado
+            </label>
+
+            <div
+                v-if="mensajeConsulta"
+                class="anfeca-aviso-certificado"
+                :class="tipoMensajeConsulta === 'exito'
+                    ? 'anfeca-aviso-certificado-exito'
+                    : 'anfeca-aviso-certificado-error'"
+                :role="tipoMensajeConsulta === 'exito' ? 'status' : 'alert'"
+            >
+                <span class="anfeca-aviso-icono">
+                    {{ tipoMensajeConsulta === 'exito' ? '✓' : '!' }}
+                </span>
+
+                <span class="anfeca-aviso-texto">
+                    {{ mensajeConsulta }}
+                </span>
+            </div>
+        </div>
 
         <div class="consulta-certificado-controles">
             <input
                 id="numero_certificado_anterior"
-		name="numero_certificado_anterior"
-		 v-model="numeroCertificadoAnterior"
-		 type="text"
+                name="numero_certificado_anterior"
+                v-model="numeroCertificadoAnterior"
+                type="text"
                 autocomplete="off"
                 inputmode="numeric"
                 pattern="[0-9]{1,7}"
                 maxlength="7"
                 placeholder="Ingrese hasta 7 dígitos"
                 @input="numeroCertificadoAnterior = $event.target.value.replace(/[^0-9]/g, '').slice(0, 7)"
->
+            >
 
-		<button
-		    type="button"
-		    class="boton-consultar-certificado"
-		    :disabled="consultandoCertificado || !numeroCertificadoAnterior.trim()"
-		    @click="consultarCertificadoAnterior"
-		>
-		    {{ consultandoCertificado ? 'Consultando...' : 'Consultar' }}
-		</button>
-		<div
-    v-if="mensajeConsulta"
-    class="aviso-certificado"
-    :class="tipoMensajeConsulta === 'exito' ? 'aviso-certificado-exito' : 'aviso-certificado-error'"
-    :role="tipoMensajeConsulta === 'exito' ? 'status' : 'alert'"
->
-    <span class="aviso-certificado-icono">
-        {{ tipoMensajeConsulta === 'exito' ? '✓' : '!' }}
-    </span>
-    <div class="aviso-certificado-contenido">
-        <strong>
-            {{ tipoMensajeConsulta === 'exito'
-                ? 'Certificado validado correctamente'
-                : 'No fue posible validar el certificado' }}
-        </strong>
-        <p>{{ mensajeConsulta }}</p>
-    </div>
-</div>
+            <button
+                type="button"
+                class="boton-consultar-certificado"
+                :disabled="consultandoCertificado || !numeroCertificadoAnterior.trim()"
+                @click="consultarCertificadoAnterior"
+            >
+                {{ consultandoCertificado ? 'Consultando...' : 'Consultar' }}
+            </button>
         </div>
+
     </div>
 
 </section>
@@ -424,4 +436,142 @@ const versionActual = ++versionConsulta;
     background: #be123c;
     color: #fff;
 }
+
+/* ANFECA - Avisos compactos de certificado */
+
+.anfeca-certificado-encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    min-width: 0;
+}
+
+.anfeca-certificado-encabezado label {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.anfeca-aviso-certificado {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 9px;
+    border: 1px solid;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.35;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.anfeca-aviso-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.anfeca-aviso-texto {
+    overflow-wrap: anywhere;
+}
+
+.anfeca-aviso-certificado-error {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    color: #9f1239;
+}
+
+.anfeca-aviso-certificado-error .anfeca-aviso-icono {
+    background: #be123c;
+    color: white;
+}
+
+.anfeca-aviso-certificado-exito {
+    background: #ecfdf3;
+    border-color: #a6e5bd;
+    color: #166534;
+}
+
+.anfeca-aviso-certificado-exito .anfeca-aviso-icono {
+    background: #166534;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .anfeca-certificado-encabezado {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .anfeca-aviso-certificado {
+        width: 100%;
+    }
+}
+
 </style>
+
+
+<style>
+/* ANFECA - Estilos consolidados de consulta de refrendo */
+
+.consulta-certificado-vue {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 20px;
+    row-gap: 8px;
+    align-items: start;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+}
+
+.consulta-certificado-vue > .anfeca-refrendo-titulo {
+    grid-column: 1 / -1;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #a71930;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+}
+
+.consulta-certificado-vue > .consulta-certificado-info,
+.consulta-certificado-vue > .consulta-certificado-formulario {
+    min-width: 0;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.consulta-certificado-vue .consulta-certificado-info h2 {
+    margin-top: 0;
+    margin-bottom: 4px;
+}
+
+.consulta-certificado-vue .consulta-certificado-info p {
+    margin-top: 0;
+    margin-bottom: 0;
+    line-height: 1.35;
+}
+
+.consulta-certificado-vue
+.consulta-certificado-formulario label {
+    margin-top: 0;
+    margin-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+    .consulta-certificado-vue {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+</style>
+

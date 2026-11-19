@@ -35,7 +35,7 @@ autorizadoInicialmente: {
 
 });
 
-const editando = ref(props.editarInicialmente);
+const editando = ref(props.editarInicialmente && !props.autorizadoInicialmente);
 const confirmacionDatos = ref(false);
 const campos = reactive({ ...props.datos });
 
@@ -71,11 +71,21 @@ const camposIdentidad = [
 
 // Determinar si un campo puede modificarse.
 function puedeEditar(nombre) {
-    if (!props.autorizadoInicialmente) {
-        return true;
+    if (props.autorizadoInicialmente) {
+        return false;
     }
 
-    return !camposIdentidad.includes(nombre);
+    return [
+        'calle',
+        'numero_exterior',
+        'numero_interior',
+        'colonia',
+        'municipio',
+        'entidad_federativa',
+        'codigo_postal',
+        'telefono_celular',
+        'telefono_particular'
+    ].includes(nombre);
 }
 
 const grupos = [
@@ -208,29 +218,32 @@ function cancelar() {
                 </section>
             </div>
 
-            <div class="panel-acciones">
-                <template v-if="editando">
-                    <button type="submit" class="boton">
-                        Guardar cambios
-                    </button>
+            <div class="fila-autorizacion"
+                 style="display:flex; justify-content:flex-end; width:100%; margin-top:16px;">
 
-                    <button
-                        type="button"
-                        class="boton"
-                        @click="cancelar"
-                    >
-                        Cancelar
-                    </button>
-                </template>
+                <div class="panel-acciones"
+                     style="display:flex; justify-content:flex-end; align-items:center; gap:10px; width:100%;">
 
-	         <button
-		    v-else
-		    type="button"
-		    class="boton"
-		    @click="editando = true"
-		>
-		    Modificar datos
-		</button>
+                    <template v-if="editando">
+
+                        <button
+                            type="button"
+                            class="boton"
+                            @click="cancelar"
+                        >
+                            Cancelar
+                        </button>
+
+                        <button
+                            type="submit"
+                            class="boton"
+                        >
+                            Guardar cambios
+                        </button>
+
+                    </template>
+
+                </div>
             </div>
         </form>
 	<!-- Autorización de datos personales -->
@@ -238,18 +251,26 @@ function cancelar() {
 
     <template v-if="autorizadoInicialmente">
 
+    
+<div class="anfeca-acciones-autorizacion">
+
     <p class="mensaje-autorizado">
         ✓ Tus datos personales se encuentran autorizados.
     </p>
 
-    <div class="panel-acciones">
+    <div class="anfeca-botones">
+
+
         <a
             :href="urlSiguiente"
-            class="boton"
+            class="boton boton-siguiente"
         >
             Siguiente
         </a>
     </div>
+
+</div>
+
 
 </template>
 
@@ -257,6 +278,7 @@ function cancelar() {
 
         <input type="hidden" name="_token" :value="csrf">
 
+        <div class="fila-autorizacion">
         <label class="confirmacion-datos">
             <input
                 type="checkbox"
@@ -272,12 +294,20 @@ function cancelar() {
 
         <div class="panel-acciones">
             <button
+                type="button"
+                class="boton boton-modificar"
+                @click="editando = true"
+            >
+                Modificar datos
+            </button>
+            <button
                 type="submit"
                 class="boton"
                 :disabled="!confirmacionDatos"
             >
                 Autorizar y continuar
             </button>
+        </div>
         </div>
 
     </form>
@@ -448,6 +478,238 @@ function cancelar() {
     .campo-actualizacion input,
     .campo-actualizacion select {
         font-size: 16px !important;
+    }
+}
+
+
+/* ANFECA - Acciones de datos personales alineadas */
+
+.anfeca-acciones-autorizacion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+}
+
+.anfeca-acciones-autorizacion .mensaje-autorizado {
+    flex: 1;
+    margin: 0 !important;
+    line-height: 1.25 !important;
+}
+
+.anfeca-botones {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.anfeca-botones .boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 125px;
+    min-height: 34px;
+    padding: 7px 12px;
+    margin: 0 !important;
+    border-radius: 6px;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.anfeca-botones .boton-modificar {
+    background: #ffffff;
+    color: #a00012;
+    border: 1px solid #a00012;
+}
+
+.anfeca-botones .boton-siguiente {
+    background: #a00012;
+    color: #ffffff;
+    border: 1px solid #a00012;
+}
+
+@media (max-width: 767px) {
+    .anfeca-acciones-autorizacion {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .anfeca-botones {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .anfeca-botones .boton {
+        flex: 1;
+    }
+}
+
+
+/* ANFECA COMPACTO V4 - DATOS PERSONALES */
+
+@media (min-width: 1024px) {
+
+    .panel-etapas {
+        gap: 10px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .tarjeta-etapa {
+        padding: 10px 14px !important;
+    }
+
+    .tarjeta-etapa h3 {
+        margin: 0 0 8px !important;
+        line-height: 1.15 !important;
+    }
+
+    .campo-actualizacion {
+        margin-bottom: 5px !important;
+        line-height: 1.2 !important;
+    }
+
+    .campo-actualizacion label {
+        margin-bottom: 2px !important;
+        line-height: 1.15 !important;
+    }
+
+    .campo-actualizacion span {
+        line-height: 1.2 !important;
+    }
+
+    .seccion-autorizacion {
+        margin-top: 8px !important;
+        padding: 9px 12px !important;
+    }
+
+    .mensaje-autorizado {
+        margin: 0 !important;
+        line-height: 1.2 !important;
+    }
+}
+
+
+/* INICIO ANFECA DATOS COMPACTOS V5 */
+
+@media screen and (min-width: 1024px) {
+
+    .panel-etapas {
+        gap: 10px !important;
+        margin-bottom: 6px !important;
+        align-items: start;
+    }
+
+    .tarjeta-etapa {
+        padding: 8px 12px !important;
+    }
+
+    .tarjeta-etapa h3 {
+        margin: 0 0 6px !important;
+        padding: 0 !important;
+        font-size: 14px !important;
+        line-height: 1.15 !important;
+    }
+
+    .campo-actualizacion {
+        margin: 0 0 4px !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+        line-height: 1.15 !important;
+    }
+
+    .campo-actualizacion label {
+        display: block;
+        margin: 0 0 1px !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+        line-height: 1.15 !important;
+    }
+
+    .campo-actualizacion span {
+        display: block;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+        line-height: 1.15 !important;
+    }
+
+    .campo-actualizacion input,
+    .campo-actualizacion select {
+        min-height: 30px !important;
+        padding: 5px 7px !important;
+        line-height: 1.2 !important;
+    }
+
+    .seccion-autorizacion {
+        margin-top: 6px !important;
+        padding: 8px 12px !important;
+    }
+
+    .mensaje-autorizado {
+        margin: 0 !important;
+        line-height: 1.2 !important;
+    }
+
+    .anfeca-acciones-autorizacion {
+        gap: 8px !important;
+    }
+
+    .anfeca-botones {
+        gap: 8px !important;
+    }
+}
+
+/* FIN ANFECA DATOS COMPACTOS V5 */
+
+
+/* Alineación horizontal de autorización */
+.fila-autorizacion {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+}
+
+.fila-autorizacion .panel-acciones {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .fila-autorizacion {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+
+/* Alineación de confirmación y botón */
+.fila-autorizacion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    width: 100%;
+}
+
+.fila-autorizacion .confirmacion-datos {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+
+.fila-autorizacion .panel-acciones {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .fila-autorizacion {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

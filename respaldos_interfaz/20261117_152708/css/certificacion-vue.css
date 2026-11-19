@@ -1,0 +1,352 @@
+
+/* ========================================
+   ANFECA - SELECCIÓN DE CERTIFICACIÓN
+   VUE 3
+   ======================================== */
+
+/* Mismas dimensiones que Formación Académica */
+
+.contenido {
+    padding: 30px 5% 25px;
+}
+
+.certificacion-vue {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+/* Dos secciones horizontales */
+
+.columnas-certificacion-vue {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8%;
+    width: 100%;
+}
+
+.seccion-certificacion-vue {
+    min-width: 0;
+}
+
+/* Encabezados */
+
+.seccion-certificacion-vue h2 {
+    font-size: 19px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #888;
+    padding-bottom: 8px;
+    margin: 0 0 22px;
+}
+
+/* Certificación */
+
+.descripcion-certificacion {
+    font-size: 14px;
+    text-align: center;
+    margin: 0 0 22px;
+}
+
+.opciones-certificacion {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.opcion-certificacion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.opcion-certificacion input {
+    width: 17px;
+    height: 17px;
+    accent-color: #98121a;
+}
+
+/* Personal Académico */
+
+.campo-certificacion {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.campo-certificacion label {
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 7px;
+}
+
+.campo-certificacion select {
+    width: 80%;
+    max-width: 440px;
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid #888;
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+}
+
+/* Adaptación móvil */
+
+@media (max-width: 850px) {
+    .columnas-certificacion-vue {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .contenido {
+        padding: 25px 20px;
+    }
+
+    .campo-certificacion select {
+        width: 100%;
+        max-width: 440px;
+    }
+}
+
+
+/* ANTECEDENTES HISTÓRICOS DE CERTIFICACIÓN */
+
+.antecedentes-certificacion-vue {
+    width: 100%;
+    margin-top: 35px;
+    padding: 20px 24px;
+    border: 1px solid #d8d8d8;
+    border-radius: 6px;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+
+.antecedentes-certificacion-vue h2 {
+    font-size: 19px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #888;
+    padding-bottom: 8px;
+    margin: 0 0 20px;
+}
+
+.antecedentes-certificacion-vue > p {
+    font-size: 14px;
+    line-height: 1.6;
+    text-align: center;
+    margin: 12px 0;
+}
+
+.lista-antecedentes-vue {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.registro-antecedente-vue {
+    padding: 16px 20px;
+    border: 1px solid #ddd;
+    border-left: 4px solid #98121a;
+    border-radius: 4px;
+    background-color: #fafafa;
+    min-width: 0;
+}
+
+.registro-antecedente-vue h3 {
+    color: #98121a;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 14px;
+}
+
+.registro-antecedente-vue p {
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 8px 0;
+}
+
+@media (max-width: 850px) {
+    .antecedentes-certificacion-vue {
+        margin-top: 30px;
+        padding: 16px;
+    }
+
+    .lista-antecedentes-vue {
+        grid-template-columns: 1fr;
+    }
+
+    .registro-antecedente-vue {
+        padding: 14px;
+    }
+}
+
+/* ==========================================
+   ANTECEDENTES HISTÓRICOS - CENTRADO
+   ========================================== */
+
+.antecedentes-certificacion-vue .lista-antecedentes-vue {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    width: 100%;
+}
+
+.antecedentes-certificacion-vue .registro-antecedente-vue {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 500px;
+    margin: 0;
+    padding: 16px 20px;
+    text-align: center;
+    border-left: 4px solid #98121a;
+}
+
+.antecedentes-certificacion-vue .registro-antecedente-vue h3 {
+    text-align: center;
+    color: #98121a;
+    margin: 0 0 12px;
+}
+
+.antecedentes-certificacion-vue .registro-antecedente-vue p {
+    text-align: center;
+    margin: 8px 0;
+}
+
+@media (max-width: 600px) {
+    .antecedentes-certificacion-vue .registro-antecedente-vue {
+        max-width: 100%;
+        padding: 14px;
+    }
+}
+
+/* =========================================
+   CONSULTA DE CERTIFICADO ANTERIOR
+   ========================================= */
+
+.consulta-certificado-vue {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+
+    padding: 20px 24px;
+    margin: 18px 0 26px;
+
+    background: #fafafa;
+    border: 1px solid #dedede;
+    border-radius: 10px;
+}
+
+/* Información del buscador */
+
+.consulta-certificado-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.consulta-certificado-info h2 {
+    margin: 0 0 7px;
+    color: #9e0015;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.consulta-certificado-info p {
+    margin: 0;
+    color: #555;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Campo de búsqueda */
+
+.consulta-certificado-formulario {
+    flex: 1;
+    min-width: 0;
+}
+
+.consulta-certificado-formulario label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+.consulta-certificado-controles {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.consulta-certificado-controles input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+
+    border: 1px solid #c8c8c8;
+    border-radius: 6px;
+    background: #fff;
+
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.consulta-certificado-controles input:focus {
+    border-color: #a60018;
+    box-shadow: 0 0 0 2px rgba(166, 0, 24, 0.08);
+}
+
+/* Botón institucional */
+
+.consulta-certificado-controles .boton-consultar-certificado {
+    height: 40px;
+    padding: 0 24px;
+
+    background: #a60018;
+    color: white;
+
+    border: none;
+    border-radius: 6px;
+
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.consulta-certificado-controles .boton-consultar-certificado:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* Adaptación a pantallas pequeñas */
+
+@media (max-width: 850px) {
+    .consulta-certificado-vue {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        padding: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .consulta-certificado-controles {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .consulta-certificado-controles .boton-consultar-certificado {
+        width: 100%;
+    }
+}

@@ -31,6 +31,27 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
+        // Priorizar cualquier solicitud pendiente del usuario.
+        $tieneBorrador = \App\Models\SolicitudCertificacion::query()
+            ->where('user_id', $request->user()->id)
+            ->where('estado', 'borrador')
+            ->exists();
+
+        if ($tieneBorrador) {
+            return redirect()->route('mis-datos.edit');
+        }
+
+        // Si solamente tiene trámites enviados, mostrar su conclusión.
+        $tieneSolicitudEnviada = \App\Models\SolicitudCertificacion::query()
+            ->where('user_id', $request->user()->id)
+            ->where('estado', 'enviado')
+            ->exists();
+
+        if ($tieneSolicitudEnviada) {
+            return redirect()->route('registro.completado');
+        }
+
+        // Usuario sin solicitudes: conservar el flujo original.
         return redirect()->route('mis-datos.edit');
     }
 

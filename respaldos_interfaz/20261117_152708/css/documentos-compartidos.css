@@ -1,0 +1,322 @@
+
+/* ESTILOS COMPARTIDOS DE DOCUMENTOS ANFECA */
+/* Aplicables únicamente a componentes que usen .documentos-anfeca */
+
+.cert-main .documentos-anfeca .campo-documento {
+    position: relative;
+    margin: 0 0 12px;
+    padding: 14px 15px;
+    border: 1px solid #e8c8cd;
+    border-radius: 12px;
+    background: #faf5f6;
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.cert-main .documentos-anfeca .fila-documento {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+}
+
+.cert-main .documentos-anfeca .icono-documento {
+    color: #b8757d;
+    font-size: 21px;
+    flex-shrink: 0;
+}
+
+.cert-main .documentos-anfeca .nombre-documento {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #343034;
+    text-align: left;
+}
+
+.cert-main .documentos-anfeca .acciones-documento {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.cert-main .documentos-anfeca .accion-documento {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 6px 13px;
+    border: 1px solid #d8a6ad;
+    border-radius: 20px;
+    background: #fff9fa;
+    color: #8f3946;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.cert-main .documentos-anfeca .acciones-documento
+.accion-documento:last-child:not(:first-child) {
+    background: #b8757d;
+    border-color: #b8757d;
+    color: #ffffff;
+}
+
+.cert-main .documentos-anfeca .accion-documento:hover {
+    filter: brightness(0.96);
+}
+
+.cert-main .documentos-anfeca .accion-documento:focus-visible {
+    outline: 2px solid #8f3946;
+    outline-offset: 3px;
+}
+
+.cert-main .documentos-anfeca .archivo-oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.cert-main .documentos-anfeca .archivo-elegido {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #216b35;
+    overflow-wrap: anywhere;
+}
+
+.cert-main .documentos-anfeca .ayuda-documento {
+    display: block;
+    margin-top: 7px;
+    color: #64748b;
+    font-size: 11px;
+    text-align: left;
+}
+
+@media (max-width: 600px) {
+    .cert-main .documentos-anfeca .fila-documento {
+        flex-wrap: wrap;
+    }
+
+    .cert-main .documentos-anfeca .acciones-documento {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+
+/* AJUSTES DE HOMOLOGACIÓN ANFECA */
+
+/* Tarjetas uniformes en ambas pantallas */
+.cert-main .documentos-anfeca .campo-documento {
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    margin: 0 0 12px;
+    padding: 13px 15px;
+}
+
+/* Filas compactas y alineadas */
+.cert-main .documentos-anfeca .fila-documento {
+    display: flex;
+    width: 100%;
+    min-height: 36px;
+    padding: 0;
+    margin: 0;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+/* Nombres */
+.cert-main .documentos-anfeca .nombre-documento {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Botones */
+.cert-main .documentos-anfeca .acciones-documento {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+}
+
+.cert-main .documentos-anfeca .accion-documento {
+    min-height: 31px;
+    padding: 6px 12px;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+/* Espaciado de listas */
+.cert-main .documentos-anfeca .lista-documentos {
+    gap: 0;
+}
+
+/* Texto de ayuda */
+.cert-main .documentos-anfeca .ayuda-documento {
+    margin-top: 7px;
+    text-align: left;
+}
+
+/* Evitar que el input oculto altere el diseño */
+.cert-main .documentos-anfeca .archivo-oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+/* Adaptación a pantallas pequeñas */
+@media (max-width: 600px) {
+    .cert-main .documentos-anfeca .fila-documento {
+        flex-wrap: wrap;
+    }
+
+    .cert-main .documentos-anfeca .acciones-documento {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+
+/* DISENO MINIMALISTA FINAL ANFECA */
+
+/* 1. Quitar el fondo y los bordes de las tarjetas */
+.cert-main .documentos-anfeca .campo-documento {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 14px 8px;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+/* 2. Separación discreta entre documentos */
+.cert-main .documentos-anfeca
+.campo-documento + .campo-documento {
+    border-top: 1px solid #d5d5d5;
+}
+
+/* 3. Alinear iconos, nombres y botones */
+.cert-main .documentos-anfeca .fila-documento {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 38px;
+    padding: 0;
+    margin: 0;
+    flex-wrap: nowrap;
+}
+
+/* 4. Iconos discretos */
+.cert-main .documentos-anfeca .icono-documento {
+    color: #b7a0c8;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+/* 5. Nombre del documento */
+.cert-main .documentos-anfeca .nombre-documento {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: #222222;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: left;
+}
+
+/* 6. Botones alineados */
+.cert-main .documentos-anfeca .acciones-documento {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+    gap: 9px;
+}
+
+/* 7. Botones rosa tenue sin relleno */
+.cert-main .documentos-anfeca .accion-documento,
+.cert-main .documentos-anfeca
+.acciones-documento .accion-documento:last-child:not(:first-child) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 6px 14px;
+    background: #ffffff;
+    border: 1px solid #c9828e;
+    border-radius: 20px;
+    color: #a34c5a;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+/* 8. Efecto al pasar el cursor */
+.cert-main .documentos-anfeca .accion-documento:hover {
+    background: #fff5f7;
+    color: #8f3946;
+}
+
+/* 9. Texto de ayuda y archivos seleccionados */
+.cert-main .documentos-anfeca .ayuda-documento,
+.cert-main .documentos-anfeca .archivo-elegido {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    color: #666666;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+/* 10. Ocultar el selector nativo sin usar display:none */
+.cert-main .documentos-anfeca .archivo-oculto {
+    display: block;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+/* 11. Adaptación para pantallas pequeñas */
+@media (max-width: 600px) {
+    .cert-main .documentos-anfeca .fila-documento {
+        flex-wrap: wrap;
+    }
+
+    .cert-main .documentos-anfeca .acciones-documento {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}

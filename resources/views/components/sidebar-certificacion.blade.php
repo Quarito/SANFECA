@@ -2,6 +2,7 @@
     $esPreview = request()->is('preview/*');
     $tieneDatos = false;
     $esRefrendo = false;
+    $tramiteEnviado = false;
     if (!$esPreview && auth()->check()) {
         $tieneDatos = \App\Models\DatosSolicitante::where(
             'user_id', auth()->id()
@@ -13,6 +14,17 @@
             ->where('estado', 'borrador')
             ->latest('id')
             ->first();
+
+        if (!$solicitudMenu) {
+            $solicitudMenu = \App\Models\SolicitudCertificacion::where(
+                'user_id', auth()->id()
+            )
+                ->where('estado', 'enviado')
+                ->latest('id')
+                ->first();
+
+            $tramiteEnviado = $solicitudMenu !== null;
+        }
 
         $esRefrendo = $solicitudMenu?->tipo_tramite === 'refrendo';
 
@@ -105,13 +117,22 @@
                 $activa = $existe
                     && request()->routeIs($nombreRuta);
 
-                $anterior = $indiceActual !== false
-                    && $indice < $indiceActual;
+                $anterior = $tramiteEnviado
+                    || ($indiceActual !== false
+                        && $indice < $indiceActual);
 
 
             @endphp
 
-            @if ($existe)
+            @if ($tramiteEnviado && !$esPreview)
+                <div class="cert-sidebar-item completed">
+                    <span class="cert-step-number">✓</span>
+                    <span class="cert-step-text">
+                        <strong>{{ $etapa['nombre'] }}</strong>
+                        <small>Etapa concluida</small>
+                    </span>
+                </div>
+            @elseif ($existe)
 
                 <a
                     href="{{ route($nombreRuta) }}"

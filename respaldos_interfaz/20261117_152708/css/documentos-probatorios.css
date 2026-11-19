@@ -1,0 +1,466 @@
+
+/* ANFECA - Pantalla 5: Documentos Probatorios */
+
+.contenido {
+    padding: 30px 5% 25px;
+}
+
+.documentos-vue {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.documentos-columnas {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 8%;
+    align-items: start;
+}
+
+.seccion-documentos {
+    min-width: 0;
+}
+
+.seccion-documentos h2 {
+    font-size: 19px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 1px solid #888;
+    padding-bottom: 8px;
+    margin: 0 0 22px;
+}
+
+.lista-documentos {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    min-width: 0;
+}
+
+.fila-documento {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    flex-wrap: wrap;
+}
+
+.icono-documento {
+    font-size: 23px;
+    flex-shrink: 0;
+}
+
+.nombre-documento {
+    font-size: 14px;
+    flex: 1;
+    min-width: 110px;
+}
+
+.accion-documento,
+.estado-pendiente {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    text-decoration: none;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.accion-documento {
+    background: #e3f0f7;
+    color: #233c4b;
+    cursor: pointer;
+}
+
+.estado-pendiente {
+    background: #f2eeee;
+    color: #777;
+}
+
+.archivo-oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.archivo-elegido {
+    width: 100%;
+    padding-left: 34px;
+    font-size: 11px;
+    color: #216b35;
+    overflow-wrap: anywhere;
+}
+
+/* Documentos probatorios a la izquierda,
+   Link a la derecha del mismo grupo */
+
+.probatorios-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 25px;
+    align-items: start;
+}
+
+.grupo-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.grupo-link label {
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.grupo-link input {
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 12px;
+    border: 1px solid #888;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.nota-documentos {
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+    margin: 30px 0 0;
+}
+
+/* Pantallas medianas */
+
+@media (max-width: 1050px) {
+    .documentos-columnas {
+        grid-template-columns: 1fr;
+        gap: 35px;
+    }
+}
+
+/* Celulares */
+
+@media (max-width: 650px) {
+    .contenido {
+        padding: 25px 20px;
+    }
+
+    .probatorios-contenido {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+
+    .fila-documento {
+        gap: 8px;
+    }
+}
+
+/* ==========================================
+   ANFECA - DOCUMENTOS PROBATORIOS
+   Diseño centrado de dos columnas
+   ========================================== */
+
+/* Contenedor general */
+.cert-main .documentos-vue {
+    width: 100%;
+    max-width: 1050px;
+    margin: 35px auto 0;
+}
+
+/* Sección principal */
+.cert-main .documentos-vue .seccion-documentos {
+    width: 100%;
+    min-width: 0;
+}
+
+/* Título centrado */
+.cert-main .documentos-vue .seccion-documentos h2 {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 25px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #c9c9c9;
+}
+
+/* Dos columnas */
+.cert-main .documentos-vue .probatorios-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 32px;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Columna izquierda */
+.cert-main .documentos-vue .lista-documentos {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+}
+
+/* Cada documento en una fila */
+.cert-main .documentos-vue .fila-documento {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 85px;
+    width: 100%;
+    padding: 14px 0;
+}
+
+/* Icono */
+.cert-main .documentos-vue .icono-documento {
+    font-size: 23px;
+}
+
+/* Nombre del documento */
+.cert-main .documentos-vue .nombre-documento {
+    font-size: 14px;
+    line-height: 1.4;
+    min-width: 0;
+}
+
+/* Botones Ver y Cambiar */
+.cert-main .documentos-vue .acciones-documento {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cert-main .documentos-vue .accion-documento {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 9px 15px;
+    border-radius: 22px;
+    background: #e2f0f7;
+    color: #173a50;
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Mostrar el archivo seleccionado */
+.cert-main .documentos-vue .archivo-elegido {
+    grid-column: 2 / -1;
+    font-size: 11px;
+    color: #555;
+    overflow-wrap: anywhere;
+}
+
+/* Ocultar input nativo */
+.cert-main .documentos-vue .archivo-oculto {
+    display: none;
+}
+
+/* Columna derecha: Link */
+.cert-main .documentos-vue .grupo-link {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    gap: 12px;
+    min-width: 0;
+    padding-left: 28px;
+    border-left: 1px solid #d0d0d0;
+    min-height: 180px;
+}
+
+/* Etiqueta Link */
+.cert-main .documentos-vue .grupo-link label {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+/* Campo de URL más amplio */
+.cert-main .documentos-vue .grupo-link input {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: 48px;
+    padding: 10px 15px;
+    border: 1px solid #999;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+}
+
+/* Adaptación a pantallas pequeñas */
+@media (max-width: 850px) {
+    .cert-main .documentos-vue {
+        margin-top: 20px;
+    }
+
+    .cert-main .documentos-vue .probatorios-contenido {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .cert-main .documentos-vue .grupo-link {
+        border-left: none;
+        border-top: 1px solid #d0d0d0;
+        padding: 20px 0 0;
+        min-height: auto;
+    }
+}
+
+@media (max-width: 520px) {
+    .cert-main .documentos-vue .fila-documento {
+        grid-template-columns: 24px minmax(0, 1fr);
+    }
+
+    .cert-main .documentos-vue .acciones-documento {
+        grid-column: 2;
+        flex-wrap: wrap;
+    }
+}
+
+
+/* DISTRIBUCION FINAL DOCUMENTOS PROBATORIOS */
+
+/* Mantener documentos y Link en dos columnas */
+@media (min-width: 851px) {
+    .cert-main .documentos-anfeca .probatorios-contenido {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: center;
+        gap: 32px;
+    }
+}
+
+/* Conservar el separador vertical */
+.cert-main .documentos-anfeca .grupo-link {
+    border-left: 1px solid #d0d0d0;
+    padding-left: 28px;
+}
+
+/* Evitar que las tarjetas se extiendan fuera de su columna */
+.cert-main .documentos-anfeca .probatorios-contenido
+.lista-documentos {
+    width: 100%;
+    min-width: 0;
+}
+
+/* Mantener el nombre del archivo debajo de su documento */
+.cert-main .documentos-anfeca .probatorios-contenido
+.archivo-elegido {
+    width: 100%;
+    margin-top: 7px;
+    padding-left: 33px;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+/* Restaurar disposición vertical en pantallas pequeñas */
+@media (max-width: 850px) {
+    .cert-main .documentos-anfeca .probatorios-contenido {
+        grid-template-columns: 1fr;
+    }
+
+    .cert-main .documentos-anfeca .grupo-link {
+        border-left: none;
+        border-top: 1px solid #d0d0d0;
+        padding: 20px 0 0;
+        min-height: auto;
+    }
+}
+
+
+/* ==================================================
+   ANFECA - REFRENDO POR ARTICULO 13 O 14
+   Centrado exclusivo de los cuatro documentos
+   ================================================== */
+
+/* Centrar el contenedor principal solo en refrendos por artículo */
+.cert-main .vista-refrendo-articulo .documentos-vue {
+    width: 100%;
+    max-width: 760px;
+    margin: 35px auto 0;
+}
+
+/* Una sola columna centrada para los cuatro documentos */
+.cert-main .vista-refrendo-articulo .probatorios-contenido,
+.cert-main .vista-refrendo-articulo .documentos-anfeca .probatorios-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+    gap: 0;
+}
+
+/* Centrar el listado completo */
+.cert-main .vista-refrendo-articulo .lista-documentos {
+    width: 100%;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Conservar la adaptación a pantallas pequeñas */
+@media (max-width: 650px) {
+    .cert-main .vista-refrendo-articulo .documentos-vue,
+    .cert-main .vista-refrendo-articulo .probatorios-contenido,
+    .cert-main .vista-refrendo-articulo .lista-documentos {
+        max-width: 100%;
+    }
+}
+
+/* AJUSTE FINAL: CENTRADO EXCLUSIVO DE REFRENDO POR ARTICULO */
+
+.cert-main .vista-refrendo-articulo > .documentos-vue {
+    width: 100%;
+    max-width: 760px;
+    margin: 35px auto 0;
+}
+
+.cert-main .vista-refrendo-articulo > .documentos-vue
+.probatorios-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+/* ================================================
+   CENTRADO EXCLUSIVO - REFRENDO ARTICULO 13 O 14
+   ================================================ */
+
+.cert-main .documentos-vue.documentos-refrendo-articulo {
+    width: 100%;
+    max-width: 760px;
+    margin: 35px auto 0;
+}
+
+.cert-main .documentos-vue.documentos-refrendo-articulo
+.probatorios-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    gap: 0;
+}
+
+.cert-main .documentos-vue.documentos-refrendo-articulo
+.lista-documentos {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+}
+

@@ -60,13 +60,23 @@ if (contenedorFormacion) {
     const formacion = JSON.parse(
         contenedorFormacion.dataset.formacion || '{}'
     );
-const esRefrendo = contenedorFormacion.dataset.esRefrendo === 'true';
+const areaCertificacion =
+    contenedorFormacion.dataset.areaCertificacion || '';
+
+const titulosPermitidos = JSON.parse(
+    contenedorFormacion.dataset.titulosPermitidos || '[]'
+);
+
+const esRefrendo =
+    contenedorFormacion.dataset.esRefrendo === 'true';
 const formacionBloqueada =
     contenedorFormacion.dataset.formacionBloqueada === 'true';
 
      createApp(FormacionAcademica, {
         instituciones,
         formacion,
+        areaCertificacion,
+        titulosPermitidos,
         esRefrendo,
         formacionBloqueada
     }).mount(contenedorFormacion);

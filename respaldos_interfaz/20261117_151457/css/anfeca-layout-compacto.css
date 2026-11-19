@@ -1,0 +1,143 @@
+/* ANFECA - Ajustes de visualización al 100 % */
+
+@media screen and (min-width: 1024px) {
+
+    .encabezado {
+        min-height: 72px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    .encabezado h1 {
+        font-size: 19px;
+        line-height: 1.15;
+        margin: 0;
+    }
+
+    .encabezado .logos img {
+        max-height: 62px;
+        width: auto;
+    }
+
+    .barra-usuario-certificacion {
+        min-height: 42px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
+
+    .cert-layout {
+        gap: 12px;
+    }
+
+    .cert-main {
+        min-width: 0;
+        padding-top: 10px;
+        padding-bottom: 12px;
+    }
+
+    .contenido-completado {
+        padding-top: 10px;
+    }
+
+    .tarjeta-completado {
+        margin-top: 12px;
+        padding: 18px 24px;
+    }
+
+    .tarjeta-completado p {
+        margin-top: 8px;
+        margin-bottom: 8px;
+        line-height: 1.35;
+    }
+
+    .tarjeta-completado h2 {
+        margin-top: 0;
+        margin-bottom: 12px;
+    }
+
+    .boton-completado {
+        padding: 9px 16px;
+    }
+}
+
+@media screen and (max-width: 1023px) {
+    .cert-main {
+        min-width: 0;
+    }
+
+    .tarjeta-completado {
+        max-width: 100%;
+    }
+}
+/* ==========================================
+   ANFECA - COMPACTACIÓN VISUAL ADICIONAL
+   Pantallas de escritorio, zoom 100 %
+   ========================================== */
+
+@media screen and (min-width: 1024px) {
+
+    /* 1. Encabezado institucional */
+    .encabezado {
+        min-height: 64px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+
+    .encabezado h1 {
+        font-size: 18px;
+        line-height: 1.1;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .encabezado .logos img {
+        max-height: 55px;
+    }
+
+    .encabezado .coordinacion {
+        line-height: 1.2;
+    }
+
+    /* 2. Barra superior del usuario */
+    .barra-usuario-certificacion {
+        min-height: 36px;
+        padding-top: 3px;
+        padding-bottom: 3px;
+    }
+
+    /* 3. Contenido principal */
+    .cert-main,
+    .contenido-completado {
+        padding-top: 6px;
+        padding-bottom: 8px;
+    }
+
+    /* 4. Tarjeta de finalización */
+    .tarjeta-completado {
+        margin-top: 8px;
+        padding: 12px 20px;
+    }
+
+    .tarjeta-completado h2 {
+        margin-top: 0;
+        margin-bottom: 8px;
+        line-height: 1.2;
+    }
+
+    .tarjeta-completado p {
+        margin-top: 5px;
+        margin-bottom: 5px;
+        line-height: 1.25;
+    }
+
+    /* 5. Botones */
+    .tarjeta-completado .boton-completado {
+        padding: 8px 14px;
+        line-height: 1.2;
+    }
+
+    /* 6. Evitar separación excesiva entre elementos */
+    .contenido-completado > * + * {
+        margin-top: 8px;
+    }
+}

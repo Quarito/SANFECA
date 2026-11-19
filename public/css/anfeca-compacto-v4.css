@@ -1,0 +1,115 @@
+/* ==========================================
+   ANFECA - DISEÑO COMPACTO V4
+   Optimización para navegador al 100 %
+   ========================================== */
+
+@media screen and (min-width: 1024px) {
+
+    /* Encabezado institucional */
+    .encabezado {
+        min-height: 52px !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+    }
+
+    .encabezado h1 {
+        font-size: 17px !important;
+        line-height: 1.08 !important;
+        margin: 0 !important;
+    }
+
+    .encabezado .logos img {
+        max-height: 46px !important;
+        width: auto !important;
+    }
+
+    .encabezado .coordinacion {
+        line-height: 1.12 !important;
+    }
+
+    /* Barra de usuario */
+    .barra-usuario-certificacion {
+        min-height: 32px !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+    }
+
+    /* Contenido general */
+    .cert-main {
+        min-width: 0;
+        padding-top: 4px !important;
+        padding-bottom: 6px !important;
+    }
+
+    /* Tarjetas */
+    .tarjeta-etapa {
+        padding: 10px 14px !important;
+    }
+
+    .panel-etapas {
+        gap: 10px !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* Campos */
+    .campo-actualizacion {
+        margin-bottom: 5px !important;
+        font-size: 12px !important;
+        line-height: 1.2 !important;
+    }
+
+    .campo-actualizacion label {
+        margin-bottom: 2px !important;
+        line-height: 1.15 !important;
+    }
+
+    .campo-actualizacion span {
+        line-height: 1.2 !important;
+    }
+
+    /* Recuadro de autorización */
+    .seccion-autorizacion {
+        margin-top: 8px !important;
+        padding: 9px 12px !important;
+    }
+
+    .mensaje-autorizado {
+        margin: 0 !important;
+        line-height: 1.2 !important;
+    }
+
+    /* Acciones */
+    .panel-acciones {
+        margin: 5px 0 !important;
+        gap: 8px !important;
+    }
+
+    /* Finalización */
+    .tarjeta-completado {
+        margin-top: 5px !important;
+        padding: 9px 16px !important;
+    }
+
+    .tarjeta-completado p {
+        margin: 3px 0 !important;
+        line-height: 1.18 !important;
+    }
+
+    .tarjeta-completado h2 {
+        margin: 0 0 6px !important;
+        line-height: 1.15 !important;
+    }
+}
+
+/* Evitar desplazamiento horizontal */
+.cert-layout,
+.cert-main {
+    min-width: 0;
+    max-width: 100%;
+}
+
+@media screen and (max-width: 767px) {
+    .panel-etapas {
+        grid-template-columns: 1fr !important;
+    }
+}

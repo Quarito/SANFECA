@@ -1,0 +1,46 @@
+/* ANFECA - Homogeneización de acciones */
+/* Se aplica únicamente a los contenedores identificados */
+
+.anfeca-acciones-autorizacion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.anfeca-acciones-autorizacion .anfeca-mensaje-autorizacion {
+    flex: 1 1 280px;
+    margin: 0;
+    line-height: 1.25;
+}
+
+.anfeca-acciones-autorizacion .anfeca-botones {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.anfeca-acciones-autorizacion .anfeca-botones button,
+.anfeca-acciones-autorizacion .anfeca-botones a {
+    min-height: 36px;
+    min-width: 125px;
+    margin: 0;
+}
+
+@media (max-width: 767px) {
+    .anfeca-acciones-autorizacion {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .anfeca-acciones-autorizacion .anfeca-mensaje-autorizacion {
+        flex-basis: auto;
+    }
+
+    .anfeca-acciones-autorizacion .anfeca-botones {
+        justify-content: stretch;
+    }
+}

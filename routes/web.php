@@ -18,11 +18,31 @@ use App\Http\Controllers\Auth\RecuperacionPasswordController;
 */
 
 Route::get('/', function () {
-    if (auth()->check()) {
+    if (!auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    $userId = auth()->id();
+
+    $tieneBorrador = \App\Models\SolicitudCertificacion::query()
+        ->where('user_id', $userId)
+        ->where('estado', 'borrador')
+        ->exists();
+
+    if ($tieneBorrador) {
         return redirect()->route('mis-datos.edit');
     }
 
-    return redirect()->route('login');
+    $tieneEnviada = \App\Models\SolicitudCertificacion::query()
+        ->where('user_id', $userId)
+        ->where('estado', 'enviado')
+        ->exists();
+
+    if ($tieneEnviada) {
+        return redirect()->route('registro.completado');
+    }
+
+    return redirect()->route('mis-datos.edit');
 });
 
 /*

@@ -1,0 +1,97 @@
+/* ANFECA PRUEBAS - Compactación Mis Datos V6 */
+
+@media screen and (min-width: 901px) {
+
+    /* Encabezado institucional */
+    .pagina-anfeca > .encabezado {
+        min-height: 64px !important;
+        height: 64px !important;
+        padding: 4px 20px !important;
+        box-sizing: border-box !important;
+        gap: 0 !important;
+    }
+
+    .pagina-anfeca > .encabezado .logos img {
+        max-height: 54px !important;
+        width: auto !important;
+    }
+
+    .pagina-anfeca > .encabezado h1 {
+        font-size: 18px !important;
+        line-height: 1.08 !important;
+        margin: 0 !important;
+    }
+
+    .pagina-anfeca > .encabezado .coordinacion {
+        font-size: 14px !important;
+        line-height: 1.12 !important;
+        margin: 0 !important;
+    }
+
+    /* Barra de usuario */
+    .pagina-anfeca > .barra-usuario-acciones {
+        min-height: 38px !important;
+        height: 38px !important;
+        padding: 2px 12px !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        gap: 10px !important;
+    }
+
+    .pagina-anfeca > .barra-usuario-acciones .btn-cerrar-sesion {
+        padding: 6px 12px !important;
+        min-height: 29px !important;
+        font-size: 11px !important;
+    }
+
+    /* Contenido principal */
+    .pagina-anfeca .cert-layout {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .pagina-anfeca .cert-main {
+        padding-top: 6px !important;
+    }
+
+    .pagina-anfeca .cert-main .panel-contenedor {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    /* Tarjetas de datos */
+    #vue-actualizar-datos .panel-etapas {
+        gap: 10px !important;
+        margin-bottom: 6px !important;
+        align-items: start !important;
+    }
+
+    #vue-actualizar-datos .tarjeta-etapa {
+        padding: 9px 12px !important;
+    }
+
+    #vue-actualizar-datos .tarjeta-etapa h3 {
+        margin: 0 0 7px !important;
+        line-height: 1.15 !important;
+    }
+
+    #vue-actualizar-datos .campo-actualizacion {
+        margin-bottom: 5px !important;
+        line-height: 1.18 !important;
+    }
+
+    #vue-actualizar-datos .campo-actualizacion label {
+        margin-bottom: 1px !important;
+        line-height: 1.15 !important;
+    }
+
+    #vue-actualizar-datos .campo-actualizacion span {
+        line-height: 1.18 !important;
+    }
+
+    /* Autorización y botones */
+    #vue-actualizar-datos .seccion-autorizacion {
+        margin-top: 6px !important;
+        padding: 8px 12px !important;
+    }
+}

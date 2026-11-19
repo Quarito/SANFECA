@@ -26,6 +26,9 @@
 
     <!-- tipografia-global-97159 -->
     <link rel="stylesheet" href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97159">
+
+<link rel="stylesheet" href="{{ asset('css/anfeca-layout-compacto-v3.css') }}?v=3">
+    <link rel="stylesheet" href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
 </head>
 
 <body @if(request()->is("preview/*")) class="modo-preview" @endif>
@@ -61,7 +64,7 @@
         <div
             data-vue-encabezado
             data-titulo="Documentos Probatorios"
-            data-descripcion="Adjunte los documentos probatorios requeridos para respaldar su solicitud de certificación o refrendo.">
+            data-descripcion="Adjunte los documentos probatorios requeridos para respaldar su solicitud de certificación por primera vez o refrendo.">
         </div>
 
         @if(session('success'))
@@ -103,9 +106,7 @@
             ></div>
 
             <div class="botones">
-                <a href="{{ $esArticulo14
-                    ? route('registro.refrendo')
-                    : route('registro.formacion') }}"
+                <a href="{{ route('registro.formacion') }}"
                    class="boton">
                     Anterior
                 </a>

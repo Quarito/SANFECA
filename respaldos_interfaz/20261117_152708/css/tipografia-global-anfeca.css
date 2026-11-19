@@ -1,0 +1,122 @@
+
+/* tipografia-global-97159 */
+
+/* Tamaño general */
+.pagina-anfeca {
+    font-size: 12px;
+}
+
+/* Títulos principales de las etapas */
+.cert-main h1,
+.cert-main [data-vue-encabezado] h1,
+.cert-main [data-vue-encabezado] h2 {
+    font-size: 17px !important;
+}
+
+/* Títulos de secciones */
+.cert-main h2,
+.cert-main h3 {
+    font-size: 15px !important;
+}
+
+/* Campos y etiquetas */
+.cert-main label,
+.cert-main input,
+.cert-main select,
+.cert-main textarea {
+    font-size: 12px !important;
+}
+
+/* Botones */
+.cert-main button,
+.cert-main .boton,
+.cert-main a.boton {
+    font-size: 12px !important;
+}
+
+/* Textos y mensajes */
+.cert-main p,
+.cert-main small,
+.cert-main .mensaje-exito,
+.cert-main .mensaje-error {
+    font-size: 12px;
+}
+
+/* Menú lateral */
+.cert-layout aside,
+.cert-layout nav,
+.cert-layout .sidebar {
+    font-size: 11px;
+}
+
+.cert-layout aside a,
+.cert-layout nav a,
+.cert-layout .sidebar a {
+    font-size: 11px !important;
+}
+
+/* Mantener legibilidad en dispositivos móviles */
+@media (max-width: 768px) {
+    .cert-main input,
+    .cert-main select,
+    .cert-main textarea {
+        font-size: 16px !important;
+    }
+}
+
+
+/* compactacion-global-97161 */
+
+/* Espacio principal */
+.cert-layout .cert-main {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+}
+
+/* Campos y listas desplegables */
+.cert-main input:not([type="radio"]):not([type="checkbox"]):not([type="file"]),
+.cert-main select,
+.cert-main textarea {
+    min-height: 32px;
+    font-size: 12px !important;
+    box-sizing: border-box;
+}
+
+/* Botones */
+.cert-main button,
+.cert-main .boton,
+.cert-main input[type="submit"] {
+    font-size: 12px !important;
+    min-height: 32px;
+}
+
+/* Títulos de las secciones */
+.cert-main h2,
+.cert-main h3 {
+    font-size: 15px !important;
+    line-height: 1.3;
+}
+
+/* Menú lateral: textos */
+.cert-layout aside,
+.cert-layout nav,
+.cert-layout .sidebar {
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+/* Espacios de las tarjetas del menú */
+.cert-layout aside a,
+.cert-layout nav a,
+.cert-layout .sidebar a {
+    font-size: 11px !important;
+}
+
+/* Mantener campos cómodos en móviles */
+@media (max-width: 768px) {
+    .cert-main input:not([type="radio"]):not([type="checkbox"]):not([type="file"]),
+    .cert-main select,
+    .cert-main textarea {
+        font-size: 16px !important;
+    }
+}

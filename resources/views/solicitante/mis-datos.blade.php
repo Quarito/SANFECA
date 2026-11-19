@@ -113,6 +113,10 @@
     <link rel="stylesheet"
           href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97170">
 
+
+<link rel="stylesheet"
+      href="{{ asset('css/anfeca-mis-datos-compacto-v6.css') }}?v=6">
+
 </head>
 
 <style>
