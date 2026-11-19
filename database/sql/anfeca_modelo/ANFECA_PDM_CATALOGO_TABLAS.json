@@ -1,0 +1,1160 @@
+{
+  "fuente": "anfeca_certifica_1.sql",
+  "tablas": [
+    {
+      "name": "ACTA",
+      "columns": [
+        {
+          "column": "ACTA_ID_ACTA",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ACTA_ID_SOLICITUD",
+          "definition": "INT4                 null"
+        },
+        {
+          "column": "ACTA_COORDINADOR",
+          "definition": "VARCHAR(1024)        null"
+        },
+        {
+          "column": "ACTA_SECRETARIO",
+          "definition": "VARCHAR(1024)        null"
+        },
+        {
+          "column": "ACTA_SEDE",
+          "definition": "VARCHAR(1024)        null"
+        }
+      ],
+      "pk": "constraint PK_ACTA primary key (ACTA_ID_ACTA)"
+    },
+    {
+      "name": "ALCALDIA_MUNICIPIO",
+      "columns": [
+        {
+          "column": "ALMU_ID_ALCALDIA",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ALMU_ID_ENTIDAD_FEDERATIVA",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "ALMU_NOMBRE",
+          "definition": "VARCHAR(150)         not null"
+        }
+      ],
+      "pk": "constraint PK_ALCALDIA_MUNICIPIO primary key (ALMU_ID_ALCALDIA)"
+    },
+    {
+      "name": "AREA_CERTIFICACION",
+      "columns": [
+        {
+          "column": "AREA_ID_AREA_CERTIFICACION",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "AREA_DESCRIPCION",
+          "definition": "VARCHAR(200)         not null"
+        }
+      ],
+      "pk": "constraint PK_AREA_CERTIFICACION primary key (AREA_ID_AREA_CERTIFICACION)"
+    },
+    {
+      "name": "ARTICULO_SUBINDICE",
+      "columns": [
+        {
+          "column": "ARCE_ID_ARTICULO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ARCE_SUBINDICE",
+          "definition": "VARCHAR(10)          not null"
+        },
+        {
+          "column": "ARCE_DESCRIPCION",
+          "definition": "VARCHAR(100)         not null"
+        }
+      ],
+      "pk": "constraint PK_ARTICULO_SUBINDICE primary key (ARCE_ID_ARTICULO)"
+    },
+    {
+      "name": "CERTIFICADO",
+      "columns": [
+        {
+          "column": "CERT_ID_CERTIFICADO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "CERT_ID_EVALUACION",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "CERT_FOLIO",
+          "definition": "VARCHAR(100)         not null"
+        },
+        {
+          "column": "CERT_ANIO",
+          "definition": "VARCHAR(15)          not null"
+        },
+        {
+          "column": "CERT_ESTADO",
+          "definition": "VARCHAR(5)           null"
+        }
+      ],
+      "pk": "constraint PK_CERTIFICADO primary key (CERT_ID_CERTIFICADO)"
+    },
+    {
+      "name": "COLONIA",
+      "columns": [
+        {
+          "column": "COLO_ID_COLONIA",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "COLO_ID_ALCALDIA",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "COLO_NOMBRE",
+          "definition": "VARCHAR(150)         not null"
+        },
+        {
+          "column": "COLO_CODIGO_POSTAL",
+          "definition": "VARCHAR(5)           not null"
+        }
+      ],
+      "pk": "constraint PK_COLONIA primary key (COLO_ID_COLONIA)"
+    },
+    {
+      "name": "COMUNICACION",
+      "columns": [
+        {
+          "column": "COMU_ID_COMUNICACION",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "CUMU_ID_PERSONA",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "COMU_ID_TIPO_COMUNICACION",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "COMU_VALOR",
+          "definition": "VARCHAR(150)         not null"
+        },
+        {
+          "column": "COMU_VISIBLE",
+          "definition": "BOOL                 null"
+        }
+      ],
+      "pk": "constraint PK_COMUNICACION primary key (COMU_ID_COMUNICACION, CUMU_ID_PERSONA, COMU_ID_TIPO_COMUNICACION)"
+    },
+    {
+      "name": "CONVOCATORIA",
+      "columns": [
+        {
+          "column": "CONV_ID_CONVOCATORIA",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "CONV_ID_TIPO_CONVOCATORIA",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "CONV_NOMBRE",
+          "definition": "VARCHAR(150)         not null"
+        },
+        {
+          "column": "CONV_MONTO_RECUPERACION",
+          "definition": "MONEY                not null"
+        },
+        {
+          "column": "CONV_FECHA_INICIO_REGISTRO",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "CONV_FECHA_FIN_REGISTRO",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "CONV_FECHA_RESULTADO",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "CONV_FECHA_ENTREGA_CERTIFICADOS",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "CONV_PUNTUACION_MAX",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "CONV_PUNTUACION_MIN",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "CON_LUGAR_ENTREGA",
+          "definition": "VARCHAR(300)         null"
+        },
+        {
+          "column": "CON_EVENTO_ENTREGA",
+          "definition": "VARCHAR(300)         null"
+        }
+      ],
+      "pk": "constraint PK_CONVOCATORIA primary key (CONV_ID_CONVOCATORIA)"
+    },
+    {
+      "name": "C_ESTADO_SOLICITUD",
+      "columns": [
+        {
+          "column": "CESO_ID_C_ESTADO_SOLICITUD",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "CESO_ESTADO_SOLICITUD",
+          "definition": "VARCHAR(50)          not null"
+        }
+      ],
+      "pk": "constraint PK_C_ESTADO_SOLICITUD primary key (CESO_ID_C_ESTADO_SOLICITUD)"
+    },
+    {
+      "name": "DICTAMEN",
+      "columns": [
+        {
+          "column": "DICT_ID_DICTAMEN",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "DICT_ID_TIPO_DICTAMEN",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "DICT_ID_EVALUACION",
+          "definition": "INT4                 null"
+        },
+        {
+          "column": "DICT_ENCABEZADO",
+          "definition": "VARCHAR(9)           not null"
+        },
+        {
+          "column": "DICT_FOLIO_DICTAMEN",
+          "definition": "VARCHAR(9)           not null"
+        },
+        {
+          "column": "DICT_FECHA_DICTAMEN_CREACION",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "DICT_HORA_DICTAMEN_CREACION",
+          "definition": "TIME                 not null"
+        },
+        {
+          "column": "DICT_FECHA_DICTAMEN_ULTIMA_IMPR",
+          "definition": "DATE                 null"
+        }
+      ],
+      "pk": "constraint PK_DICTAMEN primary key (DICT_ID_DICTAMEN)"
+    },
+    {
+      "name": "DOCUMENTO",
+      "columns": [
+        {
+          "column": "DOCU_ID_DOCUMENTO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "DOCU_DESCRIPCION",
+          "definition": "VARCHAR(150)         not null"
+        },
+        {
+          "column": "DOCU_ESTATUS",
+          "definition": "VARCHAR(3)           not null"
+        }
+      ],
+      "pk": "constraint PK_DOCUMENTO primary key (DOCU_ID_DOCUMENTO)"
+    },
+    {
+      "name": "DOMICILIO",
+      "columns": [
+        {
+          "column": "DOMI_ID_DOMICILIO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "DOMI_ID_PERSONA",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "DOMI_ID_ENTIDAD_FEDERATIVA",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "DOMI_CALLE",
+          "definition": "VARCHAR(170)         not null"
+        },
+        {
+          "column": "DOMI_NUMERO_EXT",
+          "definition": "VARCHAR(6)           not null"
+        },
+        {
+          "column": "DOMI_NUMERO_INT",
+          "definition": "VARCHAR(4)           null"
+        }
+      ],
+      "pk": "constraint PK_DOMICILIO primary key (DOMI_ID_DOMICILIO)"
+    },
+    {
+      "name": "ENTIDAD_FEDERATIVA",
+      "columns": [
+        {
+          "column": "ENFE_ID_ENTIDAD_FEDERATIVA",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ENFE_NOMBRE",
+          "definition": "VARCHAR(85)          not null"
+        }
+      ],
+      "pk": "constraint PK_ENTIDAD_FEDERATIVA primary key (ENFE_ID_ENTIDAD_FEDERATIVA)"
+    },
+    {
+      "name": "ESTADO_DOCUMENTO",
+      "columns": [
+        {
+          "column": "ESDO_ID_ESTADO_DOCUMENTO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ESDO_ESTADO_DOCUMENTO",
+          "definition": "VARCHAR(250)         not null"
+        },
+        {
+          "column": "ESDO_ESTADO",
+          "definition": "VARCHAR(3)           not null"
+        }
+      ],
+      "pk": "constraint PK_ESTADO_DOCUMENTO primary key (ESDO_ID_ESTADO_DOCUMENTO)"
+    },
+    {
+      "name": "ESTADO_SOLICITUD",
+      "columns": [
+        {
+          "column": "ESSO_ID__ESTADO_SOLICITUD",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ESSO_ID_C_ESTADO_SOLICITUD",
+          "definition": "INT4                 null"
+        },
+        {
+          "column": "ESSO_ID_SOLICITUD",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "ESSO_DESCRIPCION",
+          "definition": "VARCHAR(55)          not null"
+        },
+        {
+          "column": "ESSO_SIGLAS",
+          "definition": "VARCHAR(2)           not null"
+        },
+        {
+          "column": "ESSO_FECHA",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "ESSO_HORA",
+          "definition": "TIME                 not null"
+        },
+        {
+          "column": "ESSO_MOTIVO_RECHAZO",
+          "definition": "VARCHAR(300)         null"
+        }
+      ],
+      "pk": "constraint PK_ESTADO_SOLICITUD primary key (ESSO_ID__ESTADO_SOLICITUD)"
+    },
+    {
+      "name": "ESTADO_SOLICITUD_DOCUMENTO",
+      "columns": [
+        {
+          "column": "ESDO_ID_ESTADO_SOLICITUD_DOCUME",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ESDO_ID_DOCUMENTACION",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "ESDO_ID_ESTADO_DOCUMENTO",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "ESDO_OBSERVACION",
+          "definition": "VARCHAR(300)         not null"
+        },
+        {
+          "column": "ESDO_FECHA",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "ESDO_HORA",
+          "definition": "TIME                 not null"
+        }
+      ],
+      "pk": "constraint PK_ESTADO_SOLICITUD_DOCUMENTO primary key (ESDO_ID_ESTADO_SOLICITUD_DOCUME)"
+    },
+    {
+      "name": "ESTUDIO_PROFESIONAL",
+      "columns": [
+        {
+          "column": "ESPR_ID_ESTUDIO_PROFESIONAL",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ESPR_ID_NIVEL_PROFESIONAL",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "ESPR_NOMBRE",
+          "definition": "VARCHAR(150)         not null"
+        },
+        {
+          "column": "ESPR_ESTADO",
+          "definition": "VARCHAR(3)           not null"
+        }
+      ],
+      "pk": "constraint PK_ESTUDIO_PROFESIONAL primary key (ESPR_ID_ESTUDIO_PROFESIONAL)"
+    },
+    {
+      "name": "EVALUACION",
+      "columns": [
+        {
+          "column": "EVAL_ID_EVALUACION",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "EVAL_ID_SOLICITUD",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "EVAL_PUNTUACION",
+          "definition": "INT4                 null"
+        },
+        {
+          "column": "EVAL_FECHA_EVALUACION",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "EVAL_HORA_EVALUACION",
+          "definition": "TIME                 not null"
+        }
+      ],
+      "pk": "constraint PK_EVALUACION primary key (EVAL_ID_EVALUACION)"
+    },
+    {
+      "name": "HISTORICO_CERTIFICADO",
+      "columns": [
+        {
+          "column": "HICE_ID_HISTORICO_CERTIFICADO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "HICE_ANIO_CERTIFICACION",
+          "definition": "VARCHAR(4)           null"
+        },
+        {
+          "column": "HICE_NUMERO_CERTIFICACION",
+          "definition": "VARCHAR(4)           null"
+        },
+        {
+          "column": "HICE_TIPO",
+          "definition": "VARCHAR(15)          null"
+        },
+        {
+          "column": "HICE_FOLIO_CERTIFICADO",
+          "definition": "VARCHAR(7)           not null"
+        },
+        {
+          "column": "HICE_CURP",
+          "definition": "VARCHAR(18)          null"
+        },
+        {
+          "column": "HICE_AREA_CERTIFICACION",
+          "definition": "VARCHAR(120)         null"
+        }
+      ],
+      "pk": "constraint PK_HISTORICO_CERTIFICADO primary key (HICE_ID_HISTORICO_CERTIFICADO, HICE_FOLIO_CERTIFICADO)"
+    },
+    {
+      "name": "INSTITUCION",
+      "columns": [
+        {
+          "column": "INST_ID_INSTITUCION",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "INST_NUMERO_AFILIACION",
+          "definition": "VARCHAR(7)           not null"
+        },
+        {
+          "column": "INST_NOMBRE",
+          "definition": "VARCHAR(300)         not null"
+        },
+        {
+          "column": "INST_FACULTAD",
+          "definition": "VARCHAR(500)         not null"
+        },
+        {
+          "column": "INST_ZONA",
+          "definition": "VARCHAR(80)          not null"
+        },
+        {
+          "column": "INS_COORD_REGIONAL_CERT_ACADEMI",
+          "definition": "VARCHAR(200)         null"
+        }
+      ],
+      "pk": "constraint PK_INSTITUCION primary key (INST_ID_INSTITUCION)"
+    },
+    {
+      "name": "NIVEL_PROFESIONAL",
+      "columns": [
+        {
+          "column": "NIPR_ID_NIVEL_PROFESIONAL",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "NIPR_NIVEL_PROFESIONAL",
+          "definition": "VARCHAR(300)         not null"
+        }
+      ],
+      "pk": "constraint PK_NIVEL_PROFESIONAL primary key (NIPR_ID_NIVEL_PROFESIONAL)"
+    },
+    {
+      "name": "PAGO",
+      "columns": [
+        {
+          "column": "PAGO_ID_PAGO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "PAGO_ID_SOLICITUD",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "PAGO_URL_COMPROBANTE",
+          "definition": "VARCHAR(255)         not null"
+        }
+      ],
+      "pk": "constraint PK_PAGO primary key (PAGO_ID_PAGO)"
+    },
+    {
+      "name": "PERSONA",
+      "columns": [
+        {
+          "column": "PERS_ID_PERSONA",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "PERS_ID_INSTITUCION",
+          "definition": "INT4                 null"
+        },
+        {
+          "column": "PERS_NOMBRE",
+          "definition": "VARCHAR(150)         not null"
+        },
+        {
+          "column": "PERS_APELLIDO_PATERNO",
+          "definition": "VARCHAR(60)          null"
+        },
+        {
+          "column": "PERS_APELLIDO_MATERNO",
+          "definition": "VARCHAR(60)          null"
+        },
+        {
+          "column": "PERS_CURP",
+          "definition": "VARCHAR(18)          not null"
+        },
+        {
+          "column": "PERS_RFC",
+          "definition": "VARCHAR(13)          not null"
+        },
+        {
+          "column": "PERS_GENERO",
+          "definition": "VARCHAR(1)           null"
+        },
+        {
+          "column": "PERS_NUM_AFILIACION_INSTITUCION",
+          "definition": "VARCHAR(10)          null"
+        },
+        {
+          "column": "PERS_ACTIVO",
+          "definition": "BOOL                 null"
+        }
+      ],
+      "pk": "constraint PK_PERSONA primary key (PERS_ID_PERSONA)"
+    },
+    {
+      "name": "PERSONA_ESTUDIO_PROFESIONAL",
+      "columns": [
+        {
+          "column": "PEES_ID_PERSONA_ESTUDIO_PROFESI",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "PEES_ID_ESTUIDO_PROFESIONAL",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "PEES_ID_PERSONA",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "PEES_URL_TITULO",
+          "definition": "VARCHAR(300)         null"
+        },
+        {
+          "column": "PEES_CEDULA",
+          "definition": "VARCHAR(20)          null"
+        },
+        {
+          "column": "PEES_URL_CEDULA",
+          "definition": "VARCHAR(180)         null"
+        }
+      ],
+      "pk": "constraint PK_PERSONA_ESTUDIO_PROFESIONAL primary key (PEES_ID_PERSONA_ESTUDIO_PROFESI, PEES_ID_ESTUIDO_PROFESIONAL, PEES_ID_PERSONA)"
+    },
+    {
+      "name": "PRIVILEGIO",
+      "columns": [
+        {
+          "column": "PRIV_ID_PRIVILEGIO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "PRIV_NOMBRE",
+          "definition": "VARCHAR(150)         not null"
+        },
+        {
+          "column": "PRIV_DESCRIPCION",
+          "definition": "VARCHAR(150)         not null"
+        }
+      ],
+      "pk": "constraint PK_PRIVILEGIO primary key (PRIV_ID_PRIVILEGIO)"
+    },
+    {
+      "name": "REFRENDO_CERTIFICADO",
+      "columns": [
+        {
+          "column": "RECE_ID_REFRENDO_CERTIFICACION",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "RECE_ID_EVALUACION",
+          "definition": "INT4                 null"
+        },
+        {
+          "column": "RECE_ID_CERTIFICADO",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "RECE_NUMERO_REFRENDO",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "RECE_ANIO_REFRENDO",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "RECE_ART14",
+          "definition": "BOOL                 null"
+        },
+        {
+          "column": "RECE_ART13",
+          "definition": "BOOL                 not null"
+        }
+      ],
+      "pk": "constraint PK_REFRENDO_CERTIFICADO primary key (RECE_ID_REFRENDO_CERTIFICACION)"
+    },
+    {
+      "name": "ROL",
+      "columns": [
+        {
+          "column": "ROL_ID_ROL",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ROL_NOMBRE",
+          "definition": "VARCHAR(150)         not null"
+        }
+      ],
+      "pk": "constraint PK_ROL primary key (ROL_ID_ROL)"
+    },
+    {
+      "name": "ROL_PRIVILEGIO",
+      "columns": [
+        {
+          "column": "ROPR_ID_ROL_PRIVILEGIO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "ROPR_ID_ROL",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "ROPR_ID_PRIVILEGIO",
+          "definition": "INT4                 not null"
+        }
+      ],
+      "pk": "constraint PK_ROL_PRIVILEGIO primary key (ROPR_ID_ROL_PRIVILEGIO)"
+    },
+    {
+      "name": "SEDE",
+      "columns": [
+        {
+          "column": "SEDE_ID_SEDE",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "INST_ID_INSTITUCION",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "SEDE_DESCRIPCION",
+          "definition": "VARCHAR(150)         not null"
+        }
+      ],
+      "pk": "constraint PK_SEDE primary key (SEDE_ID_SEDE)"
+    },
+    {
+      "name": "SOLICITUD",
+      "columns": [
+        {
+          "column": "SOLI_ID_SOLICITUD",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "SOLI_ID_PERSONA",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "SOLI_ID_AREA_CERTIFICACION",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "SOLI_ID_TIPO_PERSONAL_ACADEMICO",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "SOLI_ID_CONVOCATORIA",
+          "definition": "INT4                 null"
+        },
+        {
+          "column": "SOLI_ID_ARTICULO",
+          "definition": "INT4                 null"
+        },
+        {
+          "column": "SOLI_NUMERO_CERTIFICADO",
+          "definition": "VARCHAR(10)          null"
+        },
+        {
+          "column": "SOLI_FECHA_REGISTRO_SOLICITUD",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "SOLI_FOLIO_SOLICITUD",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "SOLO_ART13",
+          "definition": "BOOL                 not null"
+        },
+        {
+          "column": "SOLI_ART14",
+          "definition": "BOOL                 not null"
+        }
+      ],
+      "pk": "constraint PK_SOLICITUD primary key (SOLI_ID_SOLICITUD)"
+    },
+    {
+      "name": "SOLICITUD_DOCUMENTO",
+      "columns": [
+        {
+          "column": "SOCU_ID_DOCUMENTACION",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "SOCU_ID_SOLICITUD",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "DOCU_ID_DOCUMENTO",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "SOCU_FECHA",
+          "definition": "DATE                 not null"
+        },
+        {
+          "column": "SOCU_HORA",
+          "definition": "TIME                 not null"
+        }
+      ],
+      "pk": "constraint PK_SOLICITUD_DOCUMENTO primary key (SOCU_ID_DOCUMENTACION)"
+    },
+    {
+      "name": "TIPO_COMUNICACION",
+      "columns": [
+        {
+          "column": "TICO_ID_TIPO_COMUNICACION",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "TICO_TIPO_COMUNICACION",
+          "definition": "VARCHAR(50)          not null"
+        },
+        {
+          "column": "TICO_ESTADO",
+          "definition": "VARCHAR(3)           not null"
+        }
+      ],
+      "pk": "constraint PK_TIPO_COMUNICACION primary key (TICO_ID_TIPO_COMUNICACION)"
+    },
+    {
+      "name": "TIPO_CONVOCATORIA",
+      "columns": [
+        {
+          "column": "TICO_ID_TIPO_CONVOCATORIA",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "TICO_TIPO_CONVOCATORIA",
+          "definition": "VARCHAR(50)          not null"
+        },
+        {
+          "column": "TICO_ESTADO",
+          "definition": "VARCHAR(3)           not null"
+        },
+        {
+          "column": "TICO_SIGLAS",
+          "definition": "VARCHAR(65)          not null"
+        }
+      ],
+      "pk": "constraint PK_TIPO_CONVOCATORIA primary key (TICO_ID_TIPO_CONVOCATORIA)"
+    },
+    {
+      "name": "TIPO_DICTAMEN",
+      "columns": [
+        {
+          "column": "TIDI_ID_TIPO_DICTAMEN",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "TIDI_DESCRIPCION",
+          "definition": "VARCHAR(120)         not null"
+        },
+        {
+          "column": "TIDI_TIPO_DICTAMEN_ESTADO",
+          "definition": "BOOL                 not null"
+        }
+      ],
+      "pk": "constraint PK_TIPO_DICTAMEN primary key (TIDI_ID_TIPO_DICTAMEN)"
+    },
+    {
+      "name": "TIPO_PERSONAL_ACADEMICO",
+      "columns": [
+        {
+          "column": "TIPA_ID_TIPO_PERSONAL_ACADEMICO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "TIPA_DESCRIPCION",
+          "definition": "VARCHAR(150)         not null"
+        },
+        {
+          "column": "TIPA_ESTADO",
+          "definition": "BOOL                 not null"
+        }
+      ],
+      "pk": "constraint PK_TIPO_PERSONAL_ACADEMICO primary key (TIPA_ID_TIPO_PERSONAL_ACADEMICO)"
+    },
+    {
+      "name": "USUARIO",
+      "columns": [
+        {
+          "column": "USUA_ID_USUARIO",
+          "definition": "SERIAL               not null"
+        },
+        {
+          "column": "USUA_ID_PERSONA",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "USUA_ID_ROL",
+          "definition": "INT4                 not null"
+        },
+        {
+          "column": "USUA_NOMBRE",
+          "definition": "VARCHAR(150)         not null"
+        },
+        {
+          "column": "USUA_CONTRASENIA",
+          "definition": "VARCHAR(255)         not null"
+        },
+        {
+          "column": "USUA_ESTATUS",
+          "definition": "VARCHAR(20)          not null"
+        }
+      ],
+      "pk": "constraint PK_USUARIO primary key (USUA_ID_USUARIO)"
+    }
+  ],
+  "relaciones_foraneas": [
+    {
+      "origen": "ACTA",
+      "restriccion": "FK_ACTA_PROPORCIO_SOLICITU",
+      "columna_origen": "ACTA_ID_SOLICITUD",
+      "destino": "SOLICITUD",
+      "columna_destino": "SOLI_ID_SOLICITUD"
+    },
+    {
+      "origen": "ALCALDIA_MUNICIPIO",
+      "restriccion": "FK_ALCALDIA_CONTIENE_ENTIDAD_",
+      "columna_origen": "ALMU_ID_ENTIDAD_FEDERATIVA",
+      "destino": "ENTIDAD_FEDERATIVA",
+      "columna_destino": "ENFE_ID_ENTIDAD_FEDERATIVA"
+    },
+    {
+      "origen": "CERTIFICADO",
+      "restriccion": "FK_CERTIFIC_RELATIONS_EVALUACI",
+      "columna_origen": "CERT_ID_EVALUACION",
+      "destino": "EVALUACION",
+      "columna_destino": "EVAL_ID_EVALUACION"
+    },
+    {
+      "origen": "COLONIA",
+      "restriccion": "FK_COLONIA_SE_COMPON_ALCALDIA",
+      "columna_origen": "COLO_ID_ALCALDIA",
+      "destino": "ALCALDIA_MUNICIPIO",
+      "columna_destino": "ALMU_ID_ALCALDIA"
+    },
+    {
+      "origen": "COMUNICACION",
+      "restriccion": "FK_COMUNICA_CLASIFICA_TIPO_COM",
+      "columna_origen": "COMU_ID_TIPO_COMUNICACION",
+      "destino": "TIPO_COMUNICACION",
+      "columna_destino": "TICO_ID_TIPO_COMUNICACION"
+    },
+    {
+      "origen": "COMUNICACION",
+      "restriccion": "FK_COMUNICA_TIENE_CON_PERSONA",
+      "columna_origen": "CUMU_ID_PERSONA",
+      "destino": "PERSONA",
+      "columna_destino": "PERS_ID_PERSONA"
+    },
+    {
+      "origen": "CONVOCATORIA",
+      "restriccion": "FK_CONVOCAT_RELATIONS_TIPO_CON",
+      "columna_origen": "CONV_ID_TIPO_CONVOCATORIA",
+      "destino": "TIPO_CONVOCATORIA",
+      "columna_destino": "TICO_ID_TIPO_CONVOCATORIA"
+    },
+    {
+      "origen": "DICTAMEN",
+      "restriccion": "FK_DICTAMEN_REFERENCE_TIPO_DIC",
+      "columna_origen": "DICT_ID_TIPO_DICTAMEN",
+      "destino": "TIPO_DICTAMEN",
+      "columna_destino": "TIDI_ID_TIPO_DICTAMEN"
+    },
+    {
+      "origen": "DICTAMEN",
+      "restriccion": "FK_DICTAMEN_REFERENCE_EVALUACI",
+      "columna_origen": "DICT_ID_EVALUACION",
+      "destino": "EVALUACION",
+      "columna_destino": "EVAL_ID_EVALUACION"
+    },
+    {
+      "origen": "DOMICILIO",
+      "restriccion": "FK_DOMICILI_SE_ENCUEN_ENTIDAD_",
+      "columna_origen": "DOMI_ID_ENTIDAD_FEDERATIVA",
+      "destino": "ENTIDAD_FEDERATIVA",
+      "columna_destino": "ENFE_ID_ENTIDAD_FEDERATIVA"
+    },
+    {
+      "origen": "DOMICILIO",
+      "restriccion": "FK_DOMICILI_TIENE_DOM_PERSONA",
+      "columna_origen": "DOMI_ID_PERSONA",
+      "destino": "PERSONA",
+      "columna_destino": "PERS_ID_PERSONA"
+    },
+    {
+      "origen": "ESTADO_SOLICITUD",
+      "restriccion": "FK_ESTADO_S_REFERENCE_SOLICITU",
+      "columna_origen": "ESSO_ID_SOLICITUD",
+      "destino": "SOLICITUD",
+      "columna_destino": "SOLI_ID_SOLICITUD"
+    },
+    {
+      "origen": "ESTADO_SOLICITUD",
+      "restriccion": "FK_ESTADO_S_RELATIONS_C_ESTADO",
+      "columna_origen": "ESSO_ID_C_ESTADO_SOLICITUD",
+      "destino": "C_ESTADO_SOLICITUD",
+      "columna_destino": "CESO_ID_C_ESTADO_SOLICITUD"
+    },
+    {
+      "origen": "ESTADO_SOLICITUD_DOCUMENTO",
+      "restriccion": "FK_ESTADO_S_RELATIONS_SOLICITU",
+      "columna_origen": "ESDO_ID_DOCUMENTACION",
+      "destino": "SOLICITUD_DOCUMENTO",
+      "columna_destino": "SOCU_ID_DOCUMENTACION"
+    },
+    {
+      "origen": "ESTADO_SOLICITUD_DOCUMENTO",
+      "restriccion": "FK_ESTADO_S_RELATIONS_ESTADO_D",
+      "columna_origen": "ESDO_ID_ESTADO_DOCUMENTO",
+      "destino": "ESTADO_DOCUMENTO",
+      "columna_destino": "ESDO_ID_ESTADO_DOCUMENTO"
+    },
+    {
+      "origen": "ESTUDIO_PROFESIONAL",
+      "restriccion": "FK_ESTUDIO__REFERENCE_NIVEL_PR",
+      "columna_origen": "ESPR_ID_NIVEL_PROFESIONAL",
+      "destino": "NIVEL_PROFESIONAL",
+      "columna_destino": "NIPR_ID_NIVEL_PROFESIONAL"
+    },
+    {
+      "origen": "EVALUACION",
+      "restriccion": "FK_EVALUACI_RELATIONS_SOLICITU",
+      "columna_origen": "EVAL_ID_SOLICITUD",
+      "destino": "SOLICITUD",
+      "columna_destino": "SOLI_ID_SOLICITUD"
+    },
+    {
+      "origen": "PAGO",
+      "restriccion": "FK_PAGO_REFERENCE_SOLICITU",
+      "columna_origen": "PAGO_ID_SOLICITUD",
+      "destino": "SOLICITUD",
+      "columna_destino": "SOLI_ID_SOLICITUD"
+    },
+    {
+      "origen": "PERSONA",
+      "restriccion": "FK_PERSONA_PERTENECE_INSTITUC",
+      "columna_origen": "PERS_ID_INSTITUCION",
+      "destino": "INSTITUCION",
+      "columna_destino": "INST_ID_INSTITUCION"
+    },
+    {
+      "origen": "PERSONA_ESTUDIO_PROFESIONAL",
+      "restriccion": "FK_PERSONA__RELATIONS_ESTUDIO_",
+      "columna_origen": "PEES_ID_ESTUIDO_PROFESIONAL",
+      "destino": "ESTUDIO_PROFESIONAL",
+      "columna_destino": "ESPR_ID_ESTUDIO_PROFESIONAL"
+    },
+    {
+      "origen": "PERSONA_ESTUDIO_PROFESIONAL",
+      "restriccion": "FK_PERSONA__RELATIONS_PERSONA",
+      "columna_origen": "PEES_ID_PERSONA",
+      "destino": "PERSONA",
+      "columna_destino": "PERS_ID_PERSONA"
+    },
+    {
+      "origen": "REFRENDO_CERTIFICADO",
+      "restriccion": "FK_REFRENDO_RELATIONS_EVALUACI",
+      "columna_origen": "RECE_ID_EVALUACION",
+      "destino": "EVALUACION",
+      "columna_destino": "EVAL_ID_EVALUACION"
+    },
+    {
+      "origen": "REFRENDO_CERTIFICADO",
+      "restriccion": "FK_REFRENDO_RELATIONS_CERTIFIC",
+      "columna_origen": "RECE_ID_CERTIFICADO",
+      "destino": "CERTIFICADO",
+      "columna_destino": "CERT_ID_CERTIFICADO"
+    },
+    {
+      "origen": "ROL_PRIVILEGIO",
+      "restriccion": "FK_ROL_PRIV_ROL_PRIVI_ROL",
+      "columna_origen": "ROPR_ID_ROL",
+      "destino": "ROL",
+      "columna_destino": "ROL_ID_ROL"
+    },
+    {
+      "origen": "ROL_PRIVILEGIO",
+      "restriccion": "FK_ROL_PRIV_ROL_PRIVI_PRIVILEG",
+      "columna_origen": "ROPR_ID_PRIVILEGIO",
+      "destino": "PRIVILEGIO",
+      "columna_destino": "PRIV_ID_PRIVILEGIO"
+    },
+    {
+      "origen": "SEDE",
+      "restriccion": "FK_SEDE_TIENE_SED_INSTITUC",
+      "columna_origen": "INST_ID_INSTITUCION",
+      "destino": "INSTITUCION",
+      "columna_destino": "INST_ID_INSTITUCION"
+    },
+    {
+      "origen": "SOLICITUD",
+      "restriccion": "FK_SOLICITU_ESTA_ASOC_TIPO_PER",
+      "columna_origen": "SOLI_ID_TIPO_PERSONAL_ACADEMICO",
+      "destino": "TIPO_PERSONAL_ACADEMICO",
+      "columna_destino": "TIPA_ID_TIPO_PERSONAL_ACADEMICO"
+    },
+    {
+      "origen": "SOLICITUD",
+      "restriccion": "FK_SOLICITU_PERTENECE_AREA_CER",
+      "columna_origen": "SOLI_ID_AREA_CERTIFICACION",
+      "destino": "AREA_CERTIFICACION",
+      "columna_destino": "AREA_ID_AREA_CERTIFICACION"
+    },
+    {
+      "origen": "SOLICITUD",
+      "restriccion": "FK_SOLICITU_PUEDE_HAC_PERSONA",
+      "columna_origen": "SOLI_ID_PERSONA",
+      "destino": "PERSONA",
+      "columna_destino": "PERS_ID_PERSONA"
+    },
+    {
+      "origen": "SOLICITUD",
+      "restriccion": "FK_SOLICITU_RELATIONS_CONVOCAT",
+      "columna_origen": "SOLI_ID_CONVOCATORIA",
+      "destino": "CONVOCATORIA",
+      "columna_destino": "CONV_ID_CONVOCATORIA"
+    },
+    {
+      "origen": "SOLICITUD",
+      "restriccion": "FK_SOLICITU_TIENE_ART_ARTICULO",
+      "columna_origen": "SOLI_ID_ARTICULO",
+      "destino": "ARTICULO_SUBINDICE",
+      "columna_destino": "ARCE_ID_ARTICULO"
+    },
+    {
+      "origen": "SOLICITUD_DOCUMENTO",
+      "restriccion": "FK_SOLICITU_RELATIONS_DOCUMENT",
+      "columna_origen": "DOCU_ID_DOCUMENTO",
+      "destino": "DOCUMENTO",
+      "columna_destino": "DOCU_ID_DOCUMENTO"
+    },
+    {
+      "origen": "SOLICITUD_DOCUMENTO",
+      "restriccion": "FK_SOLICITU_TIENE_AS_SOLICITU",
+      "columna_origen": "SOCU_ID_SOLICITUD",
+      "destino": "SOLICITUD",
+      "columna_destino": "SOLI_ID_SOLICITUD"
+    },
+    {
+      "origen": "USUARIO",
+      "restriccion": "FK_USUARIO_TIENE_ROL_ROL",
+      "columna_origen": "USUA_ID_ROL",
+      "destino": "ROL",
+      "columna_destino": "ROL_ID_ROL"
+    },
+    {
+      "origen": "USUARIO",
+      "restriccion": "FK_USUARIO_TIENE_USU_PERSONA",
+      "columna_origen": "USUA_ID_PERSONA",
+      "destino": "PERSONA",
+      "columna_destino": "PERS_ID_PERSONA"
+    }
+  ]
+}
