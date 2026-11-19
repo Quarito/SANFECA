@@ -302,6 +302,12 @@ Cada fase lleva commits propios, pruebas que deben pasar y su propia reversión.
 
 ### F1 · Base técnica y entorno de pruebas PostgreSQL
 
+> **Estado (21/11/2026): implementada** en la rama `integracion/pdm-f1`.
+> - PostgreSQL aislado: 21/21 pruebas. Unitarias: 8/8.
+> - Instrucciones en `PRUEBAS_F1_POSTGRESQL.md`.
+> - Decisiones de datos con los resultados del servidor en `DECISIONES_DATOS_F1.md`.
+> - Sin cambios en `bd_laravelanfeca_pruebas`.
+
 | Aspecto | Detalle |
 |---|---|
 | Tablas | Extensiones (D-2) y semillas de catálogos: `c_estado_solicitud`, `documento`, `estado_documento`, `articulo_subindice`, `entidad_federativa`, `tipo_comunicacion`, `nivel_profesional`, `area_certificacion`, `tipo_personal_academico`, `estudio_profesional` |
