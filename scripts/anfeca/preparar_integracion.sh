@@ -2,7 +2,7 @@
 # =============================================================================
 # ANFECA · ACTIVIDAD 2 — Preparar la integración de las bases (sin modificar la principal).
 #
-#   cd /home/servidorweb/anfeca_f45 && bash scripts/anfeca/preparar_integracion.sh [--recrear-ensayo]
+#   cd /home/servidorweb/anfeca_f45 && bash scripts/anfeca/preparar_integracion.sh
 #
 # 1. Revisa las migraciones PDM 000001–000004 y su estado en la base principal (lectura).
 # 2. Revisa las decisiones D-11, D-13 y D-14 registradas en este worktree.
@@ -16,8 +16,13 @@
 #
 # Garantías:
 #   - En bd_laravelanfeca_pruebas solo hay SELECT y pg_dump. En bd_anfeca_copia_pruebas_pg, nada.
-#   - Solo crea/reemplaza bd_anfeca_ensayo_pruebas_pg, y únicamente si la creó este script
-#     (lleva un comentario de marca) y se indica --recrear-ensayo.
+#   - La base de ensayo la crea PREVIAMENTE un administrador (el rol de Laravel no tiene CREATEDB
+#     ni se le concede). Antes de restaurar se verifica que sea exactamente bd_anfeca_ensayo_pruebas_pg,
+#     local, VACÍA, propiedad de rol_anfecalaravel, con la marca ANFECA_ENSAYO_AISLADO y con la misma
+#     codificación y collation que la principal. Si algo no cumple, se rechaza sin tocarla.
+#   - Nunca elimina ni recrea bases. La restauración es de una sola transacción: si falla, la base
+#     de ensayo queda vacía.
+#   - Herramientas de PostgreSQL 18 (/usr/pgsql-18/bin), con versión >= a la del servidor.
 #   - Contraseña solicitada en pantalla, nunca guardada. Respaldos fuera del repositorio.
 # =============================================================================
 set -euo pipefail
@@ -25,9 +30,11 @@ set -euo pipefail
 PRINCIPAL="bd_laravelanfeca_pruebas"
 COPIA="bd_anfeca_copia_pruebas_pg"
 ENSAYO="bd_anfeca_ensayo_pruebas_pg"
-MARCA="ANFECA ensayo de integracion (preparar_integracion.sh)"
+ROL_ESPERADO="${ANFECA_ROL_ESPERADO:-rol_anfecalaravel}"   # variable solo para ensayos fuera del servidor
+MARCA="ANFECA_ENSAYO_AISLADO:$ENSAYO"                       # COMMENT ON DATABASE que pone el administrador
+PGBIN="${ANFECA_PGBIN:-/usr/pgsql-18/bin}"
 APP="${ANFECA_APP:-/var/www/ANFECA_PRUEBAS}"   # variable solo para ensayos fuera del servidor
-RECREAR="${1:-}"
+[[ $# -eq 0 ]] || { echo "Uso: bash scripts/anfeca/preparar_integracion.sh (sin opciones; la base de ensayo no se recrea desde aquí)" >&2; exit 1; }
 FECHA="$(date +%Y%m%d_%H%M%S)"
 SALIDA="$HOME/ANFECA_RESPALDOS/integracion/$FECHA"
 
@@ -43,6 +50,8 @@ ensayo() {
 }
 
 [[ -f artisan ]] || falla "Ejecute desde la raíz del worktree (/home/servidorweb/anfeca_f45)."
+for h in psql pg_dump pg_restore; do [[ -x "$PGBIN/$h" ]] || falla "No existe $PGBIN/$h (herramientas de PostgreSQL 18)."; done
+export PATH="$PGBIN:$PATH"   # huella_bd.sh y este script usan las herramientas de $PGBIN
 [[ "$(pwd -P)" != /var/www/* ]] || falla "No se ejecuta dentro de /var/www."
 for c in 450f69d e831add; do git merge-base --is-ancestor "$c" HEAD 2>/dev/null || falla "El worktree no contiene $c (use la rama integracion/pdm-despliegue)."; done
 URL="${ANFECA_URL:-http://192.168.7.130:8084/login}"
@@ -51,11 +60,22 @@ mkdir -p "$SALIDA" && chmod 700 "$HOME/ANFECA_RESPALDOS" "$HOME/ANFECA_RESPALDOS
 exec > >(tee -a "$SALIDA/preparacion.log") 2>&1
 
 export PGHOST="$(env_de DB_HOST)" PGPORT="$(env_de DB_PORT)" PGUSER="$(env_de DB_USERNAME)"
+[[ "$PGUSER" == "$ROL_ESPERADO" ]] || falla "DB_USERNAME es '$PGUSER'; se esperaba $ROL_ESPERADO."
+case "$PGHOST" in 127.0.0.1|localhost|::1|/*) ;; *) falla "DB_HOST='$PGHOST' no es local (se admite 127.0.0.1, localhost, ::1 o un socket).";; esac
 [[ "$(env_de DB_DATABASE)" == "$PRINCIPAL" ]] || falla "La aplicación no apunta a $PRINCIPAL."
 read -r -s -p "Contraseña de PostgreSQL para $PGUSER: " PGPASSWORD; echo; export PGPASSWORD
 trap 'unset PGPASSWORD DB_PASSWORD' EXIT
 export DB_CONNECTION=pgsql DB_HOST="$PGHOST" DB_PORT="$PGPORT" DB_USERNAME="$PGUSER" DB_PASSWORD="$PGPASSWORD" DB_URL=""
 q() { psql -d "$1" -X -q -At -v ON_ERROR_STOP=1 -c "$2"; }
+# Lecturas de catálogo con transacción de solo lectura (para la principal).
+ql() { psql -d "$1" -X -q -At -v ON_ERROR_STOP=1 -c "set default_transaction_read_only = on" -c "$2"; }
+
+echo "Herramientas: $(psql --version) · $(pg_dump --version) · $(pg_restore --version)"
+SERVIDOR_NUM="$(ql "$PRINCIPAL" "show server_version_num")"
+HERRAMIENTA_NUM="$(pg_dump --version | grep -oE '[0-9]+(\.[0-9]+)?' | head -1 | cut -d. -f1)"
+echo "Servidor: $(ql "$PRINCIPAL" "show server_version") · conexión: $(ql "$PRINCIPAL" "select coalesce(host(inet_server_addr()), 'socket local')")"
+(( HERRAMIENTA_NUM >= SERVIDOR_NUM / 10000 )) || falla "pg_dump $HERRAMIENTA_NUM es anterior al servidor ($SERVIDOR_NUM): use las herramientas de PostgreSQL 18."
+[[ "$(ql "$PRINCIPAL" "select coalesce(host(inet_server_addr()), 'socket')")" =~ ^(127\.0\.0\.1|::1|socket)$ ]] || falla "El servidor PostgreSQL no es local."
 
 paso "0. Base principal: huella inicial (solo lectura)"
 bash scripts/anfeca/huella_bd.sh "$PRINCIPAL" > "$SALIDA/huella_principal_antes.txt"
@@ -87,18 +107,55 @@ echo "Tamaño: $(stat -c %s "$DUMP") bytes · SHA-256: $(sha256sum "$DUMP" | cut
 echo "Objetos con datos en el respaldo: $(pg_restore -l "$DUMP" | grep -c 'TABLE DATA')"
 pg_dump --version
 
-paso "4. Restauración de prueba en $ENSAYO"
-[[ "$ENSAYO" != "$PRINCIPAL" && "$ENSAYO" != "$COPIA" ]] || falla "Nombre de ensayo inválido."
-if [[ "$(q postgres "select count(*) from pg_database where datname = '$ENSAYO'")" == "1" ]]; then
-    [[ "$(q postgres "select shobj_description(oid, 'pg_database') from pg_database where datname = '$ENSAYO'")" == "$MARCA" ]] \
-        || falla "$ENSAYO existe y no fue creada por este script: no se toca."
-    [[ "$RECREAR" == "--recrear-ensayo" ]] || falla "$ENSAYO ya existe (de un ensayo anterior). Repita con --recrear-ensayo para reemplazarla."
-    dropdb "$ENSAYO"
+paso "4. Restauración de prueba en $ENSAYO (base creada por el administrador)"
+[[ "$ENSAYO" == "bd_anfeca_ensayo_pruebas_pg" && "$ENSAYO" != "$PRINCIPAL" && "$ENSAYO" != "$COPIA" ]] || falla "Nombre de ensayo inválido."
+
+instrucciones_admin() {
+    cat <<TXT
+Pida al administrador de PostgreSQL (no al rol de Laravel; no se concede CREATEDB) que la prepare:
+  sudo -u postgres $PGBIN/psql -p ${PGPORT:-5432} -v ON_ERROR_STOP=1 \\
+    -c "CREATE DATABASE $ENSAYO OWNER $ROL_ESPERADO TEMPLATE template0 ENCODING '$(ql "$PRINCIPAL" "select pg_encoding_to_char(encoding) from pg_database where datname = current_database()")' LC_COLLATE '$(ql "$PRINCIPAL" "select datcollate from pg_database where datname = current_database()")' LC_CTYPE '$(ql "$PRINCIPAL" "select datctype from pg_database where datname = current_database()")'" \\
+    -c "COMMENT ON DATABASE $ENSAYO IS '$MARCA'"
+TXT
+}
+
+# Todas las comprobaciones se leen del catálogo compartido (pg_database), sin conectarse aún al ensayo.
+DATOS_BD="$(ql "$PRINCIPAL" "select pg_get_userbyid(d.datdba) || '|' || coalesce(shobj_description(d.oid, 'pg_database'), '') || '|' ||
+    d.datistemplate || '|' || d.datallowconn || '|' || pg_encoding_to_char(d.encoding) || '|' || d.datcollate || '|' || d.datctype || '|' || d.datlocprovider::text
+    from pg_database d where d.datname = '$ENSAYO'")"
+[[ -n "$DATOS_BD" ]] || { instrucciones_admin; falla "$ENSAYO no existe."; }
+REF_BD="$(ql "$PRINCIPAL" "select pg_encoding_to_char(d.encoding) || '|' || d.datcollate || '|' || d.datctype || '|' || d.datlocprovider::text
+    from pg_database d where d.datname = current_database()")"
+IFS='|' read -r E_DUENO E_MARCA E_PLANTILLA E_CONEXION E_COD E_COLL E_CTYPE E_PROV <<< "$DATOS_BD"
+echo "Dueño: $E_DUENO · Marca: '${E_MARCA}' · Codificación/collation: $E_COD $E_COLL $E_CTYPE $E_PROV"
+[[ "$E_DUENO" == "$ROL_ESPERADO" ]] || falla "$ENSAYO pertenece a '$E_DUENO', no a $ROL_ESPERADO. Rechazada."
+[[ "$E_MARCA" == "$MARCA" ]] || { instrucciones_admin; falla "$ENSAYO no tiene la marca '$MARCA'. Rechazada."; }
+[[ "$E_PLANTILLA" == "false" && "$E_CONEXION" == "true" ]] || falla "$ENSAYO es plantilla o no admite conexiones. Rechazada."
+[[ "$E_COD|$E_COLL|$E_CTYPE|$E_PROV" == "$REF_BD" ]] || { instrucciones_admin; falla "Codificación/collation de $ENSAYO ($E_COD|$E_COLL|$E_CTYPE|$E_PROV) distinta de la principal ($REF_BD): la comparación de integridad no sería válida. Rechazada."; }
+
+# Conexión al ensayo: confirma la base real y que está VACÍA (ningún objeto de usuario).
+[[ "$(q "$ENSAYO" "select current_database()")" == "$ENSAYO" ]] || falla "La conexión no apunta a $ENSAYO."
+OBJETOS="$(q "$ENSAYO" "select
+    (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname not in ('pg_catalog', 'information_schema') and n.nspname not like 'pg_toast%' and n.nspname not like 'pg_temp%')
+  + (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname not in ('pg_catalog', 'information_schema'))
+  + (select count(*) from pg_namespace n where n.nspname not in ('public', 'pg_catalog', 'information_schema') and n.nspname not like 'pg_toast%' and n.nspname not like 'pg_temp%')
+  + (select count(*) from pg_extension where extname <> 'plpgsql')
+  + (select count(*) from pg_type t join pg_namespace n on n.oid = t.typnamespace where n.nspname = 'public')")"
+if [[ "$OBJETOS" != "0" ]]; then
+    echo "$ENSAYO contiene $OBJETOS objeto(s): no está vacía (¿ensayo anterior?). No se elimina ni se reutiliza."
+    echo "Para repetir el ensayo, el administrador debe eliminarla y crearla de nuevo:"
+    echo "  sudo -u postgres $PGBIN/dropdb -p ${PGPORT:-5432} $ENSAYO"
+    instrucciones_admin
+    falla "Base de ensayo no vacía. Rechazada."
 fi
-createdb "$ENSAYO" || falla "No se pudo crear $ENSAYO. El rol $PGUSER necesita CREATEDB, o créela un administrador:
-  sudo -u postgres createdb -O $PGUSER $ENSAYO"
-q "$ENSAYO" "comment on database $ENSAYO is '$MARCA'"
-pg_restore -d "$ENSAYO" --no-owner --no-privileges --exit-on-error "$DUMP"
+echo "$ENSAYO verificada: local, vacía, propiedad de $ROL_ESPERADO, marcada y con la collation de la principal."
+
+# Restauración sin CREATEDB: el rol es dueño de la base. Una sola transacción: si falla, queda vacía.
+pg_restore --dbname="$ENSAYO" --no-owner --no-privileges --single-transaction --exit-on-error "$DUMP" \
+    || falla "pg_restore falló; por ser de una sola transacción, $ENSAYO quedó vacía. Revise el error arriba."
+[[ "$(ql "$PRINCIPAL" "select coalesce(shobj_description(oid, 'pg_database'), '') from pg_database where datname = '$ENSAYO'")" == "$MARCA" ]] \
+    || falla "La marca de $ENSAYO cambió durante la restauración."
 bash scripts/anfeca/huella_bd.sh "$ENSAYO" > "$SALIDA/huella_ensayo_restaurada.txt"
 # La restauración se compara SIN tablas justificadas: debe ser idéntica.
 if ANFECA_HUELLA_JUSTIFICADA="" bash scripts/anfeca/huella_bd.sh --comparar "$SALIDA/huella_principal_al_respaldar.txt" "$SALIDA/huella_ensayo_restaurada.txt" > "$SALIDA/dif_restauracion.txt"; then
@@ -126,7 +183,7 @@ echo "Incidencias bloqueantes: $BLOQ (detalle en $SALIDA/plan_f2.json)"
 [[ "$BLOQ" =~ ^[0-9]+$ ]] || falla "No se pudo leer el plan F2 ($SALIDA/plan_f2.json)."
 if [[ "$BLOQ" != "0" ]]; then
     echo; echo "ENSAYO DETENIDO en el plan: registre las decisiones pendientes (D-11/D-13/D-14) con fuente documentada"
-    echo "en config/anfeca_pdm_decisiones.php y repita con --recrear-ensayo. La base principal no se tocó."
+    echo "en config/anfeca_pdm_decisiones.php; el administrador recrea la base de ensayo vacía y se repite. La base principal no se tocó."
     ETAPA="plan con bloqueos"
 else
     echo "--- 5.3 Migración F2 + conciliación + equivalencia"
