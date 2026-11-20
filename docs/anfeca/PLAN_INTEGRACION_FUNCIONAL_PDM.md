@@ -335,6 +335,11 @@ Cada fase lleva commits propios, pruebas que deben pasar y su propia reversión.
 
 ### F3 · Escritura espejo (`ANFECA_PDM_MODO=espejo`)
 
+> **Estado (20/11/2026): implementada** en la rama `integracion/pdm-f3` (incluye F1, F2 y `fix/seguridad-anfeca`).
+> - PostgreSQL aislado: 43/43 pruebas. SQLite: 54/54.
+> - **No activada** en ninguna base de trabajo.
+> - Detalle, activación y reversión en `F3_ESCRITURA_ESPEJO.md`.
+
 | Aspecto | Detalle |
 |---|---|
 | Archivos | `app/Services/Pdm/Sincronizador{Persona,Solicitud,Refrendo,Formacion,Documentos}.php` · cambios **mínimos** en los 9 puntos de escritura: una llamada dentro de la transacción existente |
