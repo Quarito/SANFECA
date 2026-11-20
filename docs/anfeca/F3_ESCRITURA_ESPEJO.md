@@ -9,7 +9,7 @@
 |---|---|---|---|
 | `apagado` | `public` | `public` | Por omisión. También es el resultado si falta cualquiera de las dos llaves. |
 | `espejo` | `public` **y** `anfeca_modelo`, en la **misma transacción** | `public` | **Dos llaves:** `ANFECA_PDM_MODO=espejo` en `.env` **y** activación registrada con `anfeca:pdm-modo espejo` para esa misma base |
-| `principal`, `exclusivo` | — | — | **No implementados.** Si se configuran, la aplicación opera como `apagado` y lo registra en el log. |
+| `principal`, `exclusivo` | ver `F4_F5_PDM_PRINCIPAL_EXCLUSIVO.md` | | Implementados en F4/F5 (rama `integracion/pdm-f4-f5`). |
 
 **Activación protegida** (`anfeca:pdm-modo espejo`). Exige:
 1. La primera llave (`.env`).

@@ -349,6 +349,10 @@ Cada fase lleva commits propios, pruebas que deben pasar y su propia reversión.
 
 ### F4 · Lectura desde el PDM (`principal`)
 
+> **Estado (20/11/2026): implementada y probada en PostgreSQL 16 aislado** en la rama `integracion/pdm-f4-f5`. **No activada** en ninguna base de trabajo.
+> - Se implementó con una capa de compatibilidad (`anfeca_compat`: vistas y disparadores) en lugar de los lectores PHP descritos abajo: Blade, Vue y los controladores no cambian.
+> - Detalle en `F4_F5_PDM_PRINCIPAL_EXCLUSIVO.md`.
+
 | Aspecto | Detalle |
 |---|---|
 | Archivos | `app/Services/Pdm/Lector*.php` · `VerificarDatosAutorizados` · `ConsultaAntecedentesService` (contra el histórico del PDM) · `RegistroCompletadoController::requisitos` · `AcuseRecepcionController` · `PanelController` (corrige la lectura antigua) · `DocumentoProbatorioController::ver` |
@@ -357,6 +361,10 @@ Cada fase lleva commits propios, pruebas que deben pasar y su propia reversión.
 | Reversión | `ANFECA_PDM_MODO=espejo` (requiere `conciliar` = 0) |
 
 ### F5 · Consolidación (`exclusivo`)
+
+> **Estado (20/11/2026): implementada y probada en PostgreSQL 16 aislado** (misma rama). `public` queda congelado y protegido por una guardia.
+> - La reversión ensayada es `anfeca:pdm-exportar-public` + `anfeca:pdm-modo principal|apagado`; no requiere restaurar un respaldo, aunque el respaldo previo sigue siendo obligatorio.
+> - D-1 B **no** se implementó.
 
 | Aspecto | Detalle |
 |---|---|
