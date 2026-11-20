@@ -89,6 +89,18 @@ class AceptacionCompromisoController extends Controller
             $servicio
         );
 
+        // Consulta de la aceptación de una solicitud ya enviada.
+        if (!$solicitud) {
+            $solicitud = SolicitudCertificacion::where(
+                'user_id',
+                $request->user()->id
+            )
+                ->where('estado', 'enviado')
+                ->where('compromiso_aceptado', true)
+                ->latest('id')
+                ->first();
+        }
+
         if (!$solicitud) {
             return redirect()
                 ->route('registro.completado')
@@ -98,7 +110,14 @@ class AceptacionCompromisoController extends Controller
                 );
         }
 
-        return view('registro.aceptacion-compromiso');
+        return view('registro.aceptacion-compromiso', [
+            'aceptado' => (bool) $solicitud->compromiso_aceptado,
+            'aceptadoEn' => $solicitud->compromiso_aceptado_en
+                ?->copy()
+                ->timezone('America/Mexico_City')
+                ->format('d/m/Y H:i'),
+            'soloConsulta' => $solicitud->estado !== 'borrador',
+        ]);
     }
 
     public function guardar(

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 
-defineProps({
+const props = defineProps({
     accion: {
         type: String,
         required: true
@@ -13,23 +13,33 @@ defineProps({
     urlRegresar: {
         type: String,
         required: true
-    }
+    },
+    urlContinuar: { type: String, default: '' },
+    aceptadoInicialmente: { type: Boolean, default: false },
+    aceptadoEn: { type: String, default: '' },
+    soloConsulta: { type: Boolean, default: false }
 });
 
-const aceptado = ref(false);
+const aceptado = ref(props.aceptadoInicialmente);
 </script>
 
 <template>
     <section class="aceptacion-compromiso">
         <h3>Compromiso de entrega de documentación</h3>
 
-        <p class="texto-compromiso">
-            Para completar su solicitud, deberá entregar
-            las fotografías indicadas en la convocatoria
-            y el comprobante de pago original.
+        <p class="texto-compromiso">Para completar su solicitud, deberá entregar las fotografías indicadas en la convocatoria y el comprobante de pago original.</p>
+
+        <p v-if="aceptadoInicialmente" class="estado-compromiso" role="status">
+            Compromiso aceptado<span v-if="aceptadoEn"> el {{ aceptadoEn }}</span>.
         </p>
 
-        <form :action="accion" method="POST">
+        <div v-if="soloConsulta" class="acciones-compromiso">
+            <a :href="urlContinuar" class="boton-aceptar">
+                Regresar a Finalización
+            </a>
+        </div>
+
+        <form v-else :action="accion" method="POST">
             <input
                 type="hidden"
                 name="_token"
@@ -136,6 +146,15 @@ const aceptado = ref(false);
     color: #ffffff;
     border: none;
     cursor: pointer;
+}
+
+.estado-compromiso {
+    font-size: 13px;
+    color: #1b5e20;
+    background: #eef7ee;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 20px;
 }
 
 .boton-aceptar:disabled {

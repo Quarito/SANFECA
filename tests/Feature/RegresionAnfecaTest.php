@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\CertificadoHistorico;
+use App\Models\DatoRefrendo;
 use App\Models\DatosSolicitante;
 use App\Models\DocumentoProbatorioSolicitud;
 use App\Models\FormacionAcademicaSolicitud;
@@ -435,4 +437,147 @@ class RegresionAnfecaTest extends TestCase
         Storage::disk('local')->assertExists($anterior);
     }
 
+    // ------------------------------------------------------------------
+    // Aceptación: conservación y consulta
+    // ------------------------------------------------------------------
+
+    public function test_aceptacion_se_conserva_y_se_consulta_en_borrador_y_tras_el_envio(): void
+    {
+        $user = $this->solicitante();
+        $solicitud = $this->borradorInicial($user);
+        $this->withoutVite();
+
+        $this->actingAs($user)->get('/registro/compromiso')
+            ->assertOk()->assertSee('data-aceptado="0"', false)->assertSee('data-solo-consulta="0"', false);
+
+        $this->actingAs($user)->post('/registro/compromiso/guardar', ['compromiso_aceptado' => '1']);
+        $fecha = $solicitud->fresh()->compromiso_aceptado_en->toDateTimeString();
+
+        $this->actingAs($user)->get('/registro/compromiso')
+            ->assertOk()->assertSee('data-aceptado="1"', false)->assertSee('data-solo-consulta="0"', false);
+
+        // Reaceptar no altera la fecha original.
+        $this->travel(5)->minutes();
+        $this->actingAs($user)->post('/registro/compromiso/guardar', ['compromiso_aceptado' => '1']);
+        $this->assertSame($fecha, $solicitud->fresh()->compromiso_aceptado_en->toDateTimeString());
+
+        $this->actingAs($user)->post('/registro/completado/confirmar')
+            ->assertSessionHas('success', 'Solicitud enviada correctamente.');
+
+        $enviada = $solicitud->fresh();
+        $this->assertSame('enviado', $enviada->estado);
+        $this->assertTrue($enviada->compromiso_aceptado);
+        $this->assertSame($fecha, $enviada->compromiso_aceptado_en->toDateTimeString());
+
+        $this->actingAs($user)->get('/registro/compromiso')
+            ->assertOk()->assertSee('data-aceptado="1"', false)->assertSee('data-solo-consulta="1"', false);
+
+        $this->actingAs($user)->get('/registro/completado')
+            ->assertOk()->assertSee('Compromiso de entrega aceptado');
+
+        // Tras el envío ya no puede registrarse otra aceptación.
+        $this->actingAs($user)->post('/registro/compromiso/guardar', ['compromiso_aceptado' => '1'])
+            ->assertRedirect(route('registro.completado'));
+    }
+
+    public function test_aceptacion_rechaza_valores_distintos_de_aceptado(): void
+    {
+        $user = $this->solicitante();
+        $solicitud = $this->borradorInicial($user);
+
+        foreach (['0', 'no', ''] as $valor) {
+            $this->actingAs($user)->post('/registro/compromiso/guardar', ['compromiso_aceptado' => $valor])
+                ->assertSessionHasErrors('compromiso_aceptado');
+        }
+
+        $this->assertFalse($solicitud->fresh()->compromiso_aceptado);
+    }
+
+    // ------------------------------------------------------------------
+    // Refrendo
+    // ------------------------------------------------------------------
+
+    private function certificadoVerificado(User $user, string $numero = '1234567'): CertificadoHistorico
+    {
+        $curp = DatosSolicitante::where('user_id', $user->id)->value('curp');
+        $c = new CertificadoHistorico();
+        $c->forceFill([
+            'curp_historica' => $curp,
+            'certificacion' => 'ANFECA',
+            'primera_vez' => '2018',
+            'numero_certificado' => $numero,
+            'user_id' => $user->id,
+            'estado_vinculacion' => 'verificado',
+        ])->save();
+
+        return $c;
+    }
+
+    public function test_refrendo_nuevo_inicia_con_certificacion_en_blanco(): void
+    {
+        $user = $this->solicitante();
+        $anterior = $this->borradorInicial($user, compromiso: true);
+        $anterior->update(['estado' => 'enviado', 'fecha_envio' => now()->subYear()]);
+        $this->certificadoVerificado($user);
+        $this->withoutVite();
+
+        $this->actingAs($user)->get('/registro/certificacion')
+            ->assertOk()
+            ->assertSee('data-numero-certificado-anterior=""', false)
+            ->assertDontSee('1234567');
+    }
+
+    public function test_refrendo_en_curso_conserva_la_certificacion_historica_validada(): void
+    {
+        $user = $this->solicitante();
+        $cert = $this->certificadoVerificado($user, '7654321');
+        SeleccionCertificacion::create([
+            'user_id' => $user->id, 'certificacion' => 'ANFECA',
+            'tipo_personal' => 'Profesoras y profesores de Tiempo Completo', 'area_certificacion' => 'Administración',
+        ]);
+        SolicitudCertificacion::create([
+            'user_id' => $user->id, 'tipo_tramite' => 'refrendo', 'certificacion' => 'ANFECA',
+            'estado' => 'borrador', 'certificado_historico_id' => $cert->id,
+        ]);
+        $this->withoutVite();
+
+        $this->actingAs($user)->get('/registro/certificacion')
+            ->assertOk()
+            ->assertSee('data-numero-certificado-anterior="7654321"', false);
+    }
+
+    public function test_refrendo_articulo_14_exige_formacion_academica_para_enviar(): void
+    {
+        $user = $this->solicitante();
+        $cert = $this->certificadoVerificado($user);
+        SeleccionCertificacion::create([
+            'user_id' => $user->id, 'certificacion' => 'ANFECA',
+            'tipo_personal' => 'Profesoras y profesores de Tiempo Completo', 'area_certificacion' => 'Administración',
+        ]);
+        $solicitud = SolicitudCertificacion::create([
+            'user_id' => $user->id, 'tipo_tramite' => 'refrendo', 'certificacion' => 'ANFECA',
+            'estado' => 'borrador', 'certificado_historico_id' => $cert->id,
+            'compromiso_aceptado' => true, 'compromiso_aceptado_en' => now(),
+        ]);
+        DatoRefrendo::create([
+            'solicitud_id' => $solicitud->id, 'aplica_articulo_14' => true, 'inciso_articulo_14' => '14.1',
+        ]);
+        $ruta = fn (string $campo) => tap("anfeca/documentos/solicitudes/{$solicitud->id}/{$campo}.pdf",
+            fn ($r) => Storage::disk('local')->put($r, '%PDF-1.4 ficticio'));
+        DocumentoProbatorioSolicitud::create([
+            'solicitud_id' => $solicitud->id,
+            'constancia_antiguedad_archivo' => $ruta('constancia'),
+            'comprobante_pago_archivo' => $ruta('pago'),
+            'solicitud_articulo_14_archivo' => $ruta('sol14'),
+            'constancia_articulo_14_archivo' => $ruta('con14'),
+        ]);
+
+        $this->actingAs($user)->post('/registro/completado/confirmar')
+            ->assertRedirect(route('registro.completado'))
+            ->assertSessionHas('error', 'Debe completar todos los requisitos antes del envío.');
+        $this->assertSame('borrador', $solicitud->fresh()->estado);
+
+        $this->actingAs($user)->get('/registro/documentos-probatorios')
+            ->assertRedirect(route('registro.formacion'));
+    }
 }

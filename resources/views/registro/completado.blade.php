@@ -122,6 +122,14 @@
                         revisión correspondiente.
                     </p>
 
+                    @if($solicitud->compromiso_aceptado)
+                        <p>
+                            Compromiso de entrega aceptado:
+                            <strong>{{ $solicitud->compromiso_aceptado_en?->copy()->timezone('America/Mexico_City')->format('d/m/Y H:i') ?? 'Sí' }}</strong>
+                            · <a href="{{ route('registro.compromiso') }}">Consultar</a>
+                        </p>
+                    @endif
+
                     <p>
                         <a href="{{ route('registro.acuse.descargar', ['solicitudId' => $solicitud->id]) }}"
                            class="boton-completado boton-descargar">
@@ -147,6 +155,12 @@
 
                         <p>
                             Puede confirmar el envío de su solicitud.
+                        </p>
+
+                        <p>
+                            Compromiso de entrega aceptado:
+                            <strong>{{ $solicitud->compromiso_aceptado_en?->copy()->timezone('America/Mexico_City')->format('d/m/Y H:i') ?? 'Sí' }}</strong>
+                            · <a href="{{ route('registro.compromiso') }}">Consultar</a>
                         </p>
 
                         <form method="POST"

@@ -84,7 +84,11 @@
                 id="vue-aceptacion-compromiso"
                 data-accion="{{ route('registro.compromiso.guardar') }}"
                 data-csrf="{{ csrf_token() }}"
-                data-url-regresar="{{ route('registro.documentos') }}">
+                data-url-regresar="{{ route('registro.documentos') }}"
+                data-url-continuar="{{ route('registro.completado') }}"
+                data-aceptado="{{ $aceptado ? '1' : '0' }}"
+                data-aceptado-en="{{ $aceptadoEn ?? '' }}"
+                data-solo-consulta="{{ $soloConsulta ? '1' : '0' }}">
             </div>
 
         </main>

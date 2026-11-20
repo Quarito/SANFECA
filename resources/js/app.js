@@ -196,6 +196,10 @@ if (contenedorCompromiso) {
     createApp(AceptacionCompromiso, {
         accion: contenedorCompromiso.dataset.accion,
         csrf: contenedorCompromiso.dataset.csrf,
-        urlRegresar: contenedorCompromiso.dataset.urlRegresar
+        urlRegresar: contenedorCompromiso.dataset.urlRegresar,
+        urlContinuar: contenedorCompromiso.dataset.urlContinuar || '',
+        aceptadoInicialmente: contenedorCompromiso.dataset.aceptado === '1',
+        aceptadoEn: contenedorCompromiso.dataset.aceptadoEn || '',
+        soloConsulta: contenedorCompromiso.dataset.soloConsulta === '1'
     }).mount(contenedorCompromiso);
 }
