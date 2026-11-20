@@ -110,6 +110,35 @@ class ExclusivoPdmTest extends PdmTestCase
         $this->actingAs($user)->get("/registro/acuse/{$solicitudId}")->assertOk();
     }
 
+    public function test_exportar_no_reescribe_datos_que_nadie_modifico(): void
+    {
+        // Persona registrada en principal: public conserva lo capturado tal cual («CDMX»).
+        $this->activar('principal');
+        $this->registrar('FICT800101HDFRRN14', 'original@example.test')->assertRedirect();
+        $user = User::where('email', 'original@example.test')->firstOrFail();
+        $id = (int) DB::table('public.datos_solicitantes')->where('user_id', $user->id)->value('id');
+        $this->assertSame('CDMX', DB::table('public.datos_solicitantes')->where('id', $id)->value('entidad_federativa'));
+        $this->activar('exclusivo');
+
+        // En exclusivo solo cambia su teléfono (el formulario reenvía el domicilio igual).
+        $this->actingAs($user)->put('/mis-datos', [
+            'calle' => 'Calle Ficticia', 'numero_exterior' => '10', 'codigo_postal' => '01000', 'entidad_federativa' => 'CDMX',
+            'colonia' => 'Centro', 'municipio' => 'Cuauhtémoc', 'telefono_celular' => '5599999999',
+        ])->assertRedirect(route('mis-datos.edit'));
+        auth()->logout();
+        $this->registrar('FICT800101HDFRRN15', 'nueva@example.test')->assertRedirect();
+
+        $this->artisan('anfeca:pdm-exportar-public', ['--confirmar' => true])->assertExitCode(0);
+
+        $fila = DB::table('public.datos_solicitantes')->where('id', $id)->first();
+        $this->assertSame('CDMX', $fila->entidad_federativa, 'lo que nadie modificó no se reescribe con la forma normalizada');
+        $this->assertSame('5599999999', $fila->telefono_celular, 'el cambio real sí se exporta');
+        $this->assertSame('Ciudad de México', DB::table('public.datos_solicitantes')->where('curp', 'FICT800101HDFRRN15')->value('entidad_federativa'),
+            'una persona capturada solo en el PDM se exporta completa (forma oficial)');
+        $this->assertSame([], $this->conciliacion());
+        $this->assertSame([], $this->equivalencia());
+    }
+
     public function test_exportar_solo_en_exclusivo_y_con_autorizacion_en_la_base_en_uso(): void
     {
         config(['anfeca_modelo.bd_permitida' => DB::connection()->getDatabaseName()]);

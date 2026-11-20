@@ -79,7 +79,7 @@ class EquivalenciaPdm
                     }
                     $real = $vistas[$k][$col] ?? null;
                     if ($this->valor($valor) !== $this->valor($real)) {
-                        $diferencias[] = $this->dif($tabla, 'DISTINTA', $k, "{$col}: public ".$this->mostrar($valor).', vista '.$this->mostrar($real).'.');
+                        $diferencias[] = $this->dif($tabla, 'DISTINTA', $k, "{$col}: public ".$this->mostrar($valor).', vista '.$this->mostrar($real).'.', $col);
                     }
                 }
             }
@@ -174,8 +174,9 @@ class EquivalenciaPdm
         return $t === null ? 'nulo' : (mb_strlen($t) > 40 ? '«'.mb_substr($t, 0, 12).'…» ('.mb_strlen($t).' car.)' : "«{$t}»");
     }
 
-    private function dif(string $tabla, string $tipo, string $clave, string $detalle): array
+    /** @return array{tabla:string, tipo:string, clave:string, detalle:string, columna:?string} */
+    private function dif(string $tabla, string $tipo, string $clave, string $detalle, ?string $columna = null): array
     {
-        return compact('tabla', 'tipo', 'clave', 'detalle');
+        return compact('tabla', 'tipo', 'clave', 'detalle', 'columna');
     }
 }

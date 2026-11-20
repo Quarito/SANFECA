@@ -16,7 +16,10 @@ use Throwable;
  * volver a principal, espejo o apagado sin perder información.
  *
  * - Solo en modo exclusivo; en la base en uso exige ANFECA_PDM_AUTORIZAR_EXPORTACION=si.
- * - Inserta o actualiza por ID (nunca elimina filas de public); el historial solo se agrega.
+ * - Solo escribe lo capturado en exclusivo: filas nuevas y, en filas existentes, únicamente las
+ *   columnas que difieren DESPUÉS de las normalizaciones documentadas (EquivalenciaPdm). Un dato
+ *   que nadie modificó (p. ej., «cdmx» frente a «Ciudad de México») no se reescribe.
+ * - Nunca elimina filas de public; el historial solo se agrega.
  * - Todo en una transacción con las tablas bloqueadas; al final exige conciliación y equivalencia
  *   en 0. Si no, revierte y public queda como estaba.
  * - Los catálogos (certificados_historicos, instituciones_afiliadas) no se capturan en ANFECA: no se tocan.
@@ -70,20 +73,43 @@ class AnfecaPdmExportarPublic extends Command
         DB::statement('lock table '.implode(', ', array_map(fn ($t) => "public.{$t}", $tablas)).' in share row exclusive mode');
         DB::statement("select set_config('anfeca.exportando', 'si', true)"); // solo esta transacción
 
+        // Qué cambió realmente en el PDM respecto a public (con las normalizaciones documentadas).
+        $pendientes = [];
+        foreach ((new EquivalenciaPdm())->verificar() as $d) {
+            if (!in_array($d['tabla'], self::TABLAS, true)) {
+                continue;
+            }
+            if ($d['tipo'] === 'SOBRANTE') {
+                $pendientes[$d['tabla']]['nuevas'][] = (int) $d['clave'];
+            } elseif ($d['tipo'] === 'DISTINTA') {
+                $pendientes[$d['tabla']]['cambios'][(int) $d['clave']][] = $d['columna'];
+            } else {
+                // FALTANTE/DUPLICADA: public tiene algo que el PDM no explica. No se adivina: se detiene.
+                throw new RuntimeException("Exportación detenida: {$d['tabla']} {$d['tipo']} ({$d['clave']}): {$d['detalle']}");
+            }
+        }
+
         $resumen = [];
         foreach (self::TABLAS as $tabla) {
             $columnas = array_map(fn ($c) => $c->column_name, DB::select(
                 "select column_name from information_schema.columns where table_schema = 'anfeca_compat' and table_name = ? order by ordinal_position", [$tabla]));
             $lista = implode(', ', array_map(fn ($c) => '"'.$c.'"', $columnas));
-            $asignaciones = implode(', ', array_map(fn ($c) => "\"{$c}\" = excluded.\"{$c}\"", array_diff($columnas, ['id'])));
+            $n = 0;
 
-            // Solo filas nuevas o distintas (IS DISTINCT FROM evita reescribir lo que ya coincide).
-            $resumen[$tabla] = DB::affectingStatement("insert into public.{$tabla} ({$lista})
-                select {$lista} from anfeca_compat.{$tabla} v
-                where not exists (select 1 from public.{$tabla} p where p.id = v.id and (".implode(', ', array_map(fn ($c) => "p.\"{$c}\"", $columnas)).")
-                      is not distinct from (".implode(', ', array_map(fn ($c) => "v.\"{$c}\"", $columnas))."))
-                on conflict (id) do update set {$asignaciones}");
-            DB::statement("select setval(pg_get_serial_sequence('public.{$tabla}', 'id'), greatest((select coalesce(max(id), 0) from public.{$tabla}), 1))");
+            $nuevas = $pendientes[$tabla]['nuevas'] ?? [];
+            if ($nuevas !== []) {
+                $n += DB::affectingStatement("insert into public.{$tabla} ({$lista}) select {$lista} from anfeca_compat.{$tabla} where id in ("
+                    .implode(', ', array_fill(0, count($nuevas), '?')).')', $nuevas);
+                DB::statement("select setval(pg_get_serial_sequence('public.{$tabla}', 'id'), greatest((select coalesce(max(id), 0) from public.{$tabla}), 1))");
+            }
+
+            foreach ($pendientes[$tabla]['cambios'] ?? [] as $id => $cols) {
+                $cols = array_values(array_unique(array_intersect($cols, $columnas)));
+                $asignar = implode(', ', array_map(fn ($c) => "\"{$c}\" = v.\"{$c}\"", $cols));
+                $n += DB::affectingStatement("update public.{$tabla} p set {$asignar} from anfeca_compat.{$tabla} v where v.id = p.id and p.id = ?", [$id]);
+            }
+
+            $resumen[$tabla] = $n;
         }
 
         $resumen['historial_documentos_academicos'] = DB::affectingStatement('insert into public.historial_documentos_academicos
