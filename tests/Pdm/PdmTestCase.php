@@ -44,26 +44,31 @@ abstract class PdmTestCase extends TestCase
     private function verificarBaseAislada(): void
     {
         $conexion = DB::connection();
-        $bd = (string) $conexion->getDatabaseName();
-        $host = (string) config('database.connections.pgsql.host');
-        $sufijo = (string) config('anfeca_pdm.sufijo_bd_pruebas');
+        $driver = $conexion->getDriverName();
+        $bdReal = null;
+        $direccion = null;
 
-        $fallas = [];
-        if ($conexion->getDriverName() !== 'pgsql') {
-            $fallas[] = 'la conexión no es pgsql';
-        }
-        if (!str_ends_with($bd, $sufijo)) {
-            $fallas[] = "la base '{$bd}' no termina en '{$sufijo}'";
-        }
-        if ($bd === config('anfeca_modelo.bd_permitida')) {
-            $fallas[] = "la base '{$bd}' es la base de pruebas en uso";
-        }
-        if (!in_array($host, ['127.0.0.1', 'localhost', '::1', ''], true) && !str_starts_with($host, '/')) {
-            $fallas[] = "el host '{$host}' no es local";
+        // Solo se consulta al servidor si la configuración ya es pgsql; la consulta es de lectura.
+        if ($driver === 'pgsql') {
+            $fila = $conexion->selectOne('select current_database() as bd, host(inet_server_addr()) as ip');
+            $bdReal = $fila->bd;
+            $direccion = $fila->ip; // nulo si la conexión es por socket local
         }
 
-        if ($fallas !== []) {
-            throw new RuntimeException('SEGURIDAD: pruebas PDM detenidas: '.implode('; ', $fallas).'.');
+        $motivos = GuardiaBaseAislada::motivosDeRechazo(
+            $driver,
+            (string) $conexion->getDatabaseName(),
+            $bdReal,
+            (string) config('database.connections.pgsql.host'),
+            $direccion,
+            config('anfeca_modelo.bd_permitida'),
+            (string) config('anfeca_pdm.sufijo_bd_pruebas'),
+            $this->app->configurationIsCached(),
+            config('database.connections.pgsql.url'),
+        );
+
+        if ($motivos !== []) {
+            throw new RuntimeException('SEGURIDAD: pruebas PDM detenidas: '.implode('; ', $motivos).'.');
         }
     }
 

@@ -28,6 +28,28 @@ El servidor usa PostgreSQL 18.6, así que **ejecuta la suite PG en AlmaLinux** a
 
 ---
 
+## Protecciones de aislamiento (revisión del 20/11/2026)
+
+La suite PostgreSQL se **detiene antes de cualquier operación** si se cumple cualquiera de estas condiciones:
+
+| Condición | Motivo |
+|---|---|
+| Configuración de Laravel en caché (`bootstrap/cache/config.php`) | Laravel ignoraría `phpunit*.xml` y usaría el `.env` real. Esta regla aplica también a la suite SQLite (`tests/TestCase.php`). |
+| `DB_URL` definida | Tendría prioridad sobre el host y la base. Además, ambos `phpunit*.xml` la fuerzan a vacío. |
+| La conexión no es `pgsql` | `phpunit.pgsql.xml` la fuerza a `pgsql` y `phpunit.xml` a SQLite en memoria (`force="true"`). |
+| El nombre de la base no termina en `_pruebas_pg` | |
+| La base es `bd_laravelanfeca_pruebas` | |
+| La base que **reporta PostgreSQL** (`current_database()`) difiere de la configurada | |
+| Host o dirección del servidor (`inet_server_addr()`) distintos de la máquina local | |
+
+Las reglas están en `tests/Pdm/GuardiaBaseAislada.php` y tienen sus propias pruebas en `tests/Unit/GuardiaBaseAisladaTest.php`. También se comprobaron en ejecución real: apuntar la suite a la base de trabajo la detiene sin tocarla.
+
+Antes de probar, en el worktree:
+
+```bash
+php artisan config:clear
+```
+
 ## Paso 1 — Base aislada (una sola vez)
 
 Requiere un usuario con privilegio para crear bases; normalmente es `postgres`.
