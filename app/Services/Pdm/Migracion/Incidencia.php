@@ -20,6 +20,7 @@ final class Incidencia
         public readonly int|string|null $id,
         public readonly string $mensaje,
         public readonly ?string $decision = null,
+        public readonly ?string $campo = null,
     ) {
     }
 
@@ -32,6 +33,7 @@ final class Incidencia
             'tabla' => $this->tabla,
             'id' => $this->id,
             'mensaje' => $this->mensaje,
+            'campo' => $this->campo,
         ];
     }
 }

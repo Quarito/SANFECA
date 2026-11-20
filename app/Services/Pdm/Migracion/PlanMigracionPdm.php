@@ -35,22 +35,42 @@ class PlanMigracionPdm
     /** IDs incluidos en el plan, por tabla PDM. */
     private array $incluidos = [];
 
-    public static function construir(?array $decisiones = null): self
+    /** Alcance acotado (F3): ['usuarios' => [ids]], ['solicitudes' => [ids]] o null para todo. */
+    private ?array $alcance = null;
+
+    public static function construir(?array $decisiones = null, ?array $alcance = null): self
     {
         $plan = new self();
         $plan->decisiones = $decisiones ?? (array) config('anfeca_pdm_decisiones');
+        $plan->alcance = $alcance;
         $plan->norm = new NormalizadorCatalogos();
         $plan->cargarCatalogos();
 
-        $plan->roles();
-        $plan->zonas();
-        $plan->instituciones();
-        $plan->personasYUsuarios();
-        $plan->coordinadores();
-        $plan->historicos();
-        $plan->solicitudes();
+        if ($alcance === null) {
+            $plan->roles();
+            $plan->zonas();
+            $plan->instituciones();
+            $plan->personasYUsuarios();
+            $plan->coordinadores();
+            $plan->historicos();
+            $plan->solicitudes();
+        } else {
+            // F3: mismas reglas, solo para las personas y solicitudes afectadas por una operación.
+            // Instituciones y usuarios ya existentes en el PDM se toman de anfeca_modelo.
+            $plan->incluidos['institucion'] = DB::table('anfeca_modelo.institucion')->pluck('inst_id_institucion')->flip()->map(fn () => true)->all();
+            $plan->personasYUsuarios($alcance['usuarios'] ?? []);
+            if (isset($alcance['solicitudes'])) {
+                $plan->solicitudes($alcance['solicitudes']);
+            }
+        }
 
         return $plan;
+    }
+
+    /** @return list<Incidencia> */
+    public function incidenciasDe(bool $bloqueantes): array
+    {
+        return array_values(array_filter($this->incidencias, fn (Incidencia $i) => $i->bloqueante === $bloqueantes));
     }
 
     // ------------------------------------------------------------------
@@ -76,15 +96,15 @@ class PlanMigracionPdm
         $this->filas[$tabla][] = $fila;
     }
 
-    private function incidencia(string $codigo, bool $bloqueante, string $tabla, int|string|null $id, string $mensaje, ?string $decision = null): void
+    private function incidencia(string $codigo, bool $bloqueante, string $tabla, int|string|null $id, string $mensaje, ?string $decision = null, ?string $campo = null): void
     {
-        $this->incidencias[] = new Incidencia($codigo, $bloqueante, $tabla, $id, $mensaje, $decision);
+        $this->incidencias[] = new Incidencia($codigo, $bloqueante, $tabla, $id, $mensaje, $decision, $campo);
     }
 
     private function largoExcedido(string $tabla, int|string $id, string $columna, ?string $valor, int $limite): bool
     {
         if ($valor !== null && mb_strlen($valor) > $limite) {
-            $this->incidencia('LONGITUD', true, $tabla, $id, "{$columna}: ".mb_strlen($valor)." caracteres; el PDM admite {$limite}. No se trunca.", 'D-4');
+            $this->incidencia('LONGITUD', true, $tabla, $id, "{$columna}: ".mb_strlen($valor)." caracteres; el PDM admite {$limite}. No se trunca.", 'D-4', $columna);
 
             return true;
         }
@@ -236,7 +256,7 @@ class PlanMigracionPdm
     // Personas, usuarios, domicilio, contacto
     // ------------------------------------------------------------------
 
-    private function personasYUsuarios(): void
+    private function personasYUsuarios(?array $soloUsuarios = null): void
     {
         $decisionesDom = (array) ($this->decisiones['domicilios'] ?? []);
 
@@ -247,9 +267,15 @@ class PlanMigracionPdm
             ->orderBy('s.id')->get(['s.user_id', 'f.institucion_afiliada_id'])
             ->pluck('institucion_afiliada_id', 'user_id')->all();
 
-        $usuarios = DB::table('public.users')->get()->keyBy('id');
+        $consultaUsuarios = DB::table('public.users');
+        $consultaDatos = DB::table('public.datos_solicitantes')->orderBy('id');
+        if ($soloUsuarios !== null) {
+            $consultaUsuarios->whereIn('id', $soloUsuarios);
+            $consultaDatos->whereIn('user_id', $soloUsuarios);
+        }
+        $usuarios = $consultaUsuarios->get()->keyBy('id');
 
-        foreach (DB::table('public.datos_solicitantes')->orderBy('id')->get() as $d) {
+        foreach ($consultaDatos->get() as $d) {
             $u = $usuarios[$d->user_id] ?? null;
             $errores = false;
 
@@ -290,7 +316,7 @@ class PlanMigracionPdm
             $this->incluidos['persona_por_usuario'][$d->user_id] = $d->id;
 
             // USUARIO (D-1 A: mismo ID que users; users sigue autenticando).
-            if ($u !== null && !$this->largoExcedido('users', $u->id, 'email', $u->email, 150)) {
+            if ($u !== null && !$this->largoExcedido('users', $u->id, 'correo_electronico', $u->email, 150)) {
                 $this->agregar('usuario', [
                     'usua_id_usuario' => $u->id, 'usua_id_persona' => $d->id,
                     'usua_id_rol' => $this->incluidos['rol_nombre'][$u->rol] ?? null, '_rol_nombre' => $u->rol,
@@ -303,8 +329,11 @@ class PlanMigracionPdm
             $this->comunicaciones($d);
         }
 
+        if ($soloUsuarios !== null) {
+            return;
+        }
+
         // Usuarios sin datos personales: se conservan en public.users (D-1 A).
-        $conDatos = $this->incluidos['persona_por_usuario'] ?? [];
         $todosConDatos = DB::table('public.datos_solicitantes')->pluck('user_id')->flip()->all();
         foreach ($usuarios as $u) {
             if (!isset($todosConDatos[$u->id])) {
@@ -330,7 +359,7 @@ class PlanMigracionPdm
                 $this->incidencia('ENTIDAD_POR_DECISION', false, 'datos_solicitantes', $d->id, "Entidad asignada por decisión registrada: {$entidad}.", 'D-13');
             } else {
                 $this->incidencia('ENTIDAD_EN_REVISION', true, 'datos_solicitantes', $d->id,
-                    "Entidad '{$d->entidad_federativa}' sin equivalencia verificable ({$r->motivo})", 'D-13');
+                    "Entidad '{$d->entidad_federativa}' sin equivalencia verificable ({$r->motivo})", 'D-13', 'entidad_federativa');
 
                 return;
             }
@@ -469,14 +498,19 @@ class PlanMigracionPdm
     // Solicitudes, eventos, formación, documentos y pago
     // ------------------------------------------------------------------
 
-    private function solicitudes(): void
+    private function solicitudes(?array $soloSolicitudes = null): void
     {
         $selecciones = DB::table('public.selecciones_certificacion')->get()->keyBy('user_id');
         $refrendos = DB::table('public.datos_refrendo')->get()->keyBy('solicitud_id');
         $certificados = DB::table('public.certificados_historicos')->pluck('numero_certificado', 'id');
         $estados = (array) config('anfeca_pdm.catalogos.estados_solicitud');
 
-        foreach (DB::table('public.solicitudes_certificacion')->orderBy('id')->get() as $s) {
+        $consulta = DB::table('public.solicitudes_certificacion')->orderBy('id');
+        if ($soloSolicitudes !== null) {
+            $consulta->whereIn('id', $soloSolicitudes);
+        }
+
+        foreach ($consulta->get() as $s) {
             $persona = $this->incluidos['persona_por_usuario'][$s->user_id] ?? null;
 
             if ($persona === null) {

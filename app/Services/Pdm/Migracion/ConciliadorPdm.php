@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
  */
 class ConciliadorPdm
 {
+    /** Versiones anteriores que solo conserva el PDM (informativo, no es diferencia). */
+    public int $historialAdicional = 0;
+
     /** Clave natural de cada tabla del plan. */
     public const CLAVES = [
         'rol' => ['rol_nombre'],
@@ -37,6 +40,8 @@ class ConciliadorPdm
     private const OMITIR = [
         'rol' => ['rol_id_rol'],      // los roles creados desde users.rol no traen ID
         'usuario' => ['usua_id_rol'], // se compara por nombre de rol (_rol_nombre)
+        // Fechas de carga: public no guarda una fecha por archivo; se comparan existencia, ruta y estado.
+        'solicitud_documento' => ['socu_fecha', 'socu_hora'],
     ];
 
     /** Lecturas que reconstruyen la forma del plan a partir de varias tablas. */
@@ -63,6 +68,9 @@ class ConciliadorPdm
     public function conciliar(PlanMigracionPdm $plan): array
     {
         $diferencias = [];
+
+        $sustituido = DB::table('anfeca_modelo.estado_documento')->where('esdo_estado_documento', 'Sustituido')->value('esdo_id_estado_documento');
+        $historialAdicional = 0;
 
         foreach (self::CLAVES as $tabla => $clave) {
             $esperadas = $plan->filas[$tabla] ?? [];
@@ -92,6 +100,10 @@ class ConciliadorPdm
                     if (in_array($col, self::OMITIR[$tabla] ?? [], true)) {
                         continue;
                     }
+                    // Versiones anteriores: basta con que existan (clave con ruta y estado).
+                    if ($tabla === 'solicitud_documento' && $col === 'esdo_observacion' && (string) $esperada['esdo_id_estado_documento'] === (string) $sustituido) {
+                        continue;
+                    }
                     $real = $indice[$k][$col] ?? null;
                     if ($this->valor($valor) !== $this->valor($real)) {
                         $diferencias[] = $this->dif($tabla, 'DISTINTA', $k, "{$col}: esperado ".$this->mostrar($valor).', encontrado '.$this->mostrar($real).'.');
@@ -100,11 +112,18 @@ class ConciliadorPdm
             }
 
             foreach (array_keys($indice) as $k) {
+                // El PDM conserva versiones anteriores que public no registra (F3): no es diferencia.
+                if (!isset($vistas[$k]) && $tabla === 'solicitud_documento' && (string) $indice[$k]['esdo_id_estado_documento'] === (string) $sustituido) {
+                    $historialAdicional++;
+                    continue;
+                }
                 if (!isset($vistas[$k])) {
                     $diferencias[] = $this->dif($tabla, 'SOBRANTE', $k, 'Fila en el PDM que no corresponde a public.');
                 }
             }
         }
+
+        $this->historialAdicional = $historialAdicional;
 
         // Cada documento tiene exactamente un estado.
         $sinEstado = DB::selectOne('select count(*) as n from anfeca_modelo.solicitud_documento d
