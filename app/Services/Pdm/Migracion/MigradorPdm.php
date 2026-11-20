@@ -18,6 +18,8 @@ class MigradorPdm
         'rol' => 'rol_id_rol', 'privilegio' => 'priv_id_privilegio', 'rol_privilegio' => 'ropr_id_rol_privilegio',
         'zona' => 'zona_id_zona', 'institucion' => 'inst_id_institucion', 'persona' => 'pers_id_persona',
         'usuario' => 'usua_id_usuario', 'solicitud' => 'soli_id_solicitud',
+        'seleccion_certificacion' => 'secc_id_seleccion', 'solicitud_refrendo' => 'sore_id_solicitud_refrendo',
+        'formacion_solicitud' => 'fosc_id_formacion', 'documentos_solicitud' => 'dosc_id_documentos',
     ];
 
     /** @return array<string,int> filas escritas por tabla */
@@ -45,7 +47,8 @@ class MigradorPdm
         }, $f['usuario'] ?? []);
         $escritas['usuario'] = $this->insertar('usuario', $usuarios);
 
-        foreach (['domicilio', 'comunicacion', 'coordinador_zona', 'historico_certificado_importacion', 'historico_certificado', 'solicitud', 'estado_solicitud'] as $tabla) {
+        foreach (['seleccion_certificacion', 'domicilio', 'comunicacion', 'coordinador_zona', 'historico_certificado_importacion', 'historico_certificado',
+            'solicitud', 'estado_solicitud', 'solicitud_refrendo', 'formacion_solicitud', 'documentos_solicitud'] as $tabla) {
             $escritas[$tabla] = $this->insertar($tabla, $f[$tabla] ?? []);
         }
 

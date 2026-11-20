@@ -15,13 +15,13 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Las 42 llaves foráneas rechazan registros huérfanos y borrados en cascada.
+ * Las 47 llaves foráneas rechazan registros huérfanos y borrados en cascada.
  */
 class IntegridadReferencialTest extends PdmTestCase
 {
     use ExpedienteFicticio;
 
-    /** Pone al menos una fila en cada tabla hija de las 42 FK. */
+    /** Pone al menos una fila en cada tabla hija de las 47 FK. */
     private function poblarTodo(): void
     {
         ['solicitud' => $s, 'usuario' => $u] = $this->expediente();
@@ -43,9 +43,17 @@ class IntegridadReferencialTest extends PdmTestCase
         RolPrivilegio::create(['ropr_id_rol' => $u->usua_id_rol, 'ropr_id_privilegio' => $privilegio->priv_id_privilegio]);
 
         CoordinadorZona::create(['cozo_id_zona' => Zona::firstOrFail()->zona_id_zona, 'cozo_id_usuario' => $u->usua_id_usuario]);
+
+        // Extensiones F4.
+        DB::table('anfeca_modelo.seleccion_certificacion')->insert(['secc_id_usuario' => $u->usua_id_usuario, 'secc_certificacion' => 'ANFECA',
+            'secc_tipo_personal' => 'Profesoras y profesores de Tiempo Completo', 'secc_area_certificacion' => 'Administración']);
+        DB::table('anfeca_modelo.solicitud_refrendo')->insert(['sore_id_solicitud' => $s->soli_id_solicitud, 'sore_refrendo_actual' => 2]);
+        DB::table('anfeca_modelo.formacion_solicitud')->insert(['fosc_id_solicitud' => $s->soli_id_solicitud,
+            'fosc_id_institucion' => DB::table('anfeca_modelo.institucion')->value('inst_id_institucion')]);
+        DB::table('anfeca_modelo.documentos_solicitud')->insert(['dosc_id_solicitud' => $s->soli_id_solicitud]);
     }
 
-    public function test_cada_una_de_las_42_fk_rechaza_un_huerfano(): void
+    public function test_cada_una_de_las_47_fk_rechaza_un_huerfano(): void
     {
         $this->poblarTodo();
 
@@ -57,7 +65,7 @@ class IntegridadReferencialTest extends PdmTestCase
             where k.contype = 'f' and k.connamespace = 'anfeca_modelo'::regnamespace
             order by 1");
 
-        $this->assertCount(42, $fks);
+        $this->assertCount(47, $fks);
 
         foreach ($fks as $fk) {
             $this->assertTrue(

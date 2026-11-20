@@ -35,6 +35,8 @@ class AplicadorPdm
         }, $f['usuario'] ?? []);
         $this->sincronizar('usuario', $usuarios, ['usua_id_usuario'], 'usua_id_usuario', array_column($usuarios, 'usua_id_usuario'), false);
 
+        $this->sincronizar('seleccion_certificacion', $f['seleccion_certificacion'] ?? [], ['secc_id_seleccion'], 'secc_id_usuario',
+            array_column($usuarios, 'usua_id_usuario'), true);
         $this->sincronizar('domicilio', $f['domicilio'] ?? [], ['domi_id_persona'], 'domi_id_persona', $personas, true);
         $this->sincronizar('comunicacion', $f['comunicacion'] ?? [], ['cumu_id_persona', 'comu_id_tipo_comunicacion'], 'cumu_id_persona', $personas, true);
 
@@ -48,6 +50,9 @@ class AplicadorPdm
 
         $this->sincronizar('solicitud', $f['solicitud'] ?? [], ['soli_id_solicitud'], 'soli_id_solicitud', $solicitudes, false);
         $this->sincronizar('estado_solicitud', $f['estado_solicitud'] ?? [], ['esso_id_solicitud', 'esso_siglas'], 'esso_id_solicitud', $solicitudes, true);
+        $this->sincronizar('solicitud_refrendo', $f['solicitud_refrendo'] ?? [], ['sore_id_solicitud_refrendo'], 'sore_id_solicitud', $solicitudes, true);
+        $this->sincronizar('formacion_solicitud', $f['formacion_solicitud'] ?? [], ['fosc_id_formacion'], 'fosc_id_solicitud', $solicitudes, true);
+        $this->sincronizar('documentos_solicitud', $f['documentos_solicitud'] ?? [], ['dosc_id_documentos'], 'dosc_id_solicitud', $solicitudes, true);
 
         $formacion = array_map(function (array $p) {
             $p['pees_id_estuido_profesional'] = $this->estudio($p['espr_id_nivel_profesional'], $p['espr_nombre'], $p['espr_estado']);
@@ -218,7 +223,9 @@ class AplicadorPdm
     /** Tablas con ID conservado: la secuencia nunca queda por debajo del máximo. */
     private function alinearSecuencias(): void
     {
-        foreach (['persona' => 'pers_id_persona', 'usuario' => 'usua_id_usuario', 'solicitud' => 'soli_id_solicitud', 'rol' => 'rol_id_rol'] as $tabla => $pk) {
+        foreach (['persona' => 'pers_id_persona', 'usuario' => 'usua_id_usuario', 'solicitud' => 'soli_id_solicitud', 'rol' => 'rol_id_rol',
+            'seleccion_certificacion' => 'secc_id_seleccion', 'solicitud_refrendo' => 'sore_id_solicitud_refrendo',
+            'formacion_solicitud' => 'fosc_id_formacion', 'documentos_solicitud' => 'dosc_id_documentos'] as $tabla => $pk) {
             DB::statement("select setval(pg_get_serial_sequence('anfeca_modelo.{$tabla}', '{$pk}'),
                 greatest((select coalesce(max({$pk}), 1) from anfeca_modelo.{$tabla}),
                          (select last_value from ".DB::selectOne("select pg_get_serial_sequence('anfeca_modelo.{$tabla}', '{$pk}') as s")->s.')))');

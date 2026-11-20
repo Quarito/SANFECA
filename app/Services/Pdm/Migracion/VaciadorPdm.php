@@ -18,8 +18,9 @@ class VaciadorPdm
     /** Orden inverso de dependencias. */
     private const ORDEN = [
         'estado_solicitud_documento', 'solicitud_documento', 'pago', 'persona_estudio_profesional',
-        'estado_solicitud', 'solicitud', 'historico_certificado', 'historico_certificado_importacion',
-        'coordinador_zona', 'comunicacion', 'domicilio', 'usuario', 'persona', 'sede', 'institucion', 'zona',
+        'estado_solicitud', 'documentos_solicitud', 'formacion_solicitud', 'solicitud_refrendo', 'solicitud',
+        'historico_certificado', 'historico_certificado_importacion',
+        'coordinador_zona', 'comunicacion', 'domicilio', 'seleccion_certificacion', 'usuario', 'persona', 'sede', 'institucion', 'zona',
         'rol_privilegio', 'privilegio', 'rol',
     ];
 

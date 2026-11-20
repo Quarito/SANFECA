@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tabla anfeca_modelo.persona del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y anfeca_modelo_extensiones.sql.
+ * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
  */
 class Persona extends PdmModel
 {
@@ -33,6 +33,8 @@ class Persona extends PdmModel
         'pers_cedula_profesional',
         'pers_datos_autorizados',
         'pers_fecha_autorizacion',
+        'pers_creado_en',
+        'pers_actualizado_en',
     ];
 
     protected $casts = [
@@ -41,6 +43,8 @@ class Persona extends PdmModel
         'pers_activo' => 'boolean',
         'pers_datos_autorizados' => 'boolean',
         'pers_fecha_autorizacion' => 'datetime',
+        'pers_creado_en' => 'datetime',
+        'pers_actualizado_en' => 'datetime',
     ];
 
     /** FK FK_PERSONA_PERTENECE_INSTITUC: persona.pers_id_institucion → institucion.inst_id_institucion */
