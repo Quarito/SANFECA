@@ -35,7 +35,10 @@ class ProteccionMigracion
             return;
         }
 
-        ModoPdm::apagado(); // lanza excepción si el modo no es válido en esta fase
+        // Migrar, simular o vaciar solo con el modo efectivo apagado (nadie escribe en espejo a la vez).
+        if (!ModoPdm::apagado()) {
+            throw new RuntimeException('El modo espejo está activo: ejecute primero php artisan anfeca:pdm-modo apagado.');
+        }
 
         $bd = (string) $con->getDatabaseName();
         $aislada = str_ends_with($bd, (string) config('anfeca_pdm.sufijo_bd_pruebas')) && $bd !== config('anfeca_modelo.bd_permitida');

@@ -34,7 +34,7 @@ return new class extends Migration
         $this->verificarConexion();
 
         $tablas = (int) DB::selectOne(
-            'select count(*) as total from pg_tables where schemaname = ?',
+            "select count(*) as total from pg_tables where schemaname = ? and tablename <> 'integracion_control'",
             [self::ESQUEMA]
         )->total;
 
