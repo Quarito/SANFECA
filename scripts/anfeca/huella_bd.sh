@@ -11,6 +11,26 @@
 # Excluye tablas técnicas volátiles de Laravel (sesiones, caché, trabajos).
 # =============================================================================
 set -euo pipefail
+
+# Modo comparación:  huella_bd.sh --comparar <antes.txt> <despues.txt>
+#   Sale con 0 solo si las huellas son idénticas (ignorando la línea BASE). Las tablas listadas en
+#   ANFECA_HUELLA_JUSTIFICADA (p. ej. "public.users", decisión explícita del responsable) pueden
+#   diferir en DATOS; una diferencia de ESTRUCTURA o ESQUEMAS nunca se justifica.
+if [[ "${1:-}" == "--comparar" ]]; then
+    A="${2:?}"; B="${3:?}"
+    DIF="$(diff <(grep -v '^BASE' "$A") <(grep -v '^BASE' "$B") | grep -E '^[<>]' || true)"
+    [[ -z "$DIF" ]] && { echo "Huellas idénticas."; exit 0; }
+    NO_JUSTIFICADAS="$(echo "$DIF" | while read -r _ tipo resto; do
+        tabla="$(echo "$resto" | cut -d' ' -f1)"
+        if [[ "$tipo" == "DATOS" ]] && [[ " ${ANFECA_HUELLA_JUSTIFICADA:-} " == *" $tabla "* ]]; then continue; fi
+        echo "$tipo $resto"
+    done)"
+    echo "Diferencias entre huellas:"; echo "$DIF"
+    if [[ -n "$NO_JUSTIFICADAS" ]]; then echo "NO JUSTIFICADAS:"; echo "$NO_JUSTIFICADAS"; exit 1; fi
+    echo "Todas las diferencias son de tablas justificadas explícitamente (ANFECA_HUELLA_JUSTIFICADA='${ANFECA_HUELLA_JUSTIFICADA:-}')."
+    exit 0
+fi
+
 BD="${1:?Indique la base}"
 VOLATILES="'sessions','cache','cache_locks','jobs','job_batches','failed_jobs'"
 

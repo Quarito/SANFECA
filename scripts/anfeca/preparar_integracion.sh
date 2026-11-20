@@ -34,11 +34,18 @@ SALIDA="$HOME/ANFECA_RESPALDOS/integracion/$FECHA"
 falla() { echo; echo "ERROR: $*" >&2; exit 1; }
 paso()  { echo; echo "=================== $* ==================="; }
 env_de() { { grep -E "^$1=" "$APP/.env" || true; } | tail -1 | cut -d= -f2- | tr -d '"'"'"; }
-art()   { php artisan "$@"; }                       # artisan contra la base de $DB_DATABASE
+art()   { php artisan "$@"; }                       # artisan contra la base de $DB_DATABASE (solo lecturas)
+# Toda operación que ESCRIBE pasa por aquí: se niega si la base no es exactamente la de ensayo.
+ensayo() {
+    [[ "${DB_DATABASE:-}" == "$ENSAYO" && "$ENSAYO" != "$PRINCIPAL" && "$ENSAYO" != "$COPIA" ]] \
+        || falla "Protección: '$*' solo se ejecuta en $ENSAYO (DB_DATABASE='${DB_DATABASE:-}')."
+    if [[ "$1" == "php" ]]; then "$@"; else php artisan "$@"; fi
+}
 
 [[ -f artisan ]] || falla "Ejecute desde la raíz del worktree (/home/servidorweb/anfeca_f45)."
 [[ "$(pwd -P)" != /var/www/* ]] || falla "No se ejecuta dentro de /var/www."
-git merge-base --is-ancestor 450f69d HEAD 2>/dev/null || falla "El worktree no contiene 450f69d."
+for c in 450f69d e831add; do git merge-base --is-ancestor "$c" HEAD 2>/dev/null || falla "El worktree no contiene $c (use la rama integracion/pdm-despliegue)."; done
+URL="${ANFECA_URL:-http://192.168.7.130:8084/login}"
 [[ ! -f bootstrap/cache/config.php ]] || falla "Hay configuración en caché en el worktree: ejecute php artisan config:clear."
 mkdir -p "$SALIDA" && chmod 700 "$HOME/ANFECA_RESPALDOS" "$HOME/ANFECA_RESPALDOS/integracion" "$SALIDA"
 exec > >(tee -a "$SALIDA/preparacion.log") 2>&1
@@ -93,11 +100,12 @@ createdb "$ENSAYO" || falla "No se pudo crear $ENSAYO. El rol $PGUSER necesita C
 q "$ENSAYO" "comment on database $ENSAYO is '$MARCA'"
 pg_restore -d "$ENSAYO" --no-owner --no-privileges --exit-on-error "$DUMP"
 bash scripts/anfeca/huella_bd.sh "$ENSAYO" > "$SALIDA/huella_ensayo_restaurada.txt"
-if diff <(grep -v '^BASE' "$SALIDA/huella_principal_al_respaldar.txt") <(grep -v '^BASE' "$SALIDA/huella_ensayo_restaurada.txt") > "$SALIDA/dif_restauracion.txt"; then
+# La restauración se compara SIN tablas justificadas: debe ser idéntica.
+if ANFECA_HUELLA_JUSTIFICADA="" bash scripts/anfeca/huella_bd.sh --comparar "$SALIDA/huella_principal_al_respaldar.txt" "$SALIDA/huella_ensayo_restaurada.txt" > "$SALIDA/dif_restauracion.txt"; then
     echo "RESTAURACIÓN VERIFICADA: estructura y $(grep -c '^DATOS' "$SALIDA/huella_ensayo_restaurada.txt") tablas idénticas a la principal."
 else
-    echo "Diferencias entre la principal (al respaldar) y la restauración:"; cat "$SALIDA/dif_restauracion.txt"
-    echo "Si solo difieren tablas con actividad de usuarios entre el respaldo y la huella, repita en un momento sin uso."
+    cat "$SALIDA/dif_restauracion.txt"
+    falla "La restauración NO es equivalente a la principal. Procedimiento detenido (si hubo actividad de usuarios durante el respaldo, repita en un momento sin uso)."
 fi
 # public.migrations se excluye: es el único cambio esperado (registro de las migraciones PDM aplicadas).
 grep '^DATOS public\.' "$SALIDA/huella_ensayo_restaurada.txt" | grep -v '^DATOS public\.migrations ' > "$SALIDA/public_ensayo_inicial.txt"
@@ -107,44 +115,45 @@ export DB_DATABASE="$ENSAYO" ANFECA_PDM_MODO=apagado
 [[ "$(art tinker --execute='echo DB::connection()->getDatabaseName();' 2>/dev/null | tail -1)" == "$ENSAYO" ]] || falla "Laravel no apunta a $ENSAYO."
 
 echo "--- 5.1 Migraciones PDM (000001–000004) y catálogos"
-art migrate --path=database/migrations_pdm --force
-art db:seed --class='Database\Seeders\Pdm\CatalogosPdmSeeder' --force
+ensayo migrate --path=database/migrations_pdm --force
+ensayo db:seed --class='Database\Seeders\Pdm\CatalogosPdmSeeder' --force
 echo "anfeca_modelo: $(q "$ENSAYO" "select count(*) from pg_tables where schemaname='anfeca_modelo'") tablas, $(q "$ENSAYO" "select count(*) from pg_constraint where contype='f' and connamespace='anfeca_modelo'::regnamespace") FK · anfeca_compat: $(q "$ENSAYO" "select count(*) from information_schema.views where table_schema='anfeca_compat'") vistas"
 
 echo "--- 5.2 Plan F2"
-art anfeca:pdm-migrar --informe="$SALIDA/plan_f2.json" || true
+ensayo anfeca:pdm-migrar --informe="$SALIDA/plan_f2.json" || true
 BLOQ="$(php -r '$j = json_decode(file_get_contents($argv[1]), true); echo count(array_filter($j["incidencias"] ?? [], fn ($i) => $i["bloqueante"] ?? false));' "$SALIDA/plan_f2.json" 2>/dev/null || echo '?')"
 echo "Incidencias bloqueantes: $BLOQ (detalle en $SALIDA/plan_f2.json)"
+[[ "$BLOQ" =~ ^[0-9]+$ ]] || falla "No se pudo leer el plan F2 ($SALIDA/plan_f2.json)."
 if [[ "$BLOQ" != "0" ]]; then
     echo; echo "ENSAYO DETENIDO en el plan: registre las decisiones pendientes (D-11/D-13/D-14) con fuente documentada"
     echo "en config/anfeca_pdm_decisiones.php y repita con --recrear-ensayo. La base principal no se tocó."
     ETAPA="plan con bloqueos"
 else
     echo "--- 5.3 Migración F2 + conciliación + equivalencia"
-    art anfeca:pdm-migrar --ejecutar --confirmar --informe="$SALIDA/migracion_f2.json"
-    art anfeca:pdm-conciliar
-    art anfeca:pdm-equivalencia
+    ensayo anfeca:pdm-migrar --ejecutar --confirmar --informe="$SALIDA/migracion_f2.json"
+    ensayo anfeca:pdm-conciliar
+    ensayo anfeca:pdm-equivalencia
 
     echo "--- 5.4 Recorrido funcional en apagado (todos los usuarios con datos)"
-    php scripts/anfeca/recorrido_lectura.php "$SALIDA/recorrido_apagado.json"
+    ensayo php scripts/anfeca/recorrido_lectura.php "$SALIDA/recorrido_apagado.json"
 
     echo "--- 5.5 Espejo (F3)"
-    ANFECA_PDM_MODO=espejo art anfeca:pdm-modo espejo --confirmar
-    art anfeca:pdm-conciliar
+    ANFECA_PDM_MODO=espejo ensayo anfeca:pdm-modo espejo --confirmar
+    ensayo anfeca:pdm-conciliar
 
     echo "--- 5.6 Principal (F4)"
-    ANFECA_PDM_MODO=principal art anfeca:pdm-modo principal --confirmar
-    art anfeca:pdm-equivalencia
-    ANFECA_PDM_MODO=principal php scripts/anfeca/recorrido_lectura.php "$SALIDA/recorrido_principal.json"
+    ANFECA_PDM_MODO=principal ensayo anfeca:pdm-modo principal --confirmar
+    ensayo anfeca:pdm-equivalencia
+    ANFECA_PDM_MODO=principal ensayo php scripts/anfeca/recorrido_lectura.php "$SALIDA/recorrido_principal.json"
 
     echo "--- 5.7 Exclusivo (F5), exportación y reversión"
-    ANFECA_PDM_MODO=exclusivo art anfeca:pdm-modo exclusivo --confirmar
-    ANFECA_PDM_MODO=exclusivo php scripts/anfeca/recorrido_lectura.php "$SALIDA/recorrido_exclusivo.json"
-    art anfeca:pdm-exportar-public --confirmar
-    ANFECA_PDM_MODO=principal art anfeca:pdm-modo principal --confirmar
-    art anfeca:pdm-modo apagado
-    art anfeca:pdm-conciliar
-    art anfeca:pdm-equivalencia
+    ANFECA_PDM_MODO=exclusivo ensayo anfeca:pdm-modo exclusivo --confirmar
+    ANFECA_PDM_MODO=exclusivo ensayo php scripts/anfeca/recorrido_lectura.php "$SALIDA/recorrido_exclusivo.json"
+    ensayo anfeca:pdm-exportar-public --confirmar
+    ANFECA_PDM_MODO=principal ensayo anfeca:pdm-modo principal --confirmar
+    ensayo anfeca:pdm-modo apagado
+    ensayo anfeca:pdm-conciliar
+    ensayo anfeca:pdm-equivalencia
 
     echo "--- 5.8 Comparación de recorridos (la aplicación debe mostrar lo mismo en los tres modos)"
     php -r '$a = json_decode(file_get_contents($argv[1]), true); $ok = true;
@@ -154,25 +163,28 @@ else
             $ok = $ok && !$dif && count($b["paginas"]) === count($a["paginas"]); }
         printf("Apagado: %s\n", json_encode($a["resumen"]["codigos"])); exit($ok ? 0 : 1);' \
         "$SALIDA/recorrido_apagado.json" "$SALIDA/recorrido_principal.json" "$SALIDA/recorrido_exclusivo.json" \
-        && echo "RECORRIDOS IDÉNTICOS" || echo "ATENCIÓN: hay páginas distintas (revise los JSON)."
+        && echo "RECORRIDOS IDÉNTICOS" || falla "Comparación funcional FALLIDA: hay páginas distintas entre modos (revise $SALIDA/recorrido_*.json)."
 
     echo "--- 5.9 public del ensayo tras todo el ciclo"
     bash scripts/anfeca/huella_bd.sh "$ENSAYO" | grep '^DATOS public\.' | grep -v '^DATOS public\.migrations ' > "$SALIDA/public_ensayo_final.txt"
-    diff "$SALIDA/public_ensayo_inicial.txt" "$SALIDA/public_ensayo_final.txt" && echo "public sin cambios en el ensayo (el ciclo F2–F5 no alteró ningún registro)." || echo "ATENCIÓN: public cambió en el ensayo (ver arriba)."
+    diff "$SALIDA/public_ensayo_inicial.txt" "$SALIDA/public_ensayo_final.txt" && echo "public sin cambios en el ensayo (el ciclo F2–F5 no alteró ningún registro)." \
+        || falla "public del ensayo cambió durante el ciclo F2–F5 (ver arriba). Procedimiento detenido."
     ETAPA="ciclo F2–F5 completo"
 fi
 
 paso "6. Base principal: huella final"
 unset DB_DATABASE
 bash scripts/anfeca/huella_bd.sh "$PRINCIPAL" > "$SALIDA/huella_principal_despues.txt"
-if diff <(grep -v '^BASE' "$SALIDA/huella_principal_antes.txt") <(grep -v '^BASE' "$SALIDA/huella_principal_despues.txt"); then
-    echo "BASE PRINCIPAL SIN CAMBIOS."
-else
-    echo "(Diferencias arriba: solo pueden provenir de usuarios del sitio; este script no escribe en la principal.)"
-fi
-curl -s -o /dev/null -w "Login 8084: HTTP %{http_code}\n" "${ANFECA_URL:-http://127.0.0.1:8084/login}" || true
+bash scripts/anfeca/huella_bd.sh --comparar "$SALIDA/huella_principal_antes.txt" "$SALIDA/huella_principal_despues.txt" \
+    && echo "BASE PRINCIPAL SIN CAMBIOS." \
+    || falla "La huella de $PRINCIPAL cambió sin justificación (este script solo la lee: revise actividad externa). No se declara éxito."
+CODIGO="$(curl -s -o /dev/null -w '%{http_code}' "$URL" || true)"
+echo "Login $URL: HTTP $CODIGO"
+[[ "$CODIGO" == "200" ]] || falla "El login no responde HTTP 200."
 
 paso "RESULTADO"
 echo "Respaldo: $DUMP"
 echo "Ensayo: $ENSAYO · Etapa alcanzada: $ETAPA"
+if [[ "$ETAPA" != "ciclo F2–F5 completo" ]]; then echo "RESULTADO: BLOQUEADO (ver arriba)."; exit 2; fi
+echo "RESULTADO: PREPARACIÓN APROBADA (todas las verificaciones superadas)."
 echo "Registros: $SALIDA"
