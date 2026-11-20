@@ -259,6 +259,68 @@ class MigracionPdmTest extends PdmTestCase
         $this->assertSame(['SOLICITUD_SIN_PERSONA#9'], $codigos);
     }
 
+
+    public function test_otro_historico_sin_descripcion_se_conserva_en_revision(): void
+    {
+        DB::table('public.formaciones_academicas_solicitud')->where('id', 1)->update([
+            'titulo_ultimo_grado' => 'Otro',
+            'titulo_ultimo_grado_otro' => null,
+        ]);
+        $plan = PlanMigracionPdm::construir();
+
+        $incidencia = collect($plan->incidencias)->first(
+            fn ($i) => $i->codigo === 'OTRO_SIN_TEXTO' && $i->id === 1
+        );
+        $this->assertNotNull($incidencia);
+        $this->assertFalse($incidencia->bloqueante);
+
+        $formacion = collect($plan->filas['persona_estudio_profesional'])->first(
+            fn ($fila) => $fila['pees_id_solicitud'] === 1 && $fila['pees_tipo'] === 'ULTIMO'
+        );
+        $this->assertSame('Otro', $formacion['espr_nombre']);
+        $this->assertSame('REV', $formacion['espr_estado']);
+
+        config(['anfeca_pdm_decisiones' => $this->decisionesCompletas()]);
+        $this->migrar(['--simular' => true])
+            ->expectsOutputToContain('Simulación correcta')
+            ->assertExitCode(0);
+    }
+
+    public function test_catalogo_historico_exige_decision_explicita_con_fuente(): void
+    {
+        DB::table('public.solicitudes_certificacion')->where('id', 1)->update([
+            'area_certificacion' => null,
+            'tipo_personal' => null,
+        ]);
+        DB::table('public.selecciones_certificacion')->where('user_id', 1)->update([
+            'area_certificacion' => 'Informática',
+            'tipo_personal' => 'Tiempo Completo',
+        ]);
+
+        $plan = PlanMigracionPdm::construir();
+        $this->assertContains('SOLICITUD_INVALIDA',
+            collect($plan->bloqueantes())->pluck('codigo')->all());
+
+        $decisiones = $this->decisionesCompletas();
+        $decisiones['solicitudes'][1] = [
+            'area_certificacion' => 'Informática Administrativa',
+            'tipo_personal' => 'Profesoras y profesores de Tiempo Completo',
+        ];
+        $plan = PlanMigracionPdm::construir($decisiones);
+        $this->assertContains('SOLICITUD_INVALIDA',
+            collect($plan->bloqueantes())->pluck('codigo')->all(),
+            'Sin fuente confirmada no se acepta la equivalencia.');
+
+        $decisiones['solicitudes'][1]['fuente'] = 'Documento de validación ficticio';
+        $plan = PlanMigracionPdm::construir($decisiones);
+        $this->assertNotContains('SOLICITUD_INVALIDA',
+            collect($plan->bloqueantes())->pluck('codigo')->all());
+        $this->assertCount(2, collect($plan->incidencias)
+            ->where('codigo', 'CATALOGO_POR_DECISION'));
+        $this->assertSame(1, collect($plan->filas['solicitud'])
+            ->where('soli_id_solicitud', 1)->count());
+    }
+
     public function test_la_base_en_uso_exige_autorizacion_explicita(): void
     {
         config(['anfeca_pdm_decisiones' => $this->decisionesCompletas()]);
