@@ -37,7 +37,7 @@ class AnfecaPdmEquivalencia extends Command
             return self::SUCCESS;
         }
 
-        $this->table(['Tabla', 'Tipo', 'Clave', 'Detalle'], array_slice(array_map('array_values', $diferencias), 0, 100));
+        $this->table(['Tabla', 'Tipo', 'Clave', 'Detalle'], array_slice(array_map(fn ($d) => [$d['tabla'], $d['tipo'], $d['clave'], $d['detalle']], $diferencias), 0, 100));
         $this->error(count($diferencias).' diferencia(s). No se modificó nada.');
 
         return self::FAILURE;
