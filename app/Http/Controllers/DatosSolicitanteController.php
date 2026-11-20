@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Models\User;
 use App\Models\DatosSolicitante;
 use Illuminate\Http\Request;
@@ -12,8 +13,19 @@ use Illuminate\Validation\Rule;
 
 class DatosSolicitanteController extends Controller
 {
+    private function yaTieneDatos(Request $request): bool
+    {
+        return $request->user() !== null
+            && DatosSolicitante::where('user_id', $request->user()->id)->exists();
+    }
+
     public function create(Request $request)
 {
+    // P5: una cuenta que ya tiene datos personales no vuelve al alta.
+    if ($this->yaTieneDatos($request)) {
+        return redirect()->route('mis-datos.edit');
+    }
+
     $datos = $request->user()
         ? DatosSolicitante::where(
             'user_id',
@@ -28,6 +40,13 @@ class DatosSolicitanteController extends Controller
 
     public function store(Request $request)
     {
+        // P5: evitar un segundo registro (error 500 por unicidad de user_id).
+        if ($this->yaTieneDatos($request)) {
+            return redirect()
+                ->route('mis-datos.edit')
+                ->with('error', 'Ya existe un registro de datos personales para esta cuenta.');
+        }
+
         // Convertir CURP y RFC a mayúsculas.
         $request->merge([
             'curp' => strtoupper(trim($request->input('curp', ''))),
@@ -128,6 +147,9 @@ class DatosSolicitanteController extends Controller
 	    $datos['user_id'] = $user->id;
 
 	    DatosSolicitante::create($datos);
+
+	    // F3: espejo en anfeca_modelo (persona, usuario, domicilio, contacto).
+	    app(EspejoPdm::class)->persona($user->id);
 
 	    return $user;
 	});
@@ -313,6 +335,9 @@ $request->merge([
     );
 
     $solicitante->update($datosPermitidos);
+
+    // F3: espejo de domicilio y teléfonos.
+    app(EspejoPdm::class)->persona($solicitante->user_id);
 });
 
     return redirect()
@@ -392,10 +417,14 @@ public function autorizar(Request $request)
             );
     }
 
-    // Registrar la autorización.
-    $datos->datos_autorizados = true;
-    $datos->fecha_autorizacion = now();
-    $datos->save();
+    // Registrar la autorización (y su espejo F3 en la misma transacción).
+    DB::transaction(function () use ($datos) {
+        $datos->datos_autorizados = true;
+        $datos->fecha_autorizacion = now();
+        $datos->save();
+
+        app(EspejoPdm::class)->persona($datos->user_id);
+    });
 
     return redirect()
         ->route('registro.certificacion')

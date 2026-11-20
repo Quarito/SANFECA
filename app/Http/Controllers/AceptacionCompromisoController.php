@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Models\SeleccionCertificacion;
 use App\Models\SolicitudCertificacion;
 use App\Services\ConsultaAntecedentesService;
@@ -147,6 +148,9 @@ class AceptacionCompromisoController extends Controller
                     'compromiso_aceptado' => true,
                     'compromiso_aceptado_en' => now(),
                 ]);
+
+                // F3: espejo del evento «Compromiso de entrega aceptado».
+                app(EspejoPdm::class)->solicitud($actual->id);
             }
         });
 

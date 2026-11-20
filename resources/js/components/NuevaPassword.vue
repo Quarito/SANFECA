@@ -21,7 +21,7 @@ const mostrarError = computed(() =>
 
         <p class="instrucciones-password">
             Ingresa una nueva contraseña de al menos
-            8 caracteres y confírmala para continuar.
+            12 caracteres y confírmala para continuar.
         </p>
 
         <div class="campo-recuperacion">
@@ -33,7 +33,7 @@ const mostrarError = computed(() =>
                 name="password"
                 :type="mostrar ? 'text' : 'password'"
                 autocomplete="new-password"
-                minlength="8"
+                minlength="12"
                 required
             >
         </div>
@@ -49,7 +49,7 @@ const mostrarError = computed(() =>
                 name="password_confirmation"
                 :type="mostrar ? 'text' : 'password'"
                 autocomplete="new-password"
-                minlength="8"
+                minlength="12"
                 required
             >
         </div>
@@ -71,7 +71,7 @@ const mostrarError = computed(() =>
         </p>
 
         <p
-            v-if="confirmacion && coinciden && password.length >= 8"
+            v-if="confirmacion && coinciden && password.length >= 12"
             class="exito-password"
         >
             Las contraseñas coinciden.

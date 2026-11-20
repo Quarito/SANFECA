@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Models\DocumentoProbatorioSolicitud;
 use App\Models\SeleccionCertificacion;
 use App\Models\SolicitudCertificacion;
@@ -279,11 +280,19 @@ private function solicitudActiva(
                         ['solicitud_id' => $solicitudBloqueada->id],
                         array_merge($datos, $archivosNuevos)
                     );
+
+                    // F3: espejo de documentos probatorios, enlace y pago.
+                    app(EspejoPdm::class)->solicitud($solicitudBloqueada->id);
                 }
             );
         } catch (\Throwable $e) {
             foreach ($archivosNuevos as $ruta) {
                 Storage::disk('local')->delete($ruta);
+            }
+
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                // F3: error controlado del espejo PDM (la transacción ya se revirtió).
+                throw $e;
             }
 
             report($e);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Models\SolicitudCertificacion;
 use App\Models\SeleccionCertificacion;
 use App\Models\DatoRefrendo;
@@ -229,10 +230,15 @@ class DatoRefrendoController extends Controller
         $datos['numero_refrendo_asignado'] =
             $registroExistente?->numero_refrendo_asignado;
 
-        DatoRefrendo::updateOrCreate(
-            ['solicitud_id' => $solicitud->id],
-            $datos
-        );
+        \Illuminate\Support\Facades\DB::transaction(function () use ($solicitud, $datos) {
+            DatoRefrendo::updateOrCreate(
+                ['solicitud_id' => $solicitud->id],
+                $datos
+            );
+
+            // F3: espejo de artículo 13/14 e inciso en la solicitud del PDM.
+            app(EspejoPdm::class)->solicitud($solicitud->id);
+        });
 
 	// ETAPA 1: todos los refrendos, incluido artículo 14, continúan a Formación académica.
 	return redirect()

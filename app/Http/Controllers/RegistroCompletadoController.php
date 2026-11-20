@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Models\DatosSolicitante;
 use App\Models\SeleccionCertificacion;
 use App\Models\SolicitudCertificacion;
@@ -364,6 +365,9 @@ private function obtenerSolicitud(
                 'tipo_personal' => $seleccion->tipo_personal,
                 'area_certificacion' => $seleccion->area_certificacion,
             ]);
+
+            // F3: espejo del envío (evento «Enviada»).
+            app(EspejoPdm::class)->solicitud($actual->id);
 
             return true;
         });
