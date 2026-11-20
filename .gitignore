@@ -52,3 +52,10 @@ Thumbs.db
 /0
 /[
 /sin_vinculacion
+
+# Volcados de base de datos y capturas: nunca en el repositorio (contienen datos personales)
+*.dump
+*.sql.gz
+/respaldos_demo/
+/respaldos_usuario_k/
+/:USERPROFILE*

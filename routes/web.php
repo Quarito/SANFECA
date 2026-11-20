@@ -65,7 +65,7 @@ Route::middleware('guest')->group(function () {
         LoginController::class,
         'login'
     ])
-    ->middleware('throttle:5,1')
+    ->middleware('throttle:login')
     ->name('login.submit');
 
 });
@@ -128,7 +128,8 @@ Route::post('/mis-datos/autorizar', [DatosSolicitanteController::class, 'autoriz
 |--------------------------------------------------------------------------
 */
 
-Route::view('/registro', 'registro.create')
+// P4: la vista registro.create no existe; se conserva el nombre de la ruta.
+Route::redirect('/registro', '/registro/datos-personales')
     ->name('registro.create');
 
 /*
@@ -166,7 +167,7 @@ Route::middleware('guest')->group(function () {
         '/recuperar',
         [RecuperacionPasswordController::class, 'enviarEnlace']
     )
-    ->middleware('throttle:3,1')
+    ->middleware('throttle:recuperacion')
     ->name('password.email');
 
     // Pantalla 2: Confirmación de solicitud
@@ -188,7 +189,7 @@ Route::middleware('guest')->group(function () {
         '/restablecer',
         [RecuperacionPasswordController::class, 'guardarNuevaPassword']
     )
-    ->middleware('throttle:5,1')
+    ->middleware('throttle:restablecer')
     ->name('password.update');
 
 });

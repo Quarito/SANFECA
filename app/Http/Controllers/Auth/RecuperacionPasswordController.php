@@ -67,7 +67,7 @@ class RecuperacionPasswordController extends Controller
             'password' => [
                 'required',
                 'confirmed',
-                PasswordRule::min(8),
+                PasswordRule::min(12),
             ],
         ]);
 
