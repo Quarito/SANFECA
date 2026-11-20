@@ -120,18 +120,24 @@ TXT
 }
 
 # Todas las comprobaciones se leen del catálogo compartido (pg_database), sin conectarse aún al ensayo.
-DATOS_BD="$(ql "$PRINCIPAL" "select pg_get_userbyid(d.datdba) || '|' || coalesce(shobj_description(d.oid, 'pg_database'), '') || '|' ||
-    d.datistemplate || '|' || d.datallowconn || '|' || pg_encoding_to_char(d.encoding) || '|' || d.datcollate || '|' || d.datctype || '|' || d.datlocprovider::text
+# Booleanos resueltos en SQL (PostgreSQL 16 devuelve true/false y 18 t/f) y separador chr(31): una
+# marca con '|' no puede desplazar campos.
+source "$(dirname "$(readlink -f "$0")")/validar_ensayo.sh"
+SEP=$'\x1f'
+DATOS_BD="$(ql "$PRINCIPAL" "select concat_ws(chr(31), pg_get_userbyid(d.datdba), coalesce(shobj_description(d.oid, 'pg_database'), ''),
+    case when d.datistemplate then 'si' else 'no' end, case when d.datallowconn then 'si' else 'no' end,
+    concat_ws('|', pg_encoding_to_char(d.encoding), d.datcollate, d.datctype, d.datlocprovider::text),
+    (select count(*) from pg_stat_activity a where a.datname = d.datname and a.pid <> pg_backend_pid()))
     from pg_database d where d.datname = '$ENSAYO'")"
 [[ -n "$DATOS_BD" ]] || { instrucciones_admin; falla "$ENSAYO no existe."; }
-REF_BD="$(ql "$PRINCIPAL" "select pg_encoding_to_char(d.encoding) || '|' || d.datcollate || '|' || d.datctype || '|' || d.datlocprovider::text
+REF_BD="$(ql "$PRINCIPAL" "select concat_ws('|', pg_encoding_to_char(d.encoding), d.datcollate, d.datctype, d.datlocprovider::text)
     from pg_database d where d.datname = current_database()")"
-IFS='|' read -r E_DUENO E_MARCA E_PLANTILLA E_CONEXION E_COD E_COLL E_CTYPE E_PROV <<< "$DATOS_BD"
-echo "Dueño: $E_DUENO · Marca: '${E_MARCA}' · Codificación/collation: $E_COD $E_COLL $E_CTYPE $E_PROV"
-[[ "$E_DUENO" == "$ROL_ESPERADO" ]] || falla "$ENSAYO pertenece a '$E_DUENO', no a $ROL_ESPERADO. Rechazada."
-[[ "$E_MARCA" == "$MARCA" ]] || { instrucciones_admin; falla "$ENSAYO no tiene la marca '$MARCA'. Rechazada."; }
-[[ "$E_PLANTILLA" == "false" && "$E_CONEXION" == "true" ]] || falla "$ENSAYO es plantilla o no admite conexiones. Rechazada."
-[[ "$E_COD|$E_COLL|$E_CTYPE|$E_PROV" == "$REF_BD" ]] || { instrucciones_admin; falla "Codificación/collation de $ENSAYO ($E_COD|$E_COLL|$E_CTYPE|$E_PROV) distinta de la principal ($REF_BD): la comparación de integridad no sería válida. Rechazada."; }
+IFS="$SEP" read -r E_DUENO E_MARCA E_PLANTILLA E_CONEXION E_REGIONAL E_AJENAS <<< "$DATOS_BD"
+echo "Dueño: $E_DUENO · Marca: '${E_MARCA}' · Plantilla: $E_PLANTILLA · Conexiones: $E_CONEXION · Regional: $E_REGIONAL · Sesiones ajenas: $E_AJENAS"
+if ! MOTIVO="$(validar_atributos_ensayo "$ENSAYO" "$E_DUENO" "$ROL_ESPERADO" "$E_MARCA" "$MARCA" "$E_PLANTILLA" "$E_CONEXION" "$E_REGIONAL" "$REF_BD" "$E_AJENAS")"; then
+    instrucciones_admin
+    falla "$ENSAYO rechazada: $MOTIVO"
+fi
 
 # Conexión al ensayo: confirma la base real y que está VACÍA (ningún objeto de usuario).
 [[ "$(q "$ENSAYO" "select current_database()")" == "$ENSAYO" ]] || falla "La conexión no apunta a $ENSAYO."
@@ -141,7 +147,8 @@ OBJETOS="$(q "$ENSAYO" "select
   + (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname not in ('pg_catalog', 'information_schema'))
   + (select count(*) from pg_namespace n where n.nspname not in ('public', 'pg_catalog', 'information_schema') and n.nspname not like 'pg_toast%' and n.nspname not like 'pg_temp%')
   + (select count(*) from pg_extension where extname <> 'plpgsql')
-  + (select count(*) from pg_type t join pg_namespace n on n.oid = t.typnamespace where n.nspname = 'public')")"
+  + (select count(*) from pg_type t join pg_namespace n on n.oid = t.typnamespace where n.nspname = 'public')
+  + (select count(*) from pg_largeobject_metadata)")"
 if [[ "$OBJETOS" != "0" ]]; then
     echo "$ENSAYO contiene $OBJETOS objeto(s): no está vacía (¿ensayo anterior?). No se elimina ni se reutiliza."
     echo "Para repetir el ensayo, el administrador debe eliminarla y crearla de nuevo:"

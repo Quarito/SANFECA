@@ -16,7 +16,7 @@
 | IGUALES: la aplicación muestra lo mismo leyendo de public o del PDM.
 |
 | Garantía: todo el recorrido ocurre dentro de una transacción que se REVIERTE al final;
-| se niega a correr en bd_laravelanfeca_pruebas y en bd_anfeca_copia_pruebas_pg.
+| nunca corre en bd_anfeca_copia_pruebas_pg; en bd_laravelanfeca_pruebas solo con ANFECA_RECORRIDO_PRINCIPAL=si.
 */
 
 use Illuminate\Contracts\Http\Kernel;
@@ -36,8 +36,11 @@ if ($salida === null) {
 }
 
 $bd = DB::connection()->getDatabaseName();
-if (in_array($bd, ['bd_laravelanfeca_pruebas', 'bd_anfeca_copia_pruebas_pg'], true)) {
-    fwrite(STDERR, "Se niega a ejecutarse en {$bd}: use la base de ensayo restaurada.\n");
+// La copia migrada nunca. La principal solo con autorización explícita (verificación de la activación
+// real): el recorrido es de lectura y TODO ocurre en una transacción que se revierte.
+if ($bd === 'bd_anfeca_copia_pruebas_pg'
+    || ($bd === 'bd_laravelanfeca_pruebas' && getenv('ANFECA_RECORRIDO_PRINCIPAL') !== 'si')) {
+    fwrite(STDERR, "Se niega a ejecutarse en {$bd} (en la principal requiere ANFECA_RECORRIDO_PRINCIPAL=si).\n");
     exit(2);
 }
 
