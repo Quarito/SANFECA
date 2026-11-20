@@ -319,6 +319,11 @@ Cada fase lleva commits propios, pruebas que deben pasar y su propia reversión.
 
 ### F2 · Migración de datos y conciliación
 
+> **Estado (20/11/2026): implementada** en la rama `integracion/pdm-f2`.
+> - PostgreSQL aislado: 31/31 pruebas.
+> - **No se migró ningún dato real.** La ejecución definitiva espera D-11, D-13 y D-14.
+> - Detalle en `F2_MIGRACION_DATOS.md`.
+
 | Aspecto | Detalle |
 |---|---|
 | Tablas | Todas las de la sección 3 |
