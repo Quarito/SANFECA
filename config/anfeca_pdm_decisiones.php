@@ -32,6 +32,15 @@ return [
     'certificados' => [
     ],
 
+    // D-15 · solicitudes_certificacion.id => equivalencias historicas confirmadas.
+    // Solo para valores fuera de catálogo; requiere fuente documentada.
+    // No modifica public y no supone que "Informática" signifique otra area.
+    // Ejemplo: 4 => ['area_certificacion' => 'Informática Administrativa',
+    //                'tipo_personal' => 'Profesoras y profesores de Tiempo Completo',
+    //                'fuente' => 'Documento oficial confirmado'],
+    'solicitudes' => [
+    ],
+
     // D-8 · regla para SOLICITUD.SOLO_ART13 (aceptada como recomendación del plan).
     'regla_solo_art13' => 'refrendo_sin_articulo_14',
 ];
