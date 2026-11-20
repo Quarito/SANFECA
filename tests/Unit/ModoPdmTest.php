@@ -17,9 +17,9 @@ class ModoPdmTest extends TestCase
         $this->assertTrue(ModoPdm::apagado());
     }
 
-    public function test_los_modos_de_fases_posteriores_se_rechazan_en_f1(): void
+    public function test_los_modos_de_fases_posteriores_se_rechazan(): void
     {
-        foreach (['espejo', 'principal', 'exclusivo'] as $modo) {
+        foreach (['principal', 'exclusivo'] as $modo) {
             config(['anfeca_pdm.modo' => $modo]);
 
             try {
@@ -28,6 +28,23 @@ class ModoPdmTest extends TestCase
             } catch (RuntimeException $e) {
                 $this->assertStringContainsString('aún no está implementado', $e->getMessage());
             }
+        }
+    }
+
+    public function test_espejo_se_admite_en_configuracion_pero_sin_activacion_opera_apagado(): void
+    {
+        config(['anfeca_pdm.modo' => 'espejo']);
+
+        $this->assertSame('espejo', ModoPdm::actual());
+        // SQLite: no existe la tabla de activación → la aplicación sigue en apagado.
+        $this->assertSame('apagado', ModoPdm::efectivo());
+    }
+
+    public function test_principal_y_exclusivo_operan_como_apagado_sin_romper_la_aplicacion(): void
+    {
+        foreach (['principal', 'exclusivo', 'desconocido'] as $modo) {
+            config(['anfeca_pdm.modo' => $modo]);
+            $this->assertSame('apagado', ModoPdm::efectivo(), $modo);
         }
     }
 

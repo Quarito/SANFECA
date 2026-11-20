@@ -100,21 +100,21 @@ class ExtensionesPdmTest extends PdmTestCase
             $this->assertStringContainsString('anfeca_modelo.zona tiene datos', $e->getMessage());
         }
 
-        $this->assertSame(39, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->count());
+        $this->assertSame(39, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->where('tablename', '<>', 'integracion_control')->count());
     }
 
     public function test_reversion_y_reaplicacion_sin_datos(): void
     {
         $this->migracion()->down();
 
-        $this->assertSame(36, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->count());
+        $this->assertSame(36, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->where('tablename', '<>', 'integracion_control')->count());
         $this->assertSame(35, (int) DB::selectOne("select count(*) as n from pg_constraint where contype = 'f' and connamespace = 'anfeca_modelo'::regnamespace")->n);
         $this->assertSame(25, DB::table('pg_tables')->where('schemaname', 'public')->count(), 'public no cambia');
         $this->assertSame(32, DB::table('anfeca_modelo.entidad_federativa')->count(), 'los catálogos se conservan');
 
         $this->migracion()->up();
 
-        $this->assertSame(39, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->count());
+        $this->assertSame(39, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->where('tablename', '<>', 'integracion_control')->count());
         $this->assertSame(42, (int) DB::selectOne("select count(*) as n from pg_constraint where contype = 'f' and connamespace = 'anfeca_modelo'::regnamespace")->n);
     }
 

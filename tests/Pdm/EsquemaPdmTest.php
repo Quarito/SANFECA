@@ -34,7 +34,7 @@ class EsquemaPdmTest extends PdmTestCase
 
     public function test_pdm_original_y_extensiones_instalados(): void
     {
-        $tablas = DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->count();
+        $tablas = DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->where('tablename', '<>', 'integracion_control')->count();
         $fks = DB::selectOne("select count(*) as n from pg_constraint where contype = 'f' and connamespace = 'anfeca_modelo'::regnamespace")->n;
 
         $this->assertSame(39, $tablas, '36 del PDM + zona, coordinador_zona, historico_certificado_importacion');
@@ -83,6 +83,13 @@ class EsquemaPdmTest extends PdmTestCase
         }
 
         $this->assertSame(39, $revisados);
+    }
+
+    public function test_tabla_tecnica_de_control_existe_y_esta_vacia(): void
+    {
+        // F3: control del modo de integración; no es parte del PDM.
+        $this->assertNotNull(DB::selectOne("select to_regclass('anfeca_modelo.integracion_control') as t")->t);
+        $this->assertSame(0, DB::table('anfeca_modelo.integracion_control')->count(), 'el espejo no queda activado por omisión');
     }
 
     public function test_public_conserva_las_25_tablas_de_laravel(): void
