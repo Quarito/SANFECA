@@ -15,6 +15,12 @@ class ReiniciarDemo extends Command
 {
     public function handle(): int
     {
+        // F3: en modo espejo borrar en public dejaría el PDM desalineado.
+        if (!\App\Services\Pdm\ModoPdm::apagado()) {
+            $this->error('anfeca:reiniciar-demo solo se permite con el modo PDM apagado (anfeca:pdm-modo apagado).');
+            return self::FAILURE;
+        }
+
         if (realpath(base_path()) !== '/var/www/ANFECA_PRUEBAS') {
             $this->error('Solo se permite en ANFECA_PRUEBAS.');
             return self::FAILURE;

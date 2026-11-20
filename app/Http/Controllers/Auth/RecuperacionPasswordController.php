@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Http\Controllers\Controller;
 use App\Models\DatosSolicitante;
 use App\Models\User;
@@ -79,10 +80,15 @@ class RecuperacionPasswordController extends Controller
                 'token'
             ),
             function (User $usuario, string $password) {
-                $usuario->forceFill([
-                    'password' => Hash::make($password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+                DB::transaction(function () use ($usuario, $password) {
+                    $usuario->forceFill([
+                        'password' => Hash::make($password),
+                        'remember_token' => Str::random(60),
+                    ])->save();
+
+                    // F3: el usuario técnico del PDM conserva el mismo hash (D-1 A).
+                    app(EspejoPdm::class)->usuario($usuario->id);
+                });
             }
         );
 

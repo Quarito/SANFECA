@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Models\FormacionAcademica;
 use App\Models\SolicitudCertificacion;
 use App\Models\SeleccionCertificacion;
@@ -355,6 +356,9 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                     array_merge($datos, $nuevosArchivos)
                 );
 
+                // F3: espejo de formación, documentos académicos e historial.
+                app(EspejoPdm::class)->solicitud($solicitud->id);
+
                 return false;
             });
 
@@ -375,6 +379,11 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 	        foreach ($nuevosArchivos as $ruta) {
 	            Storage::disk('local')->delete($ruta);
 	        }
+
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                // F3: error controlado del espejo PDM (la transacción ya se revirtió).
+                throw $e;
+            }
 
 	        report($e);
 
@@ -490,6 +499,9 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 
             $formacion->formacion_completada_at = now();
             $formacion->save();
+
+            // F3: espejo del evento «Formación académica autorizada».
+            app(EspejoPdm::class)->solicitud($solicitud->id);
 
             return redirect()
                 ->route('registro.documentos');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Models\SeleccionCertificacion;
 use App\Models\SolicitudCertificacion;
 use App\Services\ConsultaAntecedentesService;
@@ -455,6 +456,9 @@ public function consultarCertificadoAnterior(Request $request)
 		        'certificado_historico_id' => $certificadoValidado->id,
 		    ]);
 		}
+
+            // F3: espejo de la solicitud (área, tipo de personal, trámite, antecedente).
+            app(EspejoPdm::class)->solicitud($solicitud->id);
 
             return $tipo;
         });

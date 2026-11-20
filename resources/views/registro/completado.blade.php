@@ -75,6 +75,15 @@
                     </p>
                 @endif
 
+                {{-- Errores de validación del envío (incluido el espejo PDM de F3). --}}
+                @if($errors->any())
+                    @foreach(array_unique($errors->all()) as $error)
+                        <p role="alert">
+                            {{ $error }}
+                        </p>
+                    @endforeach
+                @endif
+
                 @if($enviada ?? false)
 
                     <h2>Solicitud enviada correctamente</h2>
