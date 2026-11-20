@@ -113,6 +113,50 @@ En `config/anfeca_pdm_decisiones.php`, **por ID de `public`** y con su fuente:
 
 **No se infiere ninguna equivalencia.** Monterrey no se asigna a Nuevo León sin una decisión registrada.
 
+## 4b. Verificar la conexión efectiva (antes de cualquier operación)
+
+`php artisan anfeca:pdm-conexion` es de **solo lectura**. Muestra:
+- la configuración efectiva;
+- si está en caché;
+- la base **real** (`current_database()`), la versión del servidor y las tablas de `anfeca_modelo` y `public`;
+- cada línea `DB_*` del `.env`, sin mostrar la contraseña.
+
+Explica por qué un `grep DB_DATABASE .env` puede no mostrar una línea que existe. Señala:
+- BOM al inicio del archivo;
+- fin de línea `CRLF`;
+- espacios al inicio;
+- prefijo `export`;
+- líneas duplicadas (gana la última);
+- variables exportadas en la sesión, que tienen prioridad sobre `.env` (las lee de `/proc/self/environ`).
+
+## 4c. Ensayo automatizado sobre la copia
+
+`scripts/anfeca/ensayo_copia_f2.sh` automatiza el procedimiento de la sección 5. Se ejecuta desde la raíz del worktree:
+
+```bash
+bash scripts/anfeca/ensayo_copia_f2.sh /ruta/respaldo.dump plan
+```
+
+| Modo | Qué hace |
+|---|---|
+| `plan` (por omisión) | Verifica el respaldo (fecha, tamaño, SHA-256, `pg_restore -l`) y lo restaura en `bd_anfeca_copia_pruebas_pg`. Compara conteos con la base de trabajo (solo `SELECT`). Confirma la conexión. Prepara el PDM y las extensiones en la copia y muestra el plan. |
+| `simular` | Además: simulación con conciliación y reversión |
+| `completo` | Además: migración en la copia, conciliación, verificación de IDs, usuarios y hashes, históricos, autorizaciones, compromisos e historial, y **reversión probada** (vaciado y comprobación de `public`) |
+
+**Protecciones:**
+- Se niega fuera de un worktree o desde `/var/www/ANFECA_PRUEBAS`.
+- Solo escribe en `bd_anfeca_copia_pruebas_pg`. Si la copia ya existe, exige `--recrear` y escribir la palabra RECREAR.
+- La contraseña se pide en la sesión.
+- Los resultados quedan en `$HOME/ANFECA_RESPALDOS/ensayo_f2/<fecha>/`, con permisos 700/600.
+
+**Probado en este entorno (PostgreSQL 16.15)** con un respaldo de una base local que simula la de trabajo, con datos ficticios. El modo `completo` terminó así:
+- 39 tablas y 42 FK;
+- simulación y migración con 0 diferencias;
+- todas las verificaciones de IDs coinciden;
+- vaciado correcto y `public` sin cambios.
+
+La base de trabajo local quedó **idéntica**: misma huella y el PDM sin filas.
+
 ## 5. Procedimiento para validarlo (sin tocar la base de trabajo)
 
 Lo recomendado es ensayar sobre una **copia restaurada** de tu respaldo, en una base aislada. Así ves el plan con los datos reales sin modificar `bd_laravelanfeca_pruebas`.
