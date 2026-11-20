@@ -504,6 +504,7 @@ class PlanMigracionPdm
         $refrendos = DB::table('public.datos_refrendo')->get()->keyBy('solicitud_id');
         $certificados = DB::table('public.certificados_historicos')->pluck('numero_certificado', 'id');
         $estados = (array) config('anfeca_pdm.catalogos.estados_solicitud');
+        $decisionesSolicitudes = (array) ($this->decisiones['solicitudes'] ?? []);
 
         $consulta = DB::table('public.solicitudes_certificacion')->orderBy('id');
         if ($soloSolicitudes !== null) {
@@ -537,7 +538,10 @@ class PlanMigracionPdm
             }
 
             // Área y tipo de personal; N-6: selección del mismo usuario y certificación.
+            // Valores históricos no reconocidos solo se corrigen mediante decisión
+            // explícita, por solicitud y con fuente verificable.
             $seleccion = $selecciones[$s->user_id] ?? null;
+            $decisionSolicitud = (array) ($decisionesSolicitudes[$s->id] ?? []);
             $catalogo = [];
             foreach (['area_certificacion' => ['areas_certificacion', 'areas'], 'tipo_personal' => ['tipos_personal_academico', 'tipos_personal']] as $col => [$grupo, $mapa]) {
                 $valor = $s->{$col};
@@ -546,6 +550,16 @@ class PlanMigracionPdm
                     $this->incidencia('N6_DESDE_SELECCION', false, 'solicitudes_certificacion', $s->id, "{$col} vacío: se toma de selecciones_certificacion (regla N-6).");
                 }
                 $r = $this->norm->catalogoExacto($grupo, $valor);
+                if ($r->revision && filled($decisionSolicitud['fuente'] ?? null)
+                    && filled($decisionSolicitud[$col] ?? null)) {
+                    $porDecision = $this->norm->catalogoExacto($grupo, $decisionSolicitud[$col]);
+                    if (!$porDecision->revision) {
+                        $r = $porDecision;
+                        $this->incidencia('CATALOGO_POR_DECISION', false, 'solicitudes_certificacion', $s->id,
+                            "{$col}: se usa el valor del catálogo confirmado en decisión registrada (sin alterar public).",
+                            'D-15', $col);
+                    }
+                }
                 if ($r->revision) {
                     $errores[] = "{$col}: {$r->motivo}";
                 } else {
@@ -641,8 +655,13 @@ class PlanMigracionPdm
                 $nombre = trim((string) $f->{$cOtro});
                 $estado = 'REV';
                 if ($nombre === '') {
-                    $this->incidencia('OTRO_SIN_TEXTO', true, 'formaciones_academicas_solicitud', $f->id, "{$tipo}: título «Otro» sin texto capturado.");
-                    continue;
+                    // Registro histórico incompleto: se conserva literalmente el
+                    // único valor existente en public ("Otro"), sin inventar título.
+                    // El estudio queda REV; las capturas nuevas siguen sujetas a
+                    // required_if en FormacionAcademicaController.
+                    $nombre = 'Otro';
+                    $this->incidencia('OTRO_SIN_TEXTO', false, 'formaciones_academicas_solicitud', $f->id,
+                        "{$tipo}: descripción histórica ausente; se conserva «Otro» en revisión (REV), sin atribuir un título.");
                 }
             } elseif (!isset($this->cat['estudios'][$nivel][$nombre])) {
                 $estado = 'REV';
