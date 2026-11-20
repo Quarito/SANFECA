@@ -384,6 +384,11 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                 // F3: error controlado del espejo PDM (la transacción ya se revirtió).
                 throw $e;
             }
+            if ($e instanceof \Illuminate\Database\QueryException
+                && ($controlado = \App\Services\Pdm\ErrorValidacionPdm::desde($e)) !== null) {
+                // F4/F5: dato no registrable en el PDM (disparadores anfeca_compat).
+                throw $controlado;
+            }
 
 	        report($e);
 

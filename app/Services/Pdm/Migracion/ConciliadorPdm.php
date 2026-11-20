@@ -34,6 +34,11 @@ class ConciliadorPdm
         'persona_estudio_profesional' => ['pees_id_solicitud', 'pees_tipo'],
         'solicitud_documento' => ['socu_id_solicitud', 'docu_id_documento', 'socu_url_archivo', 'esdo_id_estado_documento'],
         'pago' => ['pago_id_solicitud', 'pago_url_comprobante'],
+        // F4
+        'seleccion_certificacion' => ['secc_id_seleccion'],
+        'solicitud_refrendo' => ['sore_id_solicitud_refrendo'],
+        'formacion_solicitud' => ['fosc_id_formacion'],
+        'documentos_solicitud' => ['dosc_id_documentos'],
     ];
 
     /** Columnas del plan que no se comparan directamente. */
@@ -60,6 +65,7 @@ class ConciliadorPdm
         'rol', 'privilegio', 'rol_privilegio', 'zona', 'institucion', 'sede', 'persona', 'usuario', 'domicilio',
         'comunicacion', 'coordinador_zona', 'historico_certificado_importacion', 'historico_certificado', 'solicitud',
         'estado_solicitud', 'persona_estudio_profesional', 'solicitud_documento', 'estado_solicitud_documento', 'pago',
+        'seleccion_certificacion', 'solicitud_refrendo', 'formacion_solicitud', 'documentos_solicitud',
     ];
 
     /**

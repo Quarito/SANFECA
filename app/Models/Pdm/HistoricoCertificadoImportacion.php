@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tabla anfeca_modelo.historico_certificado_importacion (EXTENSIÓN ANFECA, no está en el PDM original).
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y anfeca_modelo_extensiones.sql.
+ * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
  */
 class HistoricoCertificadoImportacion extends PdmModel
 {

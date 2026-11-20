@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tabla anfeca_modelo.usuario del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y anfeca_modelo_extensiones.sql.
+ * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
  */
 class Usuario extends PdmModel
 {
@@ -56,5 +56,11 @@ class Usuario extends PdmModel
     public function historicoCertificadoImportaciones(): HasMany
     {
         return $this->hasMany(HistoricoCertificadoImportacion::class, 'hcim_id_usuario', 'usua_id_usuario');
+    }
+
+    /** FK FK_SECC_USUARIO: seleccion_certificacion.secc_id_usuario → usuario.usua_id_usuario */
+    public function seleccionCertificaciones(): HasMany
+    {
+        return $this->hasMany(SeleccionCertificacion::class, 'secc_id_usuario', 'usua_id_usuario');
     }
 }

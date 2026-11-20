@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tabla anfeca_modelo.persona_estudio_profesional del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y anfeca_modelo_extensiones.sql.
+ * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
  * PK compuesta en el PDM (pees_id_persona_estudio_profesi, pees_id_estuido_profesional, pees_id_persona); Eloquent usa pees_id_persona_estudio_profesi (SERIAL único).
  */
 class PersonaEstudioProfesional extends PdmModel

@@ -77,6 +77,7 @@ abstract class PdmTestCase extends TestCase
         $bd = DB::connection()->getDatabaseName();
 
         // Base aislada verificada arriba: se puede reconstruir completa.
+        DB::statement('drop schema if exists anfeca_compat cascade');
         DB::statement('drop schema if exists anfeca_modelo cascade');
         $this->ejecutar('migrate:fresh', ['--force' => true]);
 

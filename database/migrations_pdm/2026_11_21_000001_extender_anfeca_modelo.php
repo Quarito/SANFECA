@@ -33,13 +33,18 @@ return new class extends Migration
     {
         $this->verificarConexion();
 
-        $tablas = (int) DB::selectOne(
-            "select count(*) as total from pg_tables where schemaname = ? and tablename <> 'integracion_control'",
-            [self::ESQUEMA]
-        )->total;
+        // Las 36 tablas ORIGINALES del PDM, por nombre (otras tablas técnicas o de fases
+        // posteriores no cuentan). Si zona ya existe, las extensiones ya están aplicadas.
+        $originales = ['acta', 'alcaldia_municipio', 'area_certificacion', 'articulo_subindice', 'certificado', 'colonia',
+            'comunicacion', 'convocatoria', 'c_estado_solicitud', 'dictamen', 'documento', 'domicilio', 'entidad_federativa',
+            'estado_documento', 'estado_solicitud', 'estado_solicitud_documento', 'estudio_profesional', 'evaluacion',
+            'historico_certificado', 'institucion', 'nivel_profesional', 'pago', 'persona', 'persona_estudio_profesional',
+            'privilegio', 'refrendo_certificado', 'rol', 'rol_privilegio', 'sede', 'solicitud', 'solicitud_documento',
+            'tipo_comunicacion', 'tipo_convocatoria', 'tipo_dictamen', 'tipo_personal_academico', 'usuario'];
+        $tablas = DB::table('pg_tables')->where('schemaname', self::ESQUEMA)->whereIn('tablename', $originales)->count();
 
-        if ($tablas !== 36) {
-            throw new RuntimeException("Se esperaban las 36 tablas originales en anfeca_modelo y hay {$tablas}. Instale primero con anfeca:modelo-instalar o revise si las extensiones ya se aplicaron.");
+        if ($tablas !== 36 || DB::selectOne("select to_regclass('anfeca_modelo.zona') as t")->t) {
+            throw new RuntimeException("Se esperaban las 36 tablas originales en anfeca_modelo (hay {$tablas}) y las extensiones sin aplicar. Instale primero con anfeca:modelo-instalar o revise si las extensiones ya se aplicaron.");
         }
 
         $bd = DB::connection()->getDatabaseName();

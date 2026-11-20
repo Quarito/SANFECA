@@ -312,6 +312,7 @@ class PlanMigracionPdm
                 'pers_genero' => $genero->valor, 'pers_num_afiliacion_institucion' => null, 'pers_activo' => true,
                 'pers_cedula_profesional' => $d->cedula_profesional,
                 'pers_datos_autorizados' => (bool) $d->datos_autorizados, 'pers_fecha_autorizacion' => $d->fecha_autorizacion,
+                'pers_creado_en' => $d->created_at, 'pers_actualizado_en' => $d->updated_at,
             ]);
             $this->incluidos['persona_por_usuario'][$d->user_id] = $d->id;
 
@@ -323,6 +324,17 @@ class PlanMigracionPdm
                     'usua_nombre' => $u->email, 'usua_contrasenia' => $u->password, 'usua_estatus' => 'ACTIVO',
                 ]);
                 $this->incluidos['usuario'][$u->id] = true;
+
+                // F4: selección de certificación vigente del usuario (copia fiel).
+                $seleccion = DB::table('public.selecciones_certificacion')->where('user_id', $u->id)->first();
+                if ($seleccion !== null) {
+                    $this->agregar('seleccion_certificacion', [
+                        'secc_id_seleccion' => $seleccion->id, 'secc_id_usuario' => $u->id,
+                        'secc_certificacion' => $seleccion->certificacion, 'secc_tipo_personal' => $seleccion->tipo_personal,
+                        'secc_area_certificacion' => $seleccion->area_certificacion,
+                        'secc_creado_en' => $seleccion->created_at, 'secc_actualizado_en' => $seleccion->updated_at,
+                    ]);
+                }
             }
 
             $this->domicilio($d, $decisionesDom[$d->id] ?? null);
@@ -600,7 +612,18 @@ class PlanMigracionPdm
                 'soli_art14' => $art14,
                 'soli_tipo_tramite' => $s->tipo_tramite, 'soli_certificacion' => $s->certificacion,
                 'soli_id_historico_importacion' => $s->certificado_historico_id,
+                'soli_creado_en' => $s->created_at, 'soli_actualizado_en' => $s->updated_at,
             ]);
+
+            // F4: datos propios de la solicitud de refrendo (lo que no cubre SOLICITUD).
+            if ($refrendo !== null) {
+                $this->agregar('solicitud_refrendo', [
+                    'sore_id_solicitud_refrendo' => $refrendo->id, 'sore_id_solicitud' => $s->id,
+                    'sore_numero_refrendo_asignado' => $refrendo->numero_refrendo_asignado,
+                    'sore_refrendo_actual' => $refrendo->refrendo_actual,
+                    'sore_creado_en' => $refrendo->created_at, 'sore_actualizado_en' => $refrendo->updated_at,
+                ]);
+            }
             $this->incluidos['solicitud'][$s->id] = $persona;
 
             // Eventos (D-3): borrador, formación autorizada, compromiso, envío.
@@ -634,6 +657,16 @@ class PlanMigracionPdm
         if ($f === null) {
             return;
         }
+
+        // F4: registro de la formación del trámite, con la institución elegida en ESE trámite.
+        $institucion = $f->institucion_afiliada_id;
+        if ($institucion !== null && !isset($this->incluidos['institucion'][$institucion])) {
+            $institucion = null; // la incidencia D-11 ya se reporta en la persona
+        }
+        $this->agregar('formacion_solicitud', [
+            'fosc_id_formacion' => $f->id, 'fosc_id_solicitud' => $s->id, 'fosc_id_institucion' => $institucion,
+            'fosc_creado_en' => $f->created_at, 'fosc_actualizado_en' => $f->updated_at,
+        ]);
 
         foreach (['ORIGEN' => ['nivel_origen', 'titulo_origen', 'titulo_origen_otro', 'titulo_origen_archivo', 'cedula_origen_archivo'],
                   'ULTIMO' => ['nivel_ultimo_grado', 'titulo_ultimo_grado', 'titulo_ultimo_grado_otro', 'titulo_ultimo_grado_archivo', 'cedula_ultimo_grado_archivo']]
@@ -689,6 +722,14 @@ class PlanMigracionPdm
         $cargado = (int) $this->cat['estados_documento'][config('anfeca_pdm.catalogos.estados_documento.CARGADO')];
         $sustituido = (int) $this->cat['estados_documento'][config('anfeca_pdm.catalogos.estados_documento.SUSTITUIDO')];
         $p = DB::table('public.documentos_probatorios_solicitud')->where('solicitud_id', $s->id)->first();
+
+        // F4: registro de documentos probatorios del trámite.
+        if ($p !== null) {
+            $this->agregar('documentos_solicitud', [
+                'dosc_id_documentos' => $p->id, 'dosc_id_solicitud' => $s->id,
+                'dosc_creado_en' => $p->created_at, 'dosc_actualizado_en' => $p->updated_at,
+            ]);
+        }
 
         $vigentes = [];
         foreach (['titulo_origen_archivo', 'cedula_origen_archivo', 'titulo_ultimo_grado_archivo', 'cedula_ultimo_grado_archivo'] as $campo) {

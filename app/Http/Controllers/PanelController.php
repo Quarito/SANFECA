@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\DatosSolicitante;
 use App\Models\SeleccionCertificacion;
-use App\Models\FormacionAcademica;
+use App\Models\FormacionAcademicaSolicitud;
+use App\Models\SolicitudCertificacion;
 use Illuminate\Http\Request;
 
 class PanelController extends Controller
@@ -21,9 +22,12 @@ class PanelController extends Controller
             'user_id', $userId
         )->exists();
 
-        $formacionCompleta = FormacionAcademica::where(
-            'user_id', $userId
-        )->exists();
+        // Formación del trámite actual (formaciones_academicas_solicitud); la tabla antigua
+        // formaciones_academicas ya no se escribe y no existe en el modelo PowerDesigner.
+        $formacionCompleta = FormacionAcademicaSolicitud::whereIn(
+            'solicitud_id',
+            SolicitudCertificacion::where('user_id', $userId)->select('id')
+        )->whereNotNull('formacion_completada_at')->exists();
 
         $etapas = [
 	    [

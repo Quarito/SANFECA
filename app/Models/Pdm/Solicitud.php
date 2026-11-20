@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tabla anfeca_modelo.solicitud del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y anfeca_modelo_extensiones.sql.
+ * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
  */
 class Solicitud extends PdmModel
 {
@@ -34,6 +34,8 @@ class Solicitud extends PdmModel
         'soli_tipo_tramite',
         'soli_certificacion',
         'soli_id_historico_importacion',
+        'soli_creado_en',
+        'soli_actualizado_en',
     ];
 
     protected $casts = [
@@ -48,6 +50,8 @@ class Solicitud extends PdmModel
         'solo_art13' => 'boolean',
         'soli_art14' => 'boolean',
         'soli_id_historico_importacion' => 'integer',
+        'soli_creado_en' => 'datetime',
+        'soli_actualizado_en' => 'datetime',
     ];
 
     /** FK FK_SOLICITU_ESTA_ASOC_TIPO_PER: solicitud.soli_id_tipo_personal_academico → tipo_personal_academico.tipa_id_tipo_personal_academico */
@@ -120,5 +124,23 @@ class Solicitud extends PdmModel
     public function personaEstudioProfesionales(): HasMany
     {
         return $this->hasMany(PersonaEstudioProfesional::class, 'pees_id_solicitud', 'soli_id_solicitud');
+    }
+
+    /** FK FK_SORE_SOLICITUD: solicitud_refrendo.sore_id_solicitud → solicitud.soli_id_solicitud */
+    public function solicitudRefrendos(): HasMany
+    {
+        return $this->hasMany(SolicitudRefrendo::class, 'sore_id_solicitud', 'soli_id_solicitud');
+    }
+
+    /** FK FK_FOSC_SOLICITUD: formacion_solicitud.fosc_id_solicitud → solicitud.soli_id_solicitud */
+    public function formacionSolicitudes(): HasMany
+    {
+        return $this->hasMany(FormacionSolicitud::class, 'fosc_id_solicitud', 'soli_id_solicitud');
+    }
+
+    /** FK FK_DOSC_SOLICITUD: documentos_solicitud.dosc_id_solicitud → solicitud.soli_id_solicitud */
+    public function documentosSolicitudes(): HasMany
+    {
+        return $this->hasMany(DocumentosSolicitud::class, 'dosc_id_solicitud', 'soli_id_solicitud');
     }
 }

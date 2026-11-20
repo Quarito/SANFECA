@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tabla anfeca_modelo.comunicacion del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y anfeca_modelo_extensiones.sql.
+ * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
  * PK compuesta en el PDM (comu_id_comunicacion, cumu_id_persona, comu_id_tipo_comunicacion); Eloquent usa comu_id_comunicacion (SERIAL único).
  */
 class Comunicacion extends PdmModel

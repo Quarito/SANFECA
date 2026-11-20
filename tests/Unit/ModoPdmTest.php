@@ -7,7 +7,7 @@ use RuntimeException;
 use Tests\TestCase;
 
 /**
- * F1: el interruptor existe, pero solo "apagado" está permitido.
+ * Interruptor del modo PDM: sin activación registrada (dos llaves) siempre opera en apagado.
  */
 class ModoPdmTest extends TestCase
 {
@@ -17,17 +17,11 @@ class ModoPdmTest extends TestCase
         $this->assertTrue(ModoPdm::apagado());
     }
 
-    public function test_los_modos_de_fases_posteriores_se_rechazan(): void
+    public function test_principal_y_exclusivo_estan_implementados_en_configuracion(): void
     {
         foreach (['principal', 'exclusivo'] as $modo) {
             config(['anfeca_pdm.modo' => $modo]);
-
-            try {
-                ModoPdm::actual();
-                $this->fail("{$modo} no debe activarse en F1");
-            } catch (RuntimeException $e) {
-                $this->assertStringContainsString('aún no está implementado', $e->getMessage());
-            }
+            $this->assertSame($modo, ModoPdm::actual());
         }
     }
 

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Tabla anfeca_modelo.institucion del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y anfeca_modelo_extensiones.sql.
+ * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
  */
 class Institucion extends PdmModel
 {
@@ -51,5 +51,11 @@ class Institucion extends PdmModel
     public function sedes(): HasMany
     {
         return $this->hasMany(Sede::class, 'inst_id_institucion', 'inst_id_institucion');
+    }
+
+    /** FK FK_FOSC_INSTITUCION: formacion_solicitud.fosc_id_institucion → institucion.inst_id_institucion */
+    public function formacionSolicitudes(): HasMany
+    {
+        return $this->hasMany(FormacionSolicitud::class, 'fosc_id_institucion', 'inst_id_institucion');
     }
 }

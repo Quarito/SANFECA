@@ -14,7 +14,8 @@ class EsquemaPdmTest extends PdmTestCase
     private function fkDeclaradasEnSql(): array
     {
         $sql = file_get_contents(database_path('sql/anfeca_modelo/anfeca_modelo.sql'))."\n"
-            .file_get_contents(database_path('sql/anfeca_modelo/anfeca_modelo_extensiones.sql'));
+            .file_get_contents(database_path('sql/anfeca_modelo/anfeca_modelo_extensiones.sql'))."\n"
+            .file_get_contents(database_path('sql/anfeca_modelo/anfeca_modelo_extensiones_f4.sql'));
         $sql = preg_replace('/--[^\n]*/', '', $sql);
 
         $fks = [];
@@ -37,8 +38,8 @@ class EsquemaPdmTest extends PdmTestCase
         $tablas = DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->where('tablename', '<>', 'integracion_control')->count();
         $fks = DB::selectOne("select count(*) as n from pg_constraint where contype = 'f' and connamespace = 'anfeca_modelo'::regnamespace")->n;
 
-        $this->assertSame(39, $tablas, '36 del PDM + zona, coordinador_zona, historico_certificado_importacion');
-        $this->assertSame(42, (int) $fks, '35 del PDM + 7 de extensión');
+        $this->assertSame(43, $tablas, '36 del PDM + 3 de F1 (zona, coordinador_zona, historico_certificado_importacion) + 4 de F4');
+        $this->assertSame(47, (int) $fks, '35 del PDM + 7 de F1 + 5 de F4');
     }
 
     public function test_cada_fk_del_sql_existe_en_postgresql(): void
@@ -82,7 +83,7 @@ class EsquemaPdmTest extends PdmTestCase
             $revisados++;
         }
 
-        $this->assertSame(39, $revisados);
+        $this->assertSame(43, $revisados);
     }
 
     public function test_tabla_tecnica_de_control_existe_y_esta_vacia(): void
