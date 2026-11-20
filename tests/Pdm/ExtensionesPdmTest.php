@@ -100,27 +100,45 @@ class ExtensionesPdmTest extends PdmTestCase
             $this->assertStringContainsString('anfeca_modelo.zona tiene datos', $e->getMessage());
         }
 
-        $this->assertSame(39, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->where('tablename', '<>', 'integracion_control')->count());
+        $this->assertSame(39, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->whereNotIn('tablename', ['integracion_control', 'seleccion_certificacion', 'solicitud_refrendo', 'formacion_solicitud', 'documentos_solicitud'])->count());
     }
 
     public function test_reversion_y_reaplicacion_sin_datos(): void
     {
+        // La capa anfeca_compat (F4) depende de las extensiones: se retira primero y se reinstala al final.
+        $this->capaCompatibilidad()->down();
         $this->migracion()->down();
 
-        $this->assertSame(36, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->where('tablename', '<>', 'integracion_control')->count());
-        $this->assertSame(35, (int) DB::selectOne("select count(*) as n from pg_constraint where contype = 'f' and connamespace = 'anfeca_modelo'::regnamespace")->n);
+        $this->assertSame(36, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->whereNotIn('tablename', ['integracion_control', 'seleccion_certificacion', 'solicitud_refrendo', 'formacion_solicitud', 'documentos_solicitud'])->count());
+        $this->assertSame(35, (int) DB::selectOne("select count(*) as n from pg_constraint where contype = 'f' and connamespace = 'anfeca_modelo'::regnamespace and conrelid::regclass::text not in ('anfeca_modelo.seleccion_certificacion', 'anfeca_modelo.solicitud_refrendo', 'anfeca_modelo.formacion_solicitud', 'anfeca_modelo.documentos_solicitud')")->n);
         $this->assertSame(25, DB::table('pg_tables')->where('schemaname', 'public')->count(), 'public no cambia');
         $this->assertSame(32, DB::table('anfeca_modelo.entidad_federativa')->count(), 'los catálogos se conservan');
 
         $this->migracion()->up();
 
-        $this->assertSame(39, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->where('tablename', '<>', 'integracion_control')->count());
-        $this->assertSame(42, (int) DB::selectOne("select count(*) as n from pg_constraint where contype = 'f' and connamespace = 'anfeca_modelo'::regnamespace")->n);
+        $this->assertSame(39, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->whereNotIn('tablename', ['integracion_control', 'seleccion_certificacion', 'solicitud_refrendo', 'formacion_solicitud', 'documentos_solicitud'])->count());
+        $this->assertSame(42, (int) DB::selectOne("select count(*) as n from pg_constraint where contype = 'f' and connamespace = 'anfeca_modelo'::regnamespace and conrelid::regclass::text not in ('anfeca_modelo.seleccion_certificacion', 'anfeca_modelo.solicitud_refrendo', 'anfeca_modelo.formacion_solicitud', 'anfeca_modelo.documentos_solicitud')")->n);
+
+        $this->capaCompatibilidad()->up();
+        $this->assertSame(9, DB::table('information_schema.views')->where('table_schema', 'anfeca_compat')->count());
+    }
+
+    public function test_las_extensiones_no_se_revierten_con_la_capa_de_compatibilidad_instalada(): void
+    {
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectExceptionMessage('anfeca_compat');
+        $this->migracion()->down();
+    }
+
+    private function capaCompatibilidad(): object
+    {
+        return require database_path('migrations_pdm/2026_11_21_000004_instalar_capa_compatibilidad.php');
     }
 
     public function test_extensiones_protegen_la_base_en_uso(): void
     {
         config(['anfeca_modelo.bd_permitida' => DB::connection()->getDatabaseName()]);
+        $this->capaCompatibilidad()->down();
         $this->migracion()->down();
 
         $this->expectException(RuntimeException::class);

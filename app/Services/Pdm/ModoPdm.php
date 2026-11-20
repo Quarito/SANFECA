@@ -12,14 +12,16 @@ use Throwable;
  *
  *  apagado   → Laravel usa solo public (comportamiento actual).
  *  espejo    → escribe en public y en el PDM en la misma transacción; lee de public (F3).
- *  principal → lee del PDM (F4, NO implementado).
- *  exclusivo → solo PDM (F5, NO implementado).
+ *  principal → lee y escribe en el PDM a través de las vistas anfeca_compat; los disparadores
+ *               replican en public (respaldo para revertir) (F4).
+ *  exclusivo → solo PDM; public queda congelado y protegido por la guardia (F5).
  *
  * MODO EFECTIVO = DOS LLAVES:
- *  1) ANFECA_PDM_MODO=espejo en .env (config anfeca_pdm.modo), y
- *  2) fila de activación en anfeca_modelo.integracion_control para ESTA base, escrita
- *     solo por "php artisan anfeca:pdm-modo espejo" tras conciliar con 0 diferencias.
+ *  1) ANFECA_PDM_MODO=<modo> en .env (config anfeca_pdm.modo), y
+ *  2) fila de activación en anfeca_modelo.integracion_control para ESTA base y el MISMO modo,
+ *     escrita solo por "php artisan anfeca:pdm-modo <modo>" tras sus verificaciones.
  * Si falta cualquiera de las dos, el modo efectivo es "apagado" (comportamiento actual).
+ * En principal/exclusivo, además, debe existir la capa anfeca_compat.
  * Con ANFECA_PDM_MODO=apagado no se consulta la base: costo cero para la aplicación actual.
  */
 class ModoPdm
@@ -32,7 +34,10 @@ class ModoPdm
     public const VALIDOS = [self::APAGADO, self::ESPEJO, self::PRINCIPAL, self::EXCLUSIVO];
 
     /** Modos implementados y probados. Se amplía fase a fase. */
-    public const IMPLEMENTADOS = [self::APAGADO, self::ESPEJO];
+    public const IMPLEMENTADOS = [self::APAGADO, self::ESPEJO, self::PRINCIPAL, self::EXCLUSIVO];
+
+    /** Modos que leen y escriben a través de las vistas anfeca_compat. */
+    public const SOBRE_VISTAS = [self::PRINCIPAL, self::EXCLUSIVO];
 
     /** Modo solicitado en la configuración (.env). Lanza excepción si no es válido o no está implementado. */
     public static function actual(): string
@@ -44,7 +49,7 @@ class ModoPdm
         }
 
         if (!in_array($modo, self::IMPLEMENTADOS, true)) {
-            throw new RuntimeException("ANFECA_PDM_MODO='{$modo}' aún no está implementado en esta fase. Use 'apagado' o 'espejo'.");
+            throw new RuntimeException("ANFECA_PDM_MODO='{$modo}' no está implementado.");
         }
 
         return $modo;
@@ -67,22 +72,44 @@ class ModoPdm
             return self::APAGADO;
         }
 
-        if ($modo !== self::ESPEJO) {
-            Log::critical("ANFECA_PDM_MODO='{$modo}' no está implementado: se opera en modo apagado.");
+        if (!in_array($modo, self::IMPLEMENTADOS, true)) {
+            Log::critical("ANFECA_PDM_MODO='{$modo}' no es válido: se opera en modo apagado.");
 
             return self::APAGADO;
         }
 
         $activacion = self::activacion();
 
-        if ($activacion === null || $activacion->ic_modo !== self::ESPEJO
+        if ($activacion === null || $activacion->ic_modo !== $modo
             || $activacion->ic_base_datos !== DB::connection()->getDatabaseName()) {
-            Log::warning('ANFECA_PDM_MODO=espejo sin activación registrada para esta base: se opera en modo apagado. Use anfeca:pdm-modo espejo.');
+            Log::warning("ANFECA_PDM_MODO={$modo} sin activación registrada para esta base: se opera en modo apagado. Use anfeca:pdm-modo {$modo}.");
 
             return self::APAGADO;
         }
 
-        return self::ESPEJO;
+        if (in_array($modo, self::SOBRE_VISTAS, true) && !self::capaCompatibilidad()) {
+            Log::critical("ANFECA_PDM_MODO={$modo} sin la capa anfeca_compat instalada: se opera en modo apagado.");
+
+            return self::APAGADO;
+        }
+
+        return $modo;
+    }
+
+    /** principal o exclusivo: la aplicación debe operar sobre las vistas anfeca_compat. */
+    public static function sobreVistas(): bool
+    {
+        return in_array(self::efectivo(), self::SOBRE_VISTAS, true);
+    }
+
+    public static function capaCompatibilidad(): bool
+    {
+        try {
+            return DB::connection()->getDriverName() === 'pgsql'
+                && (bool) DB::selectOne("select to_regnamespace('anfeca_compat') as n")->n;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     public static function apagado(): bool
