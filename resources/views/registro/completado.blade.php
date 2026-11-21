@@ -24,6 +24,7 @@
 
 
 <link rel="stylesheet" href="{{ asset('css/anfeca-layout-compacto-v3.css') }}?v=3">
+<link rel="stylesheet" href="{{ asset('css/anfeca-avisos.css') }}?v=1">
     <link rel="stylesheet" href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
 </head>
 
@@ -220,15 +221,11 @@
 
 @if(($enviada ?? false) && auth()->check())
 <div id="aviso-cierre-acuse"
+     class="anfeca-aviso anfeca-aviso--advertencia anfeca-aviso--flotante"
      role="status"
      aria-live="polite"
      hidden
-     style="position:fixed;bottom:20px;right:20px;
-            z-index:9999;max-width:380px;
-            background:#fff;border:1px solid #d5d5d5;
-            border-left:5px solid #bb1025;
-            border-radius:10px;padding:18px;
-            box-shadow:0 8px 24px rgba(0,0,0,.15);">
+     style="bottom:20px;right:20px;">
 
     <strong>Acuse de recepción</strong>
 

@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97159">
 
 <link rel="stylesheet" href="{{ asset('css/anfeca-layout-compacto-v3.css') }}?v=3">
+<link rel="stylesheet" href="{{ asset('css/anfeca-avisos.css') }}?v=1">
     <link rel="stylesheet" href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
 </head>
 

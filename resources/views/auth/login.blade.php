@@ -8,7 +8,9 @@
     <title>Registro ANFECA</title>
 
     <link rel="stylesheet"
-          href="{{ asset('css/login.css') }}?v=aviso-amigable-2">
+          href="{{ asset('css/anfeca-avisos.css') }}?v=1">
+    <link rel="stylesheet"
+          href="{{ asset('css/login.css') }}?v=avisos-homologados-1">
 </head>
 <body>
 

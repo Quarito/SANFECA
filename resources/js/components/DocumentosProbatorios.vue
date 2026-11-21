@@ -73,7 +73,7 @@ function seleccionarArchivo(event, campo) {
 
             <div
                 v-if="formatoArticulo14Url"
-                class="formato-articulo-14"
+                class="formato-articulo-14 anfeca-aviso anfeca-aviso--info"
                 role="note"
             >
                 <p class="formato-articulo-14-texto">
@@ -183,15 +183,10 @@ function seleccionarArchivo(event, campo) {
 </template>
 
 <style scoped>
+/* Aspecto homologado: public/css/anfeca-avisos.css (anfeca-aviso--info). */
 .formato-articulo-14 {
     margin: 0 0 16px;
-    padding: 12px 14px;
-    border: 1px solid #e3c9cd;
-    border-left: 4px solid #980d22;
-    border-radius: 8px;
-    background: #fdf7f8;
     font-size: 13px;
-    line-height: 1.5;
 }
 
 .formato-articulo-14-texto {

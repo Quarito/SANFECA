@@ -262,11 +262,11 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    background-color: #edf7ee;
-    border: 1px solid #b8dfbf;
-    border-left: 4px solid #2e7d32;
-    color: #256029;
-    border-radius: 6px;
+    /* Aviso homologado (anfeca-avisos.css): sin franja izquierda */
+    background-color: var(--anfeca-aviso-exito-fondo, #f4faf5);
+    border: 1px solid var(--anfeca-aviso-exito-borde, #cfe6d3);
+    color: var(--anfeca-aviso-exito-texto, #256029);
+    border-radius: var(--anfeca-aviso-radio, 10px);
     padding: 12px 14px;
     margin-bottom: 20px;
     font-size: 14px;
@@ -285,11 +285,11 @@ body {
     width: 100%;
     margin: 0 0 18px;
     padding: 13px 15px;
-    background: #fffdfd;
-    border: 1px solid #e6dddd;
-    border-left: 3px solid #a71930;
-    border-radius: 7px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    /* Aviso homologado (anfeca-avisos.css): sin franja izquierda */
+    background: var(--anfeca-aviso-info-fondo, #fbf9f9);
+    border: 1px solid var(--anfeca-aviso-info-borde, #e6dddd);
+    border-radius: var(--anfeca-aviso-radio, 10px);
+    box-shadow: var(--anfeca-aviso-sombra, 0 2px 8px rgba(0, 0, 0, 0.05));
     color: #404040;
     font-size: 14px;
     line-height: 1.5;
@@ -321,15 +321,11 @@ body {
 /* ANFECA AVISO AMIGABLE 8086 */
 
 .acceso .aviso-nuevo-sistema-anfeca {
-    background: linear-gradient(
-        135deg,
-        #fff7f7 0%,
-        #ffffff 100%
-    );
-    border: 1px solid #ead8d5;
-    border-left: 4px solid #a71930;
-    border-radius: 10px;
-    box-shadow: 0 3px 10px rgba(80, 20, 20, 0.07);
+    /* Aviso homologado (anfeca-avisos.css): sin franja izquierda */
+    background: var(--anfeca-aviso-info-fondo, #fbf9f9);
+    border: 1px solid var(--anfeca-aviso-info-borde, #e6dddd);
+    border-radius: var(--anfeca-aviso-radio, 10px);
+    box-shadow: var(--anfeca-aviso-sombra, 0 2px 8px rgba(0, 0, 0, 0.05));
     padding: 13px 15px;
     margin: 0 0 15px;
 }

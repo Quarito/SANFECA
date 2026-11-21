@@ -257,6 +257,7 @@
 
 
 <link rel="stylesheet" href="{{ asset('css/anfeca-layout-compacto-v3.css') }}?v=3">
+<link rel="stylesheet" href="{{ asset('css/anfeca-avisos.css') }}?v=1">
     <link rel="stylesheet" href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
 
 <style id="estilo-formacion-autorizada">
@@ -505,6 +506,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const aviso = document.createElement('div');
     aviso.id = 'aviso-cambios-formacion-1183';
+    // Aviso homologado (public/css/anfeca-avisos.css): sin franja izquierda.
+    aviso.className = 'anfeca-aviso anfeca-aviso--advertencia anfeca-aviso--flotante';
     aviso.setAttribute('role', 'status');
     aviso.setAttribute('aria-live', 'polite');
 
@@ -521,17 +524,6 @@ document.addEventListener('DOMContentLoaded', function () {
         top: '24px',
         right: '24px',
         width: 'min(360px, calc(100vw - 32px))',
-        boxSizing: 'border-box',
-        backgroundColor: '#fff',
-        color: '#333',
-        border: '1px solid #e7b5b5',
-        borderLeft: '5px solid #a30d18',
-        borderRadius: '10px',
-        padding: '16px',
-        boxShadow: '0 6px 24px rgba(0,0,0,0.15)',
-        zIndex: '9999',
-        fontSize: '13px',
-        lineHeight: '1.5',
         display: 'flex',
         flexDirection: 'column',
         gap: '6px',

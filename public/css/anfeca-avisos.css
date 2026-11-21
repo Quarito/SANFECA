@@ -1,0 +1,92 @@
+/*
+|--------------------------------------------------------------------------
+| ANFECA · Avisos del sistema (estilo homologado)
+|--------------------------------------------------------------------------
+| Borde fino y tenue en todo el contenedor, fondo muy claro y esquinas
+| redondeadas. Sin franja vertical izquierda. Cada tipo conserva su color
+| para que errores y advertencias no pasen inadvertidos.
+|
+| Uso: class="anfeca-aviso anfeca-aviso--info|exito|advertencia|error"
+|      + "anfeca-aviso--flotante" para avisos fijos en pantalla.
+| Las hojas propias (p. ej. login.css) reutilizan estas variables.
+*/
+
+:root {
+    --anfeca-aviso-radio: 10px;
+    --anfeca-aviso-sombra: 0 2px 8px rgba(0, 0, 0, 0.05);
+    --anfeca-aviso-sombra-flotante: 0 6px 20px rgba(0, 0, 0, 0.10);
+
+    --anfeca-aviso-info-fondo: #fbf9f9;
+    --anfeca-aviso-info-borde: #e6dddd;
+    --anfeca-aviso-info-texto: #404040;
+
+    --anfeca-aviso-exito-fondo: #f4faf5;
+    --anfeca-aviso-exito-borde: #cfe6d3;
+    --anfeca-aviso-exito-texto: #256029;
+
+    --anfeca-aviso-advertencia-fondo: #fffaf0;
+    --anfeca-aviso-advertencia-borde: #ecd9a8;
+    --anfeca-aviso-advertencia-texto: #5c4400;
+
+    --anfeca-aviso-error-fondo: #fdf4f5;
+    --anfeca-aviso-error-borde: #e3b9bf;
+    --anfeca-aviso-error-texto: #8a1c2b;
+}
+
+.anfeca-aviso {
+    box-sizing: border-box;
+    padding: 13px 15px;
+    border: 1px solid var(--anfeca-aviso-info-borde);
+    border-radius: var(--anfeca-aviso-radio);
+    background: var(--anfeca-aviso-info-fondo);
+    color: var(--anfeca-aviso-info-texto);
+    box-shadow: var(--anfeca-aviso-sombra);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.anfeca-aviso--info {
+    border-color: var(--anfeca-aviso-info-borde);
+    background: var(--anfeca-aviso-info-fondo);
+    color: var(--anfeca-aviso-info-texto);
+}
+
+.anfeca-aviso--exito {
+    border-color: var(--anfeca-aviso-exito-borde);
+    background: var(--anfeca-aviso-exito-fondo);
+    color: var(--anfeca-aviso-exito-texto);
+}
+
+.anfeca-aviso--advertencia {
+    border-color: var(--anfeca-aviso-advertencia-borde);
+    background: var(--anfeca-aviso-advertencia-fondo);
+    color: var(--anfeca-aviso-advertencia-texto);
+}
+
+.anfeca-aviso--error {
+    border-color: var(--anfeca-aviso-error-borde);
+    background: var(--anfeca-aviso-error-fondo);
+    color: var(--anfeca-aviso-error-texto);
+}
+
+/* Avisos fijos en pantalla: la posición (arriba/abajo) la define cada vista. */
+.anfeca-aviso--flotante {
+    position: fixed;
+    z-index: 9999;
+    width: min(380px, calc(100vw - 32px));
+    padding: 16px;
+    box-shadow: var(--anfeca-aviso-sombra-flotante);
+    font-size: 13px;
+}
+
+@media (max-width: 600px) {
+    .anfeca-aviso {
+        padding: 12px 13px;
+    }
+
+    .anfeca-aviso--flotante {
+        left: 16px !important;
+        right: 16px !important;
+        width: auto;
+    }
+}

@@ -401,4 +401,43 @@ class FlujoCompletoRegistroTest extends TestCase
         $this->assertStringNotContainsString('solicitud-articulo-14-prueba.pdf', $vue);
         $this->assertFileDoesNotExist(public_path('formatos/solicitud-articulo-14-prueba.pdf'), 'El PDF provisional de prueba fue retirado.');
     }
+
+    public function test_avisos_homologados_sin_franja_izquierda(): void
+    {
+        // Hoja central con variantes diferenciadas y sin franja vertical.
+        $central = file_get_contents(public_path('css/anfeca-avisos.css'));
+        foreach (['--info', '--exito', '--advertencia', '--error', '--flotante'] as $variante) {
+            $this->assertStringContainsString('.anfeca-aviso'.$variante, $central);
+        }
+        $this->assertDoesNotMatchRegularExpression('/border-left\s*:/', $central);
+        $this->assertNotSame(
+            $this->valorVariable($central, '--anfeca-aviso-error-borde'),
+            $this->valorVariable($central, '--anfeca-aviso-info-borde'),
+            'Los errores conservan un color propio.'
+        );
+
+        // Avisos de Login, flotantes y bloque del formato: sin franja izquierda.
+        $this->assertDoesNotMatchRegularExpression('/border-left\s*:/', file_get_contents(public_path('css/login.css')));
+        foreach ([
+            'views/registro/formacion-academica.blade.php',
+            'views/registro/completado.blade.php',
+            'js/components/DocumentosProbatorios.vue',
+        ] as $archivo) {
+            $this->assertDoesNotMatchRegularExpression('/border-?left/i', file_get_contents(resource_path($archivo)), $archivo);
+        }
+
+        // La pantalla de Login carga la hoja central y conserva su aviso de bienvenida.
+        $this->get('/login')->assertOk()
+            ->assertSee('css/anfeca-avisos.css', false)
+            ->assertSee('class="aviso-nuevo-sistema-anfeca"', false)
+            ->assertSee('¡Bienvenido al nuevo sistema ANFECA!')
+            ->assertSee('ⓘ');
+    }
+
+    private function valorVariable(string $css, string $nombre): string
+    {
+        preg_match('/'.preg_quote($nombre, '/').'\s*:\s*([^;]+);/', $css, $m);
+
+        return trim($m[1] ?? '');
+    }
 }
