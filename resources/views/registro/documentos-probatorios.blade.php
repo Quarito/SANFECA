@@ -118,6 +118,7 @@
                 data-link="{{ $link }}"
                 data-es-articulo-14="{{ $esArticulo14 ? '1' : '0' }}"
                 data-documentos-bloqueados="{{ $documentosBloqueados ? '1' : '0' }}"
+                data-formato-articulo14-url="{{ $formatoArticulo14Url ?? '' }}"
             ></div>
 
             <div class="botones">

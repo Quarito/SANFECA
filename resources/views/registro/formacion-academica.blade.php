@@ -335,6 +335,12 @@
             </div>
         @endif
 
+        @if(session('error'))
+            <div class="mensaje-error" role="alert">
+                {{ session('error') }}
+            </div>
+        @endif
+
         @if($errors->any())
             <div class="mensaje-error">
                 <strong>Revisa los siguientes campos:</strong>
@@ -409,7 +415,7 @@
                     </a>
                 @else
                     <button type="submit" class="boton">
-                        Guardar y continuar
+                        Guardar y autorizar
                     </button>
                 @endif
             </div>
@@ -417,6 +423,7 @@
 
         @if(!$formacionBloqueada && $formacion)
             <form
+                id="autorizacion-formacion"
                 method="POST"
                 action="{{ route('registro.formacion.autorizar') }}"
                 class="formulario"
@@ -505,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <strong>Cambios pendientes de guardar</strong>
         <span>
             Has modificado información de tu formación académica.
-            Selecciona <b>Guardar y continuar</b> antes de autorizar.
+            Selecciona <b>Guardar y autorizar</b> antes de autorizar.
         </span>
     `;
 

@@ -299,6 +299,12 @@ Route::post('/registro/certificacion/consultar', [
         'store'
     ])->name('registro.documentos.guardar');
 
+    // Formato oficial de refrendo por artículo 14 (Word, solo trámites elegibles)
+    Route::get('/registro/documentos-probatorios/formato-articulo-14', [
+        DocumentoProbatorioController::class,
+        'formatoArticulo14'
+    ])->name('registro.documentos.formato-articulo-14');
+
     // Descargar documentos del usuario autenticado
     Route::get('/registro/documentos-probatorios/ver/{campo}', [
         DocumentoProbatorioController::class,

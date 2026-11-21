@@ -9,3 +9,7 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+
+# Documentos oficiales: binarios, sin conversión de fin de línea ni diff de texto.
+*.docx binary
+*.pdf binary

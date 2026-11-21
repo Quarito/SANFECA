@@ -105,7 +105,9 @@ if (contenedorDocumentos) {
         linkInicial,
         esArticulo14,
         documentosBloqueados:
-            contenedorDocumentos.dataset.documentosBloqueados === '1'
+            contenedorDocumentos.dataset.documentosBloqueados === '1',
+        formatoArticulo14Url:
+            contenedorDocumentos.dataset.formatoArticulo14Url || ''
     }).mount(contenedorDocumentos);
 }
 // Recuperación de contraseña

@@ -404,7 +404,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                 ->route('registro.formacion')
                 ->with(
                     'success',
-                    'Formación académica guardada. Revisa tus datos y autorízalos para continuar.'
+                    'Formación académica guardada. Para autorizarla, marca la confirmación y selecciona «Autorizar y continuar».'
                 );
 	}
 
@@ -508,8 +508,11 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
             // F3: espejo del evento «Formación académica autorizada».
             app(EspejoPdm::class)->solicitud($solicitud->id);
 
+            // «Autorizar y continuar»: tras confirmar el servidor la autorización,
+            // se avanza a Documentos probatorios.
             return redirect()
-                ->route('registro.formacion');
+                ->route('registro.documentos')
+                ->with('success', 'Formación académica autorizada.');
         });
     }
 

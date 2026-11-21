@@ -163,7 +163,7 @@ trait FlujosAnfeca
 
         // 7. Autorización de la formación → evento FA.
         $this->actingAs($user)->post('/registro/formacion-academica/autorizar', ['confirmacion_formacion' => '1'])
-            ->assertRedirect(route('registro.formacion')); // tras autorizar se muestra la formación bloqueada con «Siguiente»
+            ->assertRedirect(route('registro.documentos')); // «Autorizar y continuar» avanza a Documentos probatorios
         $this->assertSame(['BO', 'FA'], $this->eventos($solicitudId));
         $verificar('formacion_autorizada');
 

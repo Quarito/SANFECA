@@ -44,6 +44,30 @@ class DocumentoProbatorioController extends Controller
             );
     }
 
+    // FORMATO_ARTICULO_14_ANFECA
+    // Formato oficial (Word) de la solicitud de refrendo por artículo 14.
+    private const FORMATO_ARTICULO_14 = 'documentos/ANFECA_Formato_Refrendo_Articulo_14.docx';
+    private const FORMATO_ARTICULO_14_NOMBRE = 'Solicitud_Refrendo_Articulo_14_ANFECA.docx';
+
+    /**
+     * El formato se ofrece SOLO en refrendos por artículo 14 (incisos 14, 14.1,
+     * 14.2 y 14.3). El supuesto 13.1 comparte documentos con el artículo 14
+     * (esArticulo14) pero, por ahora, no habilita la descarga del formato.
+     */
+    private function ofreceFormatoArticulo14(SolicitudCertificacion $solicitud): bool
+    {
+        $datos = $solicitud->datosRefrendo;
+
+        return $solicitud->tipo_tramite === 'refrendo'
+            && $datos !== null
+            && (int) $datos->aplica_articulo_14 === 1
+            && in_array(
+                (string) $datos->inciso_articulo_14,
+                ['14', '14.1', '14.2', '14.3'],
+                true
+            );
+    }
+
 private function solicitudActiva(
     Request $request,
     ConsultaAntecedentesService $servicio
@@ -206,6 +230,9 @@ private function solicitudActiva(
             'link' => old('link', $documentos?->link ?? ''),
             'esArticulo14' => $esArticulo14,
             'documentosBloqueados' => $documentos !== null,
+            'formatoArticulo14Url' => $this->ofreceFormatoArticulo14($solicitud)
+                ? route('registro.documentos.formato-articulo-14')
+                : null,
         ]);
     }
 
@@ -338,6 +365,40 @@ private function solicitudActiva(
                 'success',
                 'Documentos guardados correctamente. Revise y acepte el compromiso de entrega de documentación para continuar.'
             );
+    }
+
+    /**
+     * Descarga del formato oficial de refrendo por artículo 14.
+     * Requiere sesión, datos autorizados (middleware) y una solicitud activa
+     * propia que sea refrendo por artículo 14; en cualquier otro caso, 404.
+     * Se entrega el archivo original sin transformarlo.
+     */
+    public function formatoArticulo14(
+        Request $request,
+        ConsultaAntecedentesService $servicio
+    ) {
+        $resultado = $this->verificarSolicitud($request, $servicio);
+
+        if (
+            !$resultado instanceof SolicitudCertificacion
+            || !$this->ofreceFormatoArticulo14($resultado)
+        ) {
+            abort(404);
+        }
+
+        $ruta = resource_path(self::FORMATO_ARTICULO_14);
+
+        abort_unless(is_file($ruta), 404);
+
+        return response()->download(
+            $ruta,
+            self::FORMATO_ARTICULO_14_NOMBRE,
+            [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'private, no-store',
+            ]
+        );
     }
 
     public function ver(

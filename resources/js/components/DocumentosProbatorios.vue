@@ -22,6 +22,11 @@ const props = defineProps({
     documentosBloqueados: {
         type: Boolean,
         default: false
+    },
+    // Solo llega con valor en refrendos por artículo 14 (lo decide el servidor).
+    formatoArticulo14Url: {
+        type: String,
+        default: ''
     }
 });
 
@@ -66,6 +71,22 @@ function seleccionarArchivo(event, campo) {
 
         <section class="seccion-documentos">
 
+            <div
+                v-if="formatoArticulo14Url"
+                class="formato-articulo-14"
+                role="note"
+            >
+                <p class="formato-articulo-14-texto">
+                    Descargue el formato de solicitud de refrendo por artículo 14 y complételo conforme a las indicaciones correspondientes.
+                </p>
+                <a
+                    :href="formatoArticulo14Url"
+                    class="formato-articulo-14-enlace"
+                >
+                    Descargar solicitud de refrendo por artículo 14 (Word)
+                </a>
+            </div>
+
 
 
             <div class="probatorios-contenido">
@@ -90,13 +111,12 @@ function seleccionarArchivo(event, campo) {
                         </span>
 
                         <a
-                            v-if="campo === 'solicitud_articulo_14_archivo'"
-                            href="/formatos/solicitud-articulo-14-prueba.pdf"
-                            download="Solicitud_Articulo_14_Prueba.pdf"
+                            v-if="campo === 'solicitud_articulo_14_archivo' && formatoArticulo14Url"
+                            :href="formatoArticulo14Url"
                             class="accion-documento"
                             style="margin-right: 12px;"
                         >
-                            Descargar formato Art. 14
+                            Descargar formato (Word)
                         </a>
 
                         <div class="acciones-documento">
@@ -161,3 +181,28 @@ function seleccionarArchivo(event, campo) {
         </section>
     </div>
 </template>
+
+<style scoped>
+.formato-articulo-14 {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #e3c9cd;
+    border-left: 4px solid #980d22;
+    border-radius: 8px;
+    background: #fdf7f8;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.formato-articulo-14-texto {
+    margin: 0 0 8px;
+    color: #333333;
+}
+
+.formato-articulo-14-enlace {
+    display: inline-block;
+    color: #980d22;
+    font-weight: 600;
+    text-decoration: underline;
+}
+</style>

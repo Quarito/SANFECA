@@ -426,12 +426,10 @@ public function autorizar(Request $request)
         app(EspejoPdm::class)->persona($datos->user_id);
     });
 
+    // La autorización queda registrada; Certificación no muestra un aviso
+    // de éxito por esta transición (los errores y validaciones se conservan).
     return redirect()
-        ->route('registro.certificacion')
-        ->with(
-            'success',
-            'Tus datos han sido autorizados correctamente.'
-        );
+        ->route('registro.certificacion');
 }
 
 }
