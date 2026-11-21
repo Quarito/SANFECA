@@ -399,6 +399,11 @@ class FlujoCompletoRegistroTest extends TestCase
         $this->assertStringContainsString('Descargue el formato de solicitud de refrendo por artículo 14 y complételo conforme a las indicaciones correspondientes.', $vue);
         $this->assertStringContainsString('v-if="formatoArticulo14Url"', $vue);
         $this->assertStringNotContainsString('solicitud-articulo-14-prueba.pdf', $vue);
+        // Una sola opción de descarga: la del recuadro superior (sin botón por fila).
+        $this->assertStringNotContainsString('Descargar formato (Word)', $vue);
+        $this->assertSame(1, substr_count($vue, ':href="formatoArticulo14Url"'));
+        $this->assertSame(1, substr_count($vue, self::FORMATO_14));
+        $this->assertMatchesRegularExpression('/<label\s+v-if="!documentosBloqueados"/', $vue, 'Se conserva «Añadir».');
         $this->assertFileDoesNotExist(public_path('formatos/solicitud-articulo-14-prueba.pdf'), 'El PDF provisional de prueba fue retirado.');
     }
 

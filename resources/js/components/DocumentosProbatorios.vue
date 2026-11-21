@@ -110,15 +110,6 @@ function seleccionarArchivo(event, campo) {
                             {{ documento(campo).nombre }}
                         </span>
 
-                        <a
-                            v-if="campo === 'solicitud_articulo_14_archivo' && formatoArticulo14Url"
-                            :href="formatoArticulo14Url"
-                            class="accion-documento"
-                            style="margin-right: 12px;"
-                        >
-                            Descargar formato (Word)
-                        </a>
-
                         <div class="acciones-documento">
                             <a
                                 v-if="documento(campo).disponible"
