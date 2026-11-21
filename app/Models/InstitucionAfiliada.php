@@ -14,6 +14,7 @@ class InstitucionAfiliada extends Model
         'campus',
         'sede',
         'zona_anfeca',
+        'escuela_facultad',
     ];
 }
 

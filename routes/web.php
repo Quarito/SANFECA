@@ -344,6 +344,7 @@ Route::post('/registro/certificacion/consultar', [
 |--------------------------------------------------------------------------
 */
 
+// Vistas previas: solo en APP_ENV=local; nunca en producción.
 if (app()->environment('local')) {
 
     Route::prefix('preview')
@@ -356,6 +357,8 @@ if (app()->environment('local')) {
                 ]);
             })->name('datos');
 
+
+
             Route::get('/certificacion', function () {
                 return view('registro.certificacion', [
                     'seleccion' => null,
@@ -367,6 +370,9 @@ if (app()->environment('local')) {
                     'formacion' => null,
                     'instituciones' => collect(),
                     'solicitud' => null,
+                    'formacionBloqueada' => false,
+                    'areaCertificacion' => '',
+                    'titulosPermitidos' => [],
                 ]);
             })->name('formacion');
 
@@ -428,6 +434,14 @@ if (app()->environment('local')) {
                     ],
                 ]);
             })->name('refrendo');
+
+            Route::get('/compromiso', function () {
+                return view('preview.compromiso', [
+                    'aceptado' => false,
+                    'aceptadoEn' => null,
+                    'soloConsulta' => false,
+                ]);
+            })->name('compromiso');
 
             Route::get('/completado', function () {
                 // Datos ficticios exclusivos de la vista previa.

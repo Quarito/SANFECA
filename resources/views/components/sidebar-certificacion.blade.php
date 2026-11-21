@@ -46,6 +46,7 @@
         ],
     ];
 
+
     if ($esRefrendo || request()->routeIs('preview.refrendo')) {
         $etapas[] = [
             'nombre' => 'Datos de refrendo',

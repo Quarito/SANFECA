@@ -1,5 +1,6 @@
 @php
     $esArticulo14 = $esArticulo14 ?? false;
+    $documentosBloqueados = $documentosBloqueados ?? false;
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -84,6 +85,19 @@
             </div>
         @endif
 
+        @if($documentosBloqueados)
+            <div class="mensaje-exito" role="status">
+                Tus documentos probatorios han sido guardados.
+                Ahora solo puedes consultarlos.
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="mensaje-error" role="alert">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <form
             method="POST"
             action="{{ route('registro.documentos.guardar') }}"
@@ -103,6 +117,7 @@
                 data-nuevos="{{ json_encode($nuevos) }}"
                 data-link="{{ $link }}"
                 data-es-articulo-14="{{ $esArticulo14 ? '1' : '0' }}"
+                data-documentos-bloqueados="{{ $documentosBloqueados ? '1' : '0' }}"
             ></div>
 
             <div class="botones">
@@ -111,9 +126,16 @@
                     Anterior
                 </a>
 
-                <button type="submit" class="boton">
-                    Guardar
-                </button>
+                @if($documentosBloqueados)
+                    <a href="{{ route('registro.compromiso') }}"
+                       class="boton">
+                        Siguiente
+                    </a>
+                @else
+                    <button type="submit" class="boton">
+                        Guardar
+                    </button>
+                @endif
             </div>
         </form>
     </main>

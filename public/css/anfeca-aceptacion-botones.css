@@ -1,0 +1,31 @@
+/* ANFECA: botón Anterior de Aceptación y compromiso */
+
+#vue-aceptacion-compromiso .boton-regresar {
+    background-color: #a71930 !important;
+    color: #ffffff !important;
+    border: 1px solid #a71930 !important;
+}
+
+#vue-aceptacion-compromiso .boton-regresar:hover {
+    background-color: #821326 !important;
+    color: #ffffff !important;
+}
+
+/* Aceptar y continuar: rojo institucional */
+
+#vue-aceptacion-compromiso .boton-aceptar {
+    background-color: #a71930 !important;
+    color: #ffffff !important;
+}
+
+#vue-aceptacion-compromiso .boton-aceptar:disabled {
+    background-color: #a71930 !important;
+    color: #ffffff !important;
+    opacity: 0.70 !important;
+    cursor: not-allowed !important;
+}
+
+#vue-aceptacion-compromiso .boton-aceptar:not(:disabled):hover {
+    background-color: #821326 !important;
+    opacity: 1 !important;
+}

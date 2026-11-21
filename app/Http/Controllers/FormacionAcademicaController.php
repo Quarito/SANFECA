@@ -509,7 +509,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
             app(EspejoPdm::class)->solicitud($solicitud->id);
 
             return redirect()
-                ->route('registro.documentos');
+                ->route('registro.formacion');
         });
     }
 

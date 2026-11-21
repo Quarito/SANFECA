@@ -59,3 +59,14 @@ Thumbs.db
 /respaldos_demo/
 /respaldos_usuario_k/
 /:USERPROFILE*
+
+# Protección adicional: nunca versionar documentos, logs ni temporales de storage,
+# aunque falte algún .gitignore interno.
+/storage/app/private/*
+!/storage/app/private/.gitignore
+/storage/app/public/*
+!/storage/app/public/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/framework/testing/*
+!/storage/framework/testing/.gitignore

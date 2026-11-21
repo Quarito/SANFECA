@@ -38,21 +38,28 @@ class AceptacionCompromisoController extends Controller
             ->latest('id')
             ->get();
 
+        // Mismo criterio que Finalización (RegistroCompletadoController):
+        // un refrendo con certificado histórico asociado se valida por ese
+        // certificado, aunque el antecedente aún no esté vinculado al usuario
+        // (en ese caso determinarTipoTramite() devuelve «revision_pendiente»).
         foreach ($borradores as $solicitud) {
-            if ($solicitud->tipo_tramite !== $tipo) {
+            if ($solicitud->tipo_tramite === 'inicial') {
+                if ($tipo === 'inicial') {
+                    return $solicitud;
+                }
                 continue;
             }
 
-            if ($tipo === 'inicial') {
-                return $solicitud;
-            }
-
-            if ($tipo !== 'refrendo') {
+            if ($solicitud->tipo_tramite !== 'refrendo') {
                 continue;
             }
 
             if ($solicitud->certificado_historico_id === null) {
-                return $solicitud;
+                // Compatibilidad con refrendos anteriores sin asociación.
+                if ($tipo === 'refrendo') {
+                    return $solicitud;
+                }
+                continue;
             }
 
             $certificado = \App\Models\CertificadoHistorico::find(

@@ -419,22 +419,111 @@ class RegresionAnfecaTest extends TestCase
         $this->assertNull($respuesta->headers->get('content-disposition'));
     }
 
-    public function test_documentos_reemplazados_no_se_eliminan_del_almacenamiento(): void
+    // Regla definitiva: los documentos probatorios quedan bloqueados tras el
+    // primer guardado (sustituye a la regla anterior que permitía reemplazarlos).
+
+    private function huellaDocumentos(SolicitudCertificacion $solicitud): array
     {
-        // Requisito: conservar el archivo previo al sustituir un documento.
+        $doc = $solicitud->documentosProbatorios()->first();
+        $huella = ['registro' => $doc->only(['constancia_antiguedad_archivo', 'comprobante_pago_archivo', 'link', 'updated_at'])];
+        foreach (['constancia_antiguedad_archivo', 'comprobante_pago_archivo'] as $campo) {
+            $huella[$campo] = Storage::disk('local')->get($doc->{$campo});
+        }
+        $huella['total'] = DocumentoProbatorioSolicitud::where('solicitud_id', $solicitud->id)->count();
+        $huella['archivos'] = Storage::disk('local')->allFiles("anfeca/documentos/solicitudes/{$solicitud->id}");
+
+        return $huella;
+    }
+
+    public function test_primer_guardado_de_documentos_y_bloqueo_posterior(): void
+    {
         $user = $this->solicitante();
         $solicitud = $this->borradorInicial($user);
-        $anterior = $solicitud->documentosProbatorios->constancia_antiguedad_archivo;
+        // Sin documentos probatorios todavía: solo formación académica completa.
+        DocumentoProbatorioSolicitud::where('solicitud_id', $solicitud->id)->delete();
+        $this->withoutVite();
 
+        $this->actingAs($user)->get('/registro/documentos-probatorios')
+            ->assertOk()->assertSee('data-documentos-bloqueados="0"', false);
+
+        $pdf = fn (string $n) => \Illuminate\Http\UploadedFile::fake()->create($n, 10, 'application/pdf');
+
+        // Primer guardado: permitido y conduce a Aceptación y compromiso.
         $this->actingAs($user)->post('/registro/documentos-probatorios', [
             'link' => 'https://example.test/evidencia-ficticia',
-            'constancia_antiguedad_archivo' => \Illuminate\Http\UploadedFile::fake()->create('constancia_nueva.pdf', 10, 'application/pdf'),
-        ])->assertSessionHasNoErrors();
+            'constancia_antiguedad_archivo' => $pdf('constancia.pdf'),
+            'comprobante_pago_archivo' => $pdf('pago.pdf'),
+        ])->assertSessionHasNoErrors()->assertRedirect(route('registro.compromiso'));
 
-        $nueva = $solicitud->documentosProbatorios()->first()->constancia_antiguedad_archivo;
-        $this->assertNotSame($anterior, $nueva, 'El reemplazo debe registrar el archivo nuevo.');
-        Storage::disk('local')->assertExists($nueva);
-        Storage::disk('local')->assertExists($anterior);
+        $this->assertSame(1, DocumentoProbatorioSolicitud::where('solicitud_id', $solicitud->id)->count());
+
+        // Después del guardado: solo consulta, con botón Siguiente hacia Aceptación.
+        $this->actingAs($user)->get('/registro/documentos-probatorios')
+            ->assertOk()
+            ->assertSee('data-documentos-bloqueados="1"', false)
+            ->assertSee('href="'.route('registro.compromiso').'"', false)
+            ->assertSee('Siguiente')
+            ->assertDontSee('>Guardar<', false);
+
+        $this->actingAs($user)->get('/registro/documentos-probatorios/ver/constancia_antiguedad_archivo')->assertOk();
+        $this->actingAs($user)->get('/registro/compromiso')->assertOk();
+    }
+
+    public function test_documentos_guardados_rechazan_sustitucion_por_peticion_manipulada(): void
+    {
+        $user = $this->solicitante();
+        $solicitud = $this->borradorInicial($user);
+        $antes = $this->huellaDocumentos($solicitud);
+
+        $this->travel(5)->minutes();
+
+        $intentos = [
+            'sustituir un documento' => [
+                'link' => 'https://example.test/otro',
+                'constancia_antiguedad_archivo' => \Illuminate\Http\UploadedFile::fake()->create('constancia_nueva.pdf', 10, 'application/pdf'),
+            ],
+            'sustituir ambos' => [
+                'link' => 'https://example.test/otro',
+                'constancia_antiguedad_archivo' => \Illuminate\Http\UploadedFile::fake()->create('c.pdf', 10, 'application/pdf'),
+                'comprobante_pago_archivo' => \Illuminate\Http\UploadedFile::fake()->create('p.pdf', 10, 'application/pdf'),
+            ],
+            'agregar documento de artículo 14' => [
+                'solicitud_articulo_14_archivo' => \Illuminate\Http\UploadedFile::fake()->create('s14.pdf', 10, 'application/pdf'),
+            ],
+            'vaciar campos (eliminar)' => [
+                'link' => '', 'constancia_antiguedad_archivo' => '', 'comprobante_pago_archivo' => '',
+            ],
+            'solo cambiar el enlace' => ['link' => 'https://example.test/manipulado'],
+        ];
+
+        foreach ($intentos as $caso => $datos) {
+            $this->actingAs($user)->post('/registro/documentos-probatorios', $datos)
+                ->assertRedirect(route('registro.documentos'))
+                ->assertSessionHas('error', 'Los documentos probatorios ya fueron guardados. Solo pueden consultarse.');
+
+            $this->assertEquals($antes, $this->huellaDocumentos($solicitud), "Intento rechazado sin efectos: {$caso}");
+        }
+
+        // Métodos HTTP no previstos tampoco existen para modificar o eliminar.
+        foreach (['put', 'patch', 'delete'] as $metodo) {
+            $this->assertContains(
+                $this->actingAs($user)->{$metodo}('/registro/documentos-probatorios')->getStatusCode(),
+                [404, 405]
+            );
+        }
+
+        $this->assertEquals($antes, $this->huellaDocumentos($solicitud));
+    }
+
+    public function test_bloqueo_tambien_en_la_interfaz_vue(): void
+    {
+        $vue = file_get_contents(resource_path('js/components/DocumentosProbatorios.vue'));
+        $this->assertStringContainsString('documentosBloqueados', $vue);
+        // Selector de archivo y botón «Añadir/Actualizar» solo existen antes del guardado.
+        $this->assertMatchesRegularExpression('/<input\s+v-if="!documentosBloqueados"[^>]*type="file"/s', $vue);
+        $this->assertMatchesRegularExpression('/<label\s+v-if="!documentosBloqueados"/s', $vue);
+        $this->assertSame(1, substr_count($vue, 'type="file"'), 'No debe haber otro selector de archivos sin bloqueo.');
+        $this->assertStringContainsString(':readonly="documentosBloqueados"', $vue);
     }
 
     // ------------------------------------------------------------------

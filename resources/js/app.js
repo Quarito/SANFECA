@@ -103,7 +103,9 @@ if (contenedorDocumentos) {
         academicos,
         nuevos,
         linkInicial,
-        esArticulo14
+        esArticulo14,
+        documentosBloqueados:
+            contenedorDocumentos.dataset.documentosBloqueados === '1'
     }).mount(contenedorDocumentos);
 }
 // Recuperación de contraseña

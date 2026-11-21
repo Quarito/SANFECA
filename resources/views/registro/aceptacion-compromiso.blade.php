@@ -29,6 +29,8 @@
 
     <link rel="stylesheet"
           href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
+    <link rel="stylesheet"
+          href="{{ asset('css/anfeca-aceptacion-botones.css') }}?v=1">
 </head>
 
 <body>

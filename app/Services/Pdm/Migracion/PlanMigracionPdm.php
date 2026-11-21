@@ -41,7 +41,7 @@ class PlanMigracionPdm
     public static function construir(?array $decisiones = null, ?array $alcance = null): self
     {
         $plan = new self();
-        $plan->decisiones = $decisiones ?? (array) config('anfeca_pdm_decisiones');
+        $plan->decisiones = $plan->decisionesDeEstaBase($decisiones ?? (array) config('anfeca_pdm_decisiones'));
         $plan->alcance = $alcance;
         $plan->norm = new NormalizadorCatalogos();
         $plan->cargarCatalogos();
@@ -94,6 +94,40 @@ class PlanMigracionPdm
     private function agregar(string $tabla, array $fila): void
     {
         $this->filas[$tabla][] = $fila;
+    }
+
+    /** Secciones de decisiones que se refieren a IDs concretos de public. */
+    private const DECISIONES_POR_REGISTRO = ['instituciones', 'domicilios', 'certificados', 'solicitudes'];
+
+    /**
+     * Las decisiones por registro usan IDs de public, que solo identifican al mismo
+     * registro dentro de la MISMA base. Si el archivo no declara su base, o declara otra,
+     * se descartan todas (sin aplicar ninguna) y se registra una incidencia bloqueante:
+     * así los IDs de la base de ensayo nunca se aplican a registros distintos de otro servidor.
+     */
+    private function decisionesDeEstaBase(array $decisiones): array
+    {
+        $porRegistro = array_filter(self::DECISIONES_POR_REGISTRO, fn ($k) => !empty($decisiones[$k] ?? []));
+        if ($porRegistro === []) {
+            return $decisiones;
+        }
+
+        $declarada = $decisiones['base_de_datos'] ?? null;
+        $actual = DB::connection()->getDatabaseName();
+        if (is_string($declarada) && $declarada !== '' && $declarada === $actual) {
+            return $decisiones;
+        }
+
+        $this->incidencia('DECISIONES_DE_OTRA_BASE', true, 'config', 'anfeca_pdm_decisiones',
+            ($declarada ? "Las decisiones por registro pertenecen a la base '{$declarada}'"
+                : 'Las decisiones por registro no declaran su base (base_de_datos)')
+            .'; no se aplicó ninguna ('.implode(', ', $porRegistro).'). Regístrelas para esta base.', 'D-0');
+
+        foreach (self::DECISIONES_POR_REGISTRO as $k) {
+            $decisiones[$k] = [];
+        }
+
+        return $decisiones;
     }
 
     private function incidencia(string $codigo, bool $bloqueante, string $tabla, int|string|null $id, string $mensaje, ?string $decision = null, ?string $campo = null): void
@@ -208,11 +242,25 @@ class PlanMigracionPdm
                 continue;
             }
 
-            if (!is_array($d) || blank($d['numero_afiliacion'] ?? null) || blank($d['facultad'] ?? null)) {
+            // INST_FACULTAD es obligatoria en el PDM; escuela_facultad es opcional en Laravel.
+            // Fuente: escuela_facultad capturada en public; si está vacía, la facultad confirmada en D-11.
+            // Si faltan ambas, la institución queda bloqueada (no se inventa un nombre).
+            $facultadPublic = trim((string) ($i->escuela_facultad ?? ''));
+            $facultadDecision = is_array($d) ? trim((string) ($d['facultad'] ?? '')) : '';
+
+            if (!is_array($d) || blank($d['numero_afiliacion'] ?? null) || ($facultadPublic === '' && $facultadDecision === '')) {
                 $this->incidencia('INSTITUCION_SIN_DATOS_OFICIALES', true, 'instituciones_afiliadas', $i->id,
-                    'Faltan número de afiliación (≤7) y facultad confirmados con la fuente oficial.', 'D-11');
+                    'Faltan número de afiliación (≤7) y facultad confirmados con la fuente oficial (escuela_facultad o D-11).', 'D-11');
                 continue;
             }
+
+            if ($facultadPublic !== '' && $facultadDecision !== '' && $facultadPublic !== $facultadDecision) {
+                $this->incidencia('INSTITUCION_FACULTAD_DISCREPANTE', true, 'instituciones_afiliadas', $i->id,
+                    'La facultad de D-11 no coincide con escuela_facultad registrada; confirme cuál es la oficial.', 'D-11', 'escuela_facultad');
+                continue;
+            }
+
+            $facultad = $facultadPublic !== '' ? $facultadPublic : $facultadDecision;
 
             $numero = trim((string) $d['numero_afiliacion']);
             $zona = $i->zona_id !== null ? ($this->incluidos['zona'][$i->zona_id] ?? null) : null;
@@ -228,7 +276,7 @@ class PlanMigracionPdm
             if (blank($zona) || mb_strlen($zona) > 80) {
                 $errores[] = 'zona vacía o mayor de 80 caracteres';
             }
-            if (mb_strlen((string) $d['facultad']) > 500) {
+            if (mb_strlen($facultad) > 500) {
                 $errores[] = 'facultad mayor de 500 caracteres';
             }
             if ($errores !== []) {
@@ -238,7 +286,7 @@ class PlanMigracionPdm
 
             $this->agregar('institucion', [
                 'inst_id_institucion' => $i->id, 'inst_numero_afiliacion' => $numero, 'inst_nombre' => $i->nombre,
-                'inst_facultad' => trim((string) $d['facultad']), 'inst_zona' => $zona,
+                'inst_facultad' => $facultad, 'inst_zona' => $zona,
                 'ins_coord_regional_cert_academi' => null,
                 'inst_id_zona' => $i->zona_id, 'inst_campus' => $i->campus,
             ]);

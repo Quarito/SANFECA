@@ -202,5 +202,7 @@ select i.inst_id_institucion::bigint as id, null::timestamp(0) as created_at, nu
     i.inst_numero_afiliacion::varchar(255) as numero_afiliacion, i.inst_nombre::varchar(255) as nombre,
     (select s.sede_descripcion::varchar(255) from anfeca_modelo.sede s where s.inst_id_institucion = i.inst_id_institucion
         order by s.sede_id_sede limit 1) as sede,
-    i.inst_zona::varchar(255) as zona_anfeca, i.inst_id_zona::bigint as zona_id, i.inst_campus::varchar(200) as campus
+    i.inst_zona::varchar(255) as zona_anfeca, i.inst_id_zona::bigint as zona_id, i.inst_campus::varchar(200) as campus,
+    -- escuela_facultad ← INST_FACULTAD (varchar 500 en el PDM): sin truncar a 255.
+    i.inst_facultad::varchar(500) as escuela_facultad
 from anfeca_modelo.institucion i;

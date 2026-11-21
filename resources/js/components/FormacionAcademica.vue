@@ -560,42 +560,50 @@ const institucionSeleccionada = computed(() => {
                     </select>
                 </div>
 
-                <!-- Datos heredados del catálogo -->
-                <div class="detalle-institucion">
+                <!-- Datos dinámicos del catálogo -->
+                <div v-if="institucionSeleccionada" class="detalle-institucion">
 
-                    <div class="anfeca-institucion-principal">
+                    <div
+                        v-if="institucionSeleccionada.nombre?.trim()"
+                        class="anfeca-institucion-principal"
+                    >
                         <strong>Institución:</strong>
-                        <span>
-                            {{ institucionSeleccionada?.nombre || '—' }}
-                        </span>
+                        <span>{{ institucionSeleccionada.nombre }}</span>
                     </div>
 
                     <div class="anfeca-institucion-grid">
 
-                        <div class="anfeca-institucion-campo">
+                        <div
+                            v-if="institucionSeleccionada.escuela_facultad?.trim()"
+                            class="anfeca-institucion-campo"
+                        >
                             <strong>Escuela o Facultad:</strong>
-                            <span>—</span>
+                            <span>{{ institucionSeleccionada.escuela_facultad }}</span>
                         </div>
 
-                        <div class="anfeca-institucion-campo">
+                        <div
+                            v-if="institucionSeleccionada.campus?.trim()"
+                            class="anfeca-institucion-campo"
+                        >
                             <strong>Campus:</strong>
-                            <span>
-                                {{ institucionSeleccionada?.campus || '—' }}
-                            </span>
+                            <span>{{ institucionSeleccionada.campus }}</span>
                         </div>
 
-                        <div class="anfeca-institucion-campo">
+                        <div
+                            v-if="institucionSeleccionada.sede?.trim()"
+                            class="anfeca-institucion-campo"
+                        >
                             <strong>Sede:</strong>
-                            <span>
-                                {{ institucionSeleccionada?.sede || '—' }}
-                            </span>
+                            <span>{{ institucionSeleccionada.sede }}</span>
                         </div>
 
-                        <div class="anfeca-institucion-campo">
+
+                        <div
+                            v-if="institucionSeleccionada.zona_anfeca?.trim()"
+                            class="anfeca-institucion-campo"
+                        >
                             <strong>Zona ANFECA:</strong>
-                            <span>
-                                {{ institucionSeleccionada?.zona_anfeca || '—' }}
-                            </span>
+                            <span>{{ institucionSeleccionada.zona_anfeca }}</span>
                         </div>
 
                     </div>

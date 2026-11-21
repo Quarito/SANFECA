@@ -29,6 +29,7 @@ class EspejoPdmTest extends PdmTestCase
         $this->withoutVite();
         // Decisión FICTICIA de D-11 para la institución del escenario (sin ella la activación se niega).
         config(['anfeca_pdm_decisiones' => [
+            'base_de_datos' => DB::connection()->getDatabaseName(),
             'instituciones' => [1 => ['numero_afiliacion' => 'F01', 'facultad' => 'Facultad Ficticia', 'fuente' => 'Prueba']],
             'domicilios' => [], 'certificados' => [],
         ]]);
@@ -155,7 +156,7 @@ class EspejoPdmTest extends PdmTestCase
 
         // 7. Autorización de la formación → evento FA.
         $this->actingAs($user)->post('/registro/formacion-academica/autorizar', ['confirmacion_formacion' => '1'])
-            ->assertRedirect(route('registro.documentos'));
+            ->assertRedirect(route('registro.formacion')); // tras autorizar se muestra la formación bloqueada con «Siguiente»
         $this->assertContains('FA', $this->pdm('estado_solicitud')->where('esso_id_solicitud', $solicitudId)->pluck('esso_siglas')->all());
         $this->conciliar();
 

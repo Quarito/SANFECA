@@ -51,6 +51,8 @@ return [
             'driver' => 'file',
             'path' => storage_path('framework/cache/data'),
             'lock_path' => storage_path('framework/cache/locks'),
+            // Archivos de caché escribibles por apache y por el usuario de despliegue (grupo).
+            'permission' => 0664,
         ],
 
         'storage' => [

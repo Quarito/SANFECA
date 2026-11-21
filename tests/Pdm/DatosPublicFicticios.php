@@ -22,6 +22,7 @@ trait DatosPublicFicticios
     protected function decisionesCompletas(): array
     {
         return [
+            'base_de_datos' => DB::connection()->getDatabaseName(),
             'instituciones' => [1 => ['numero_afiliacion' => 'F000001', 'facultad' => 'Facultad Ficticia', 'fuente' => 'Prueba']],
             'domicilios' => [2 => ['entidad' => 'Nuevo León', 'fuente' => 'Prueba'], 3 => 'sin_domicilio'],
             'certificados' => [2 => 'conservar_en_revision'],

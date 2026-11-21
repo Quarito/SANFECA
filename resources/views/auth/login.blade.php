@@ -8,7 +8,7 @@
     <title>Registro ANFECA</title>
 
     <link rel="stylesheet"
-          href="{{ asset('css/login.css') }}">
+          href="{{ asset('css/login.css') }}?v=aviso-amigable-2">
 </head>
 <body>
 
@@ -42,6 +42,29 @@
         </section>
 
         <section class="acceso">
+
+        <!-- Orientación para usuarios del nuevo sistema -->
+        <aside class="aviso-nuevo-sistema-anfeca"
+               role="note"
+               aria-labelledby="titulo-aviso-registro">
+            <div class="aviso-nuevo-sistema-titulo"
+                 id="titulo-aviso-registro">
+                <span aria-hidden="true">ⓘ</span>
+                ¡Bienvenido al nuevo sistema ANFECA!
+            </div>
+
+            <p>
+                Para solicitar una certificación por primera vez
+                o realizar un refrendo, es necesario registrarse
+                en este nuevo sistema de ANFECA.
+            </p>
+
+            <p>
+                Una vez realizado su registro, podrá iniciar sesión
+                con su correo electrónico y contraseña.
+            </p>
+        </aside>
+
 
 	    {{-- Mensaje de confirmación de recuperación de contraseña --}}
 	    @if (session('status'))
@@ -95,14 +118,6 @@
                     </button>
                 </div>
             </form>
-
-            <p class="aviso">
-                <strong>Aviso:</strong>
-                Si aún no completas tu registro inicial
-                o vas a realizar un refrendo, inicia sesión
-                con tu <b>CORREO</b> y <b>CONTRASEÑA</b>
-                para continuar.
-            </p>
         </section>
 
     </main>

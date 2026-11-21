@@ -205,6 +205,7 @@ private function solicitudActiva(
             'nuevos' => $nuevos,
             'link' => old('link', $documentos?->link ?? ''),
             'esArticulo14' => $esArticulo14,
+            'documentosBloqueados' => $documentos !== null,
         ]);
     }
 
@@ -220,6 +221,15 @@ private function solicitudActiva(
 
         $solicitud = $resultado;
         $actual = $solicitud->documentosProbatorios;
+
+        if ($actual !== null) {
+            return redirect()
+                ->route('registro.documentos')
+                ->with(
+                    'error',
+                    'Los documentos probatorios ya fueron guardados. Solo pueden consultarse.'
+                );
+        }
 
         $esArticulo14 = $this->esArticulo14($solicitud);
 
@@ -274,6 +284,18 @@ private function solicitudActiva(
                         throw new \RuntimeException(
                             'La solicitud ya no admite modificaciones.'
                         );
+                    }
+
+                    if (
+                        DocumentoProbatorioSolicitud::where(
+                            'solicitud_id',
+                            $solicitudBloqueada->id
+                        )->exists()
+                    ) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'documentos' =>
+                                'Los documentos ya están guardados y no pueden modificarse.',
+                        ]);
                     }
 
                     DocumentoProbatorioSolicitud::updateOrCreate(

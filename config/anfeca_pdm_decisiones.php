@@ -15,6 +15,13 @@
 
 return [
 
+    // Base a la que pertenecen las decisiones por registro (IDs de public) de este archivo.
+    // Si la conexión usa otra base, o este valor está vacío, PlanMigracionPdm descarta TODAS
+    // las decisiones por registro y bloquea la migración (incidencia D-0).
+    // PLANTILLA: en cada servidor se registra su propia base y sus propias decisiones confirmadas.
+    'base_de_datos' => null,
+
+
     // D-11 · instituciones_afiliadas.id => datos oficiales confirmados, o 'no_migrar'.
     // Ejemplo: 1 => ['numero_afiliacion' => 'XXXXXXX', 'facultad' => 'Nombre oficial', 'fuente' => 'Padrón ANFECA 2026'],
     'instituciones' => [

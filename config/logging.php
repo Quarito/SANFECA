@@ -60,6 +60,8 @@ return [
 
         'single' => [
             'driver' => 'single',
+            // Grupo (apache) y CLI (servidorweb) comparten el log: rw para ambos.
+            'permission' => 0664,
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
@@ -67,6 +69,8 @@ return [
 
         'daily' => [
             'driver' => 'daily',
+            // Grupo (apache) y CLI (servidorweb) comparten el log: rw para ambos.
+            'permission' => 0664,
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => env('LOG_DAILY_DAYS', 14),

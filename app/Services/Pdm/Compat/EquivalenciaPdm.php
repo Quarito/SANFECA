@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\DB;
  *  - historial: la vista puede tener MÁS filas que public (versiones que solo conserva el PDM)
  *    y sus IDs son los del PDM; se compara por (solicitud, tipo, ruta).
  *  - instituciones_afiliadas: numero_afiliacion proviene de la decisión D-11 y no hay fechas en el PDM.
+ *  - instituciones_afiliadas.escuela_facultad (N-7): opcional en Laravel, INST_FACULTAD obligatoria en el PDM.
+ *    Si public la tiene vacía, el PDM conserva la facultad confirmada en D-11 y la vista la devuelve;
+ *    se acepta solo si la vista trae un valor. Si public tiene valor, la comparación es exacta.
  *  - certificados_historicos.user_id: nulo si el usuario no tiene USUARIO en el PDM (D-1 A).
  */
 class EquivalenciaPdm
@@ -130,6 +133,12 @@ class EquivalenciaPdm
                     $p[$otro] = $t;
                 }
             }
+        }
+
+        if ($tabla === 'instituciones_afiliadas'
+            && trim((string) ($p['escuela_facultad'] ?? '')) === ''
+            && trim((string) ($v['escuela_facultad'] ?? '')) !== '') {
+            $p['escuela_facultad'] = $v['escuela_facultad']; // N-7
         }
 
         if ($tabla === 'solicitudes_certificacion') {

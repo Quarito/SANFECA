@@ -330,4 +330,100 @@ class MigracionPdmTest extends PdmTestCase
         $this->migrar(['--simular' => true])->expectsOutputToContain('solo se permite en una base aislada')->assertExitCode(1);
         $this->assertSame(0, $this->cuenta('persona'));
     }
+
+    // ------------------------------------------------------------------
+    // Escuela o Facultad ↔ INST_FACULTAD y decisiones ligadas a su base
+    // ------------------------------------------------------------------
+
+    private function diferenciasInstituciones(): array
+    {
+        return array_values(array_filter((new \App\Services\Pdm\Compat\EquivalenciaPdm())->verificar(),
+            fn (array $d) => $d['tabla'] === 'instituciones_afiliadas'));
+    }
+
+    private function bloqueosDe(PlanMigracionPdm $plan): array
+    {
+        return collect($plan->bloqueantes())->pluck('codigo')->all();
+    }
+
+    public function test_facultad_se_toma_de_escuela_facultad_cuando_existe(): void
+    {
+        DB::table('public.instituciones_afiliadas')->where('id', 1)->update(['escuela_facultad' => 'Facultad Capturada']);
+        $decisiones = $this->decisionesCompletas();
+        unset($decisiones['instituciones'][1]['facultad']);
+
+        config(['anfeca_pdm_decisiones' => $decisiones]);
+        $this->assertNotContains('INSTITUCION_SIN_DATOS_OFICIALES', $this->bloqueosDe(PlanMigracionPdm::construir()));
+
+        $this->migrar(['--ejecutar' => true, '--confirmar' => true])->assertExitCode(0);
+        $this->assertSame('Facultad Capturada', DB::table('anfeca_modelo.institucion')->where('inst_id_institucion', 1)->value('inst_facultad'));
+        $this->assertSame('Facultad Capturada', DB::table('anfeca_compat.instituciones_afiliadas')->where('id', 1)->value('escuela_facultad'));
+        $this->assertSame([], $this->diferenciasInstituciones());
+    }
+
+    public function test_facultad_ausente_en_public_usa_d11_y_la_equivalencia_lo_acepta(): void
+    {
+        config(['anfeca_pdm_decisiones' => $this->decisionesCompletas()]);
+        $this->migrar(['--ejecutar' => true, '--confirmar' => true])->assertExitCode(0);
+
+        $this->assertSame('Facultad Ficticia', DB::table('anfeca_modelo.institucion')->where('inst_id_institucion', 1)->value('inst_facultad'));
+        $this->assertNull(DB::table('public.instituciones_afiliadas')->where('id', 1)->value('escuela_facultad'), 'public no se altera');
+        $this->assertSame([], $this->diferenciasInstituciones());
+    }
+
+    public function test_sin_escuela_facultad_ni_decision_no_se_inventa_facultad(): void
+    {
+        $decisiones = $this->decisionesCompletas();
+        unset($decisiones['instituciones'][1]['facultad']);
+
+        $this->assertContains('INSTITUCION_SIN_DATOS_OFICIALES', $this->bloqueosDe(PlanMigracionPdm::construir($decisiones)));
+    }
+
+    public function test_facultad_discrepante_entre_public_y_d11_bloquea(): void
+    {
+        DB::table('public.instituciones_afiliadas')->where('id', 1)->update(['escuela_facultad' => 'Otra Facultad']);
+
+        $this->assertContains('INSTITUCION_FACULTAD_DISCREPANTE', $this->bloqueosDe(PlanMigracionPdm::construir($this->decisionesCompletas())));
+    }
+
+    public function test_decisiones_de_otra_base_o_sin_base_no_se_aplican(): void
+    {
+        foreach (['bd_anfeca_ensayo_pruebas_pg', null] as $base) {
+            $decisiones = $this->decisionesCompletas();
+            if ($base === null) {
+                unset($decisiones['base_de_datos']);
+            } else {
+                $decisiones['base_de_datos'] = $base;
+            }
+
+            $codigos = $this->bloqueosDe(PlanMigracionPdm::construir($decisiones));
+            $this->assertContains('DECISIONES_DE_OTRA_BASE', $codigos);
+            $this->assertContains('INSTITUCION_SIN_DATOS_OFICIALES', $codigos, 'Ninguna decisión por ID se aplica.');
+        }
+
+        $this->assertNotContains('DECISIONES_DE_OTRA_BASE', $this->bloqueosDe(PlanMigracionPdm::construir($this->decisionesCompletas())));
+        $this->assertNotContains('DECISIONES_DE_OTRA_BASE', $this->bloqueosDe(PlanMigracionPdm::construir(['instituciones' => [], 'domicilios' => [], 'certificados' => []])));
+    }
+
+    public function test_facultad_de_mas_de_255_caracteres_no_se_trunca(): void
+    {
+        $larga = str_repeat('Facultad de Contaduría y Administración ', 10); // 410 caracteres
+        $larga = trim($larga);
+        $this->assertGreaterThan(255, mb_strlen($larga));
+        $this->assertLessThanOrEqual(500, mb_strlen($larga));
+
+        $decisiones = $this->decisionesCompletas();
+        $decisiones['instituciones'][1]['facultad'] = $larga;
+        config(['anfeca_pdm_decisiones' => $decisiones]);
+        $this->migrar(['--ejecutar' => true, '--confirmar' => true])->assertExitCode(0);
+
+        $this->assertSame($larga, DB::table('anfeca_modelo.institucion')->where('inst_id_institucion', 1)->value('inst_facultad'));
+        $this->assertSame($larga, DB::table('anfeca_compat.instituciones_afiliadas')->where('id', 1)->value('escuela_facultad'),
+            'La vista no recorta a 255: devuelve el valor íntegro del PDM.');
+        $this->assertNull(DB::table('public.instituciones_afiliadas')->where('id', 1)->value('escuela_facultad'), 'public no se altera');
+
+        // Más de 500 caracteres: se bloquea, no se trunca.
+        $decisiones['instituciones'][1]['facultad'] = str_repeat('x', 501);
+        $this->assertContains('INSTITUCION_INVALIDA', $this->bloqueosDe(PlanMigracionPdm::construir($decisiones)));
+    }
 }

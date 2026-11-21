@@ -258,6 +258,37 @@
 
 <link rel="stylesheet" href="{{ asset('css/anfeca-layout-compacto-v3.css') }}?v=3">
     <link rel="stylesheet" href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
+
+<style id="estilo-formacion-autorizada">
+.anfeca-formacion-autorizada {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 16px 0;
+    padding: 12px 16px;
+    color: #237a42;
+    background: #eef8f0;
+    border: 1px solid #bddfc7;
+    border-radius: 7px;
+    font-size: 13px;
+}
+.anfeca-formacion-autorizada span {
+    font-size: 20px;
+    font-weight: bold;
+}
+</style>
+
+<style id="botones-formacion-navegacion-8086">
+.cert-main .botones-formacion-navegacion {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center;
+    width: 100%;
+    gap: 20px;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+}
+</style>
 </head>
 
 <body @if(request()->is("preview/*")) class="modo-preview" @endif>
@@ -354,21 +385,31 @@
 
 ></div>
 
-            <!-- BOTONES DE CAPTURA -->
-            <div class="botones">
-                <a href="{{ route((isset($solicitud) && $solicitud?->tipo_tramite === 'refrendo') ? 'registro.refrendo' : 'registro.certificacion') }}"
+
+        @if($formacionBloqueada)
+            <div class="anfeca-formacion-autorizada" role="status">
+                <span aria-hidden="true">✓</span>
+                <strong>
+                    Tu formación académica y sus documentos han sido autorizados.
+                </strong>
+            </div>
+        @endif
+
+        <!-- BOTONES DE CAPTURA -->
+            <div class="botones botones-formacion-navegacion">
+                <a href="{{ route((request()->is('preview/*') ? 'preview.' : 'registro.') . ((isset($solicitud) && $solicitud?->tipo_tramite === 'refrendo') ? 'refrendo' : 'certificacion')) }}"
                    class="boton">
                     Anterior
                 </a>
 
                 @if($formacionBloqueada)
-                    <a href="{{ route('registro.documentos') }}"
+                    <a href="{{ route(request()->is('preview/*') ? 'preview.documentos' : 'registro.documentos') }}"
                        class="boton">
                         Siguiente
                     </a>
                 @else
                     <button type="submit" class="boton">
-                        Guardar y revisar
+                        Guardar y continuar
                     </button>
                 @endif
             </div>
@@ -464,7 +505,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <strong>Cambios pendientes de guardar</strong>
         <span>
             Has modificado información de tu formación académica.
-            Selecciona <b>Guardar y revisar</b> antes de autorizar.
+            Selecciona <b>Guardar y continuar</b> antes de autorizar.
         </span>
     `;
 

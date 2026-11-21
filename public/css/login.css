@@ -278,3 +278,99 @@ body {
     font-weight: bold;
     flex-shrink: 0;
 }
+
+
+/* Orientación discreta para el nuevo sistema ANFECA */
+.aviso-nuevo-sistema-anfeca {
+    width: 100%;
+    margin: 0 0 18px;
+    padding: 13px 15px;
+    background: #fffdfd;
+    border: 1px solid #e6dddd;
+    border-left: 3px solid #a71930;
+    border-radius: 7px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    color: #404040;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.aviso-nuevo-sistema-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.aviso-nuevo-sistema-titulo span {
+    color: #a71930;
+    font-size: 18px;
+}
+
+.aviso-nuevo-sistema-anfeca p {
+    margin: 0 0 7px;
+}
+
+.aviso-nuevo-sistema-anfeca p:last-child {
+    margin-bottom: 0;
+}
+
+
+/* ANFECA AVISO AMIGABLE 8086 */
+
+.acceso .aviso-nuevo-sistema-anfeca {
+    background: linear-gradient(
+        135deg,
+        #fff7f7 0%,
+        #ffffff 100%
+    );
+    border: 1px solid #ead8d5;
+    border-left: 4px solid #a71930;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(80, 20, 20, 0.07);
+    padding: 13px 15px;
+    margin: 0 0 15px;
+}
+
+.acceso .aviso-nuevo-sistema-titulo {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #87202e;
+    line-height: 1.35;
+    margin-bottom: 9px;
+}
+
+.acceso .aviso-nuevo-sistema-titulo span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    background: #f8e8e9;
+    color: #a71930;
+    font-size: 19px;
+}
+
+.acceso .aviso-nuevo-sistema-anfeca p {
+    color: #454545;
+    font-size: 14px;
+    line-height: 1.45;
+    margin: 0 0 7px;
+}
+
+.acceso .aviso-nuevo-sistema-anfeca p:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 800px) {
+    .acceso .aviso-nuevo-sistema-anfeca {
+        padding: 12px 14px;
+    }
+}

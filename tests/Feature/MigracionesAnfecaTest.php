@@ -10,7 +10,9 @@ use Tests\TestCase;
 
 class MigracionesAnfecaTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase {
+        refreshDatabase as protected refreshDatabaseLaravel;
+    }
 
     public function refreshDatabase(): void
     {
@@ -25,7 +27,9 @@ class MigracionesAnfecaTest extends TestCase
             );
         }
 
-        $this->refreshTestDatabase();
+        // Tras la guardia, se delega en el método original del trait, que también
+        // restaura la conexión en memoria entre pruebas (independiente del orden).
+        $this->refreshDatabaseLaravel();
     }
 
     public function test_tablas_principales_existen(): void

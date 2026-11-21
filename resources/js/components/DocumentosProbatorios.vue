@@ -18,6 +18,10 @@ const props = defineProps({
     esArticulo14: {
         type: Boolean,
         default: false
+    },
+    documentosBloqueados: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -105,6 +109,7 @@ function seleccionarArchivo(event, campo) {
                             </a>
 
                             <label
+                                v-if="!documentosBloqueados"
                                 :for="campo"
                                 class="accion-documento"
                             >
@@ -115,6 +120,7 @@ function seleccionarArchivo(event, campo) {
                         </div>
 
                         <input
+                            v-if="!documentosBloqueados"
                             :id="campo"
                             class="archivo-oculto"
                             type="file"
@@ -145,7 +151,8 @@ function seleccionarArchivo(event, campo) {
                         type="url"
                         placeholder="https://ejemplo.com"
                         maxlength="2048"
-                        required
+                        :readonly="documentosBloqueados"
+                        :required="!documentosBloqueados"
                     >
                 </div>
 
