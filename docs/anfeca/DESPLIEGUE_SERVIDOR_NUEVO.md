@@ -247,7 +247,8 @@ Permisos: solo las rutas que necesitan escritura, sin 777 y sin `chown -R` sobre
 ```
 
 - `storage/app/private` guarda los documentos de los solicitantes. Solo pueden leerlo `apache` y el grupo; nunca queda bajo `public/`.
-- Logs y caché se crean con permiso `0664` (`config/logging.php`, `config/cache.php`).
+- El log se crea con permiso `0664` (`config/logging.php`).
+- La caché de archivos **no** define `permission` en `config/cache.php`. `FileStore` aplica ese modo también a los subdirectorios que crea; con `0664` quedaban sin bit de ejecución y el limitador del login respondía HTTP 500 (incidente del 2026-11-21).
 
 ---
 
@@ -267,7 +268,27 @@ Si alguna vez se mezclan propietarios: `sudo -u apache php artisan view:clear`.
 
 ---
 
-## 9. Verificaciones
+## 9. Prevalidación obligatoria antes de abrir el sitio
+
+```bash
+# cd /var/www/anfeca && URL_ANFECA=https://<dominio> bash scripts/anfeca/prevalidar_despliegue.sh /var/www/anfeca /etc/php-fpm.d/anfeca.conf
+```
+
+- Se ejecuta como root para medir los permisos **efectivos** del usuario de PHP-FPM.
+- Revisa:
+  - directorios de Laravel y su escritura;
+  - subdirectorios de caché sin bit de ejecución;
+  - caché y vistas creadas por otro usuario;
+  - `.env`, sin mostrar valores;
+  - SELinux y ACL;
+  - pool de PHP-FPM: usuario y `memory_limit ≥ 512M`;
+  - extensiones;
+  - rutas Preview;
+  - respuestas HTTP.
+- No modifica nada. Su única escritura es un archivo temporal que borra al instante, y nunca la hace en `storage/app/private`.
+- Termina con código 1 si hay errores: **no abrir el sitio** hasta corregirlos.
+
+## 10. Verificaciones
 
 ```bash
 $ B=https://<dominio>
@@ -297,7 +318,7 @@ $ composer install --dev && php -d memory_limit=512M vendor/bin/phpunit -c phpun
 
 ---
 
-## 10. Copias de seguridad y rollback
+## 11. Copias de seguridad y rollback
 
 Antes de cada despliegue:
 
@@ -321,7 +342,7 @@ La migración de `escuela_facultad` no requiere revertir el esquema: su `down()`
 
 ---
 
-## 11. Pendientes ajenos al servidor nuevo (ensayo)
+## 12. Pendientes ajenos al servidor nuevo (ensayo)
 
 - `direccion` sigue existiendo solo en `bd_anfeca_ensayo_pruebas_pg`. No la usa ningún código, vista ni disparador. Retirarla requiere autorización:
   1. Respaldo con `\copy (select id, direccion …) to 'direccion_respaldo.csv' csv header`.

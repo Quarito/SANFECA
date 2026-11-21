@@ -51,8 +51,10 @@ return [
             'driver' => 'file',
             'path' => storage_path('framework/cache/data'),
             'lock_path' => storage_path('framework/cache/locks'),
-            // Archivos de caché escribibles por apache y por el usuario de despliegue (grupo).
-            'permission' => 0664,
+            // Sin 'permission': FileStore aplica ese modo también a los subdirectorios
+            // que crea (p. ej. d9/a0); con 0664 quedan sin bit de ejecución y el
+            // RateLimiter del login falla con HTTP 500. Los permisos de grupo se
+            // resuelven con el directorio setgid/ACL y ejecutando Artisan como apache.
         ],
 
         'storage' => [
