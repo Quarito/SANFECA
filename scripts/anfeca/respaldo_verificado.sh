@@ -15,7 +15,8 @@
 set -euo pipefail
 
 BASE_ESPERADA="${1:?base esperada}"; RAMA_ESPERADA="${2:?rama esperada}"; COMMIT_ESPERADO="${3:?commit esperado}"
-APP=$(pwd); IMAGEN_PG=docker.io/library/postgres:18.6; IMAGEN_PHP=localhost/anfeca-php:8.5.12
+APP=$(pwd); IMAGEN_PHP=localhost/anfeca-php:8.5.12
+source "$(dirname "$0")/pg_herramientas.inc.sh"
 valor() { grep -E "^$1=" "$APP/.env" | tail -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
 
 DISPONIBLE=$(df -Pm "$HOME" | awk 'NR==2 {print $4}')
@@ -25,12 +26,14 @@ DISPONIBLE=$(df -Pm "$HOME" | awk 'NR==2 {print $4}')
 [ "$(git -C "$APP" rev-parse --short=7 HEAD)" = "${COMMIT_ESPERADO:0:7}" ] || { echo "DETENIDO: commit distinto de $COMMIT_ESPERADO" >&2; exit 1; }
 
 export PGHOST="$(valor DB_HOST)" PGPORT="$(valor DB_PORT)" PGUSER="$(valor DB_USERNAME)" PGPASSWORD="$(valor DB_PASSWORD)" PGDATABASE="$BASE_ESPERADA"
+anfeca_pg_preparar                     # herramientas cliente de la misma versión mayor que el servidor
+IMAGEN_PG=$(anfeca_pg_imagen)          # restauración desechable con la misma versión exacta
 DESTINO="$HOME/ANFECA_RESPALDOS/respaldo_verificado_${BASE_ESPERADA}_$(date +%Y%m%d_%H%M%S)"
 umask 077; mkdir -p "$DESTINO"
 INFORME="$DESTINO/RESULTADO.txt"
 registrar() { echo "$*" | tee -a "$INFORME"; }
 registrar "Respaldo verificado · base=$BASE_ESPERADA · rama=$RAMA_ESPERADA · commit=$(git -C "$APP" rev-parse --short HEAD) · $(date -Is)"
-registrar "Servidor: $(psql -Atc 'select version()' | cut -d' ' -f1-2) · tamaño: $(psql -Atc "select pg_size_pretty(pg_database_size(current_database()))")"
+registrar "Servidor: PostgreSQL ${ANFECA_PG_SERVIDOR} · cliente ${ANFECA_PG_BIN} · imagen ${IMAGEN_PG} · tamaño: $(psql -Atc "select pg_size_pretty(pg_database_size(current_database()))")"
 
 # --- 2. Respaldo completo -------------------------------------------------------------------
 pg_dump -Fc -f "$DESTINO/base.dump"

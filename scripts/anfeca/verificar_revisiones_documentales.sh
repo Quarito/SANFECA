@@ -9,6 +9,8 @@ set -uo pipefail
 valor() { grep -E "^$1=" .env | tail -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
 export PGHOST="${PGHOST:-$(valor DB_HOST)}" PGPORT="${PGPORT:-$(valor DB_PORT)}" PGUSER="${PGUSER:-$(valor DB_USERNAME)}" \
        PGPASSWORD="${PGPASSWORD:-$(valor DB_PASSWORD)}" PGDATABASE="${PGDATABASE:-$(valor DB_DATABASE)}"
+source "$(dirname "$0")/pg_herramientas.inc.sh"
+anfeca_pg_preparar
 FALLAS=0
 ok() { if [ "$2" = "$3" ]; then echo "  ✔ $1"; else echo "  ✘ $1 (esperado: $3; obtenido: $2)"; FALLAS=$((FALLAS+1)); fi; }
 q() { psql -Atc "$1"; }

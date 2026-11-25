@@ -17,6 +17,7 @@ RUTA=database/migrations/$MIG.php
 detener() { echo "DETENIDO: $*" >&2; exit 1; }
 valor() { grep -E "^$1=" .env | tail -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
 source "$(dirname "$0")/huellas_bd.inc.sh"
+source "$(dirname "$0")/pg_herramientas.inc.sh"
 
 [ "${ANFECA_AUTORIZO_MIGRACION:-}" = revisiones_documentales ] || detener "falta ANFECA_AUTORIZO_MIGRACION=revisiones_documentales"
 [ "$(df -Pm / | awk 'NR==2 {print $4}')" -ge 5120 ] || detener "menos de 5 GB libres en /"
@@ -34,6 +35,7 @@ grep -q "commit=${COMMIT:0:7}" "$RESPALDO/RESULTADO.txt" || detener "el respaldo
 (cd "$RESPALDO" && sha256sum -c --quiet base.dump.sha256) || detener "SHA-256 del respaldo no coincide"
 
 export PGHOST="$(valor DB_HOST)" PGPORT="$(valor DB_PORT)" PGUSER="$(valor DB_USERNAME)" PGPASSWORD="$(valor DB_PASSWORD)" PGDATABASE="$BASE"
+anfeca_pg_preparar
 PENDIENTES=$(php artisan migrate:status --no-ansi | grep Pending | awk '{print $1}')
 grep -qx "$MIG" <<< "$PENDIENTES" || detener "la migración autorizada no está pendiente"
 PRETEND=$(php artisan migrate --path="$RUTA" --pretend --force --no-ansi)
