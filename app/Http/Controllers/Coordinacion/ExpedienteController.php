@@ -79,8 +79,14 @@ class ExpedienteController extends Controller
             ->map(fn ($c) => $c->values()->all())
             ->all();
 
+        $zona = app(\App\Services\Zonas\ZonasAnfeca::class)->deInstitucion($detalle->institucion_id !== null ? (int) $detalle->institucion_id : null);
+
         return view('coordinacion.expediente', [
             'detalle' => $detalle,
+            'zona' => $zona,
+            // Zona HISTÓRICA del certificado (refrendo): dato del certificado previo, distinto de la
+            // zona de la institución del trámite actual.
+            'zonaHistorica' => $modelo->tipo_tramite === 'refrendo' ? ($modelo->certificadoHistorico?->zona ?: null) : null,
             'refrendo' => $modelo->datosRefrendo,
             'aplicaArticulo' => $aplicaArticulo,
             'principales' => $principales,

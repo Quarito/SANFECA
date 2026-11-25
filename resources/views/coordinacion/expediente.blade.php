@@ -32,12 +32,20 @@
                 <div class="ancho-completo"><dt>Institución</dt><dd>{{ $detalle->institucion ?? '—' }}</dd></div>
                 <div><dt>Escuela o Facultad</dt><dd>{{ $detalle->facultad ?? '—' }}</dd></div>
                 <div><dt>Campus</dt><dd>{{ $detalle->campus ?? '—' }}</dd></div>
-                <div><dt>Zona ANFECA</dt><dd>
-                    @if ($detalle->zona_siglas)
-                        {{ $detalle->zona_siglas }}
+                <div><dt>Zona ANFECA</dt><dd data-zona-origen="{{ $zona->origen }}">
+                    @if ($zona->clasificada())
+                        {{ $zona->etiqueta }}
+                        @if ($zona->origen === \App\Services\Zonas\ResolucionZona::DATO_INSTITUCIONAL)
+                            <small class="coord-nota-dato" title="Zona tomada del dato institucional cargado (zona_anfeca); falta la relación normalizada zona_id">· dato institucional</small>
+                        @endif
                     @else
-                        <span class="coord-insignia sin-zona">Pendiente de clasificación</span>
+                        <span class="coord-insignia sin-zona">Sin clasificar</span>
                     @endif
+                    @foreach ($zona->advertencias as $advertencia)
+                        @unless ($advertencia === 'sin institución identificada')
+                            <small class="coord-advertencia-zona" role="note">⚠ {{ $advertencia }}</small>
+                        @endunless
+                    @endforeach
                 </dd></div>
             </dl>
 
@@ -70,6 +78,7 @@
                 <div><dt>Compromiso de entrega</dt><dd>{{ $detalle->compromiso_aceptado ? 'Aceptado '.$fecha($detalle->compromiso_aceptado_en) : 'Pendiente' }}</dd></div>
                 @if ($detalle->tipo_tramite === 'refrendo')
                     <div><dt>Certificado histórico</dt><dd>{{ $detalle->certificado_historico ?? '—' }}</dd></div>
+                    <div><dt>Zona del certificado histórico</dt><dd>{{ $zonaHistorica ?? 'No registrada' }}</dd></div>
                     <div><dt>Artículo 13/14</dt><dd>{{ $refrendo?->aplica_articulo_14 ? 'Sí, inciso '.$refrendo->inciso_articulo_14 : 'No' }}</dd></div>
                 @endif
             </dl>

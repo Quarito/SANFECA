@@ -25,7 +25,7 @@ class SolicitudesController extends Controller
         'fecha' => 'coalesce(s.fecha_envio, s.created_at)',
         'nombre' => 'd.apellido_paterno',
         'institucion' => 'i.nombre',
-        'zona' => 'z.siglas',
+        'zona' => 'coalesce(z.siglas, i.zona_anfeca)',
         'estado' => 's.estado',
         'tramite' => 's.tipo_tramite',
         'certificacion' => 's.certificacion',
@@ -34,7 +34,19 @@ class SolicitudesController extends Controller
     public function __construct(
         private readonly ConsultaSolicitudes $consulta,
         private readonly AlcanceZona $alcance,
+        private readonly \App\Services\Zonas\ZonasAnfeca $zonasAnfeca,
     ) {
+    }
+
+    /**
+     * Claves de zona que el usuario puede usar como FILTRO (null = todas). Las claves solo filtran
+     * dentro del alcance ya restringido por zona_id; nunca lo amplían.
+     */
+    private function clavesPermitidas($usuario): ?array
+    {
+        $zonas = $this->alcance->zonasAutorizadas($usuario);
+
+        return $zonas === null ? null : $this->zonasAnfeca->clavesDeZonas($zonas);
     }
 
     public function index(Request $request)
@@ -44,12 +56,8 @@ class SolicitudesController extends Controller
         $zonas = $this->alcance->zonasAutorizadas($usuario);
 
         $opciones = [
-            'zonas' => DB::table('zonas')
-                ->when($zonas !== null, fn ($q) => $q->whereIn('id', $zonas ?: [0]))
-                ->orderBy('siglas')->get(['id', 'siglas'])
-                ->map(fn ($z) => ['valor' => (string) $z->id, 'etiqueta' => $z->siglas])
-                ->when($nacional, fn ($c) => $c->push(['valor' => 'sin_zona', 'etiqueta' => 'Pendiente de clasificación']))
-                ->values(),
+            // Zonas oficiales (o catálogo autorizado); «Sin clasificar» solo para la coordinación nacional.
+            'zonas' => $this->zonasAnfeca->opciones($this->clavesPermitidas($usuario), $nacional),
             'instituciones' => $this->consulta->base($usuario)
                 ->whereNotNull('i.id')->distinct()->orderBy('i.nombre')
                 ->get(['i.id', 'i.nombre'])
@@ -70,7 +78,7 @@ class SolicitudesController extends Controller
             'estado' => ['nullable', Rule::in(['borrador', 'enviado'])],
             'tipo_tramite' => ['nullable', Rule::in(['inicial', 'refrendo'])],
             'certificacion' => ['nullable', Rule::in(['ANFECA', 'CACSLA', 'CACECA'])],
-            'zona' => ['nullable', 'regex:/^(\d{1,9}|sin_zona)$/'],
+            'zona' => ['nullable', 'regex:/^(z[1-7]|c\d{1,9}|\d{1,9}|sin_zona)$/'],
             'institucion' => ['nullable', 'integer', 'min:1'],
             'orden' => ['nullable', Rule::in(array_keys(self::ORDEN))],
             'direccion' => ['nullable', Rule::in(['asc', 'desc'])],
@@ -80,8 +88,12 @@ class SolicitudesController extends Controller
 
         // Manipulación de parámetros: una zona fuera del alcance se rechaza.
         if (filled($f['zona'] ?? null)) {
-            $zona = $f['zona'] === 'sin_zona' ? null : (int) $f['zona'];
-            abort_unless($this->alcance->permiteZona($usuario, $zona), 403, 'Zona fuera de su alcance.');
+            if (ctype_digit($f['zona'])) {                       // compatibilidad: id de catálogo
+                $f['zona'] = $this->zonasAnfeca->clavesDeZonas([(int) $f['zona']])[0] ?? 'c'.$f['zona'];
+            }
+            $permitidas = $this->clavesPermitidas($usuario);
+            $permitida = $f['zona'] === 'sin_zona' ? $this->alcance->esNacional($usuario) : ($permitidas === null || in_array($f['zona'], $permitidas, true));
+            abort_unless($permitida, 403, 'Zona fuera de su alcance.');
         }
 
         $filtrada = function (bool $conEstado = true) use ($usuario, $f): Builder {
@@ -109,7 +121,11 @@ class SolicitudesController extends Controller
                 $q->where('i.id', (int) $f['institucion']);
             }
             if (filled($f['zona'] ?? null)) {
-                $f['zona'] === 'sin_zona' ? $q->whereNull('i.zona_id') : $q->where('i.zona_id', (int) $f['zona']);
+                // Clasificación resuelta por ZonasAnfeca (zona_id normalizada o dato institucional).
+                $ids = $this->zonasAnfeca->institucionesConClave($f['zona']);
+                $f['zona'] === 'sin_zona'
+                    ? $q->where(fn (Builder $w) => $w->whereNull('i.id')->orWhereIn('i.id', $ids ?: [0]))
+                    : $q->whereIn('i.id', $ids ?: [0]);
             }
 
             return $q;
@@ -136,7 +152,8 @@ class SolicitudesController extends Controller
             'datos' => collect($pagina->items())->values()->map(fn ($r, $i) => [
                 'num' => $pagina->firstItem() + $i,
                 'folio' => $r->folio,
-                'zona' => $r->zona_siglas,
+                'zona' => $this->zonasAnfeca->deInstitucion($r->institucion_id !== null ? (int) $r->institucion_id : null)->etiqueta,
+                'zona_clasificada' => $this->zonasAnfeca->deInstitucion($r->institucion_id !== null ? (int) $r->institucion_id : null)->clasificada(),
                 'nombre' => trim(implode(' ', array_filter([$r->nombres, $r->apellido_paterno, $r->apellido_materno]))) ?: null,
                 'institucion' => $r->institucion,
                 'facultad' => $r->facultad,

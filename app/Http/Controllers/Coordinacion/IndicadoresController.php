@@ -31,6 +31,7 @@ class IndicadoresController extends Controller
     public function __construct(
         private readonly ConsultaSolicitudes $consulta,
         private readonly AlcanceZona $alcance,
+        private readonly \App\Services\Zonas\ZonasAnfeca $zonasAnfeca,
     ) {
     }
 
@@ -90,7 +91,7 @@ class IndicadoresController extends Controller
             ],
             'recientes' => $base()
                 ->select('s.id as folio', 's.estado', 's.tipo_tramite', 's.certificacion', 'i.nombre as institucion',
-                    'z.siglas as zona', 's.fecha_envio', 's.created_at')
+                    'i.id as institucion_id', 's.fecha_envio', 's.created_at')
                 ->orderByRaw('coalesce(s.fecha_envio, s.created_at) desc')
                 ->orderByDesc('s.id')
                 ->limit(5)
@@ -103,7 +104,8 @@ class IndicadoresController extends Controller
                     'tramite' => $r->tipo_tramite === 'refrendo' ? 'Refrendo' : 'Primera vez',
                     'certificacion' => $r->certificacion,
                     'institucion' => $r->institucion,
-                    'zona' => $r->zona,
+                    'zona' => $this->zonasAnfeca->deInstitucion($r->institucion_id !== null ? (int) $r->institucion_id : null)->etiqueta,
+                    'zona_clasificada' => $this->zonasAnfeca->deInstitucion($r->institucion_id !== null ? (int) $r->institucion_id : null)->clasificada(),
                     'fecha' => optional($r->fecha_envio ?? $r->created_at, fn ($f) => \Illuminate\Support\Carbon::parse($f)
                         ->timezone('America/Mexico_City')->format('d/m/Y H:i')),
                 ]),
@@ -126,17 +128,16 @@ class IndicadoresController extends Controller
             ->values();
     }
 
+    /** Distribución por zona RESUELTA (ZonasAnfeca): se agrupa por institución y se suma por zona. */
     private function distribucionZona($consulta)
     {
-        return $consulta
-            ->selectRaw('z.siglas as etiqueta, count(*) as valor')
-            ->groupBy('z.siglas')
-            ->orderByDesc('valor')
-            ->get()
-            ->map(fn ($r) => [
-                'etiqueta' => $r->etiqueta ?? 'Pendiente de clasificación',
-                'valor' => (int) $r->valor,
-                'sin_clasificar' => $r->etiqueta === null,
-            ]);
+        $porZona = [];
+        foreach ($consulta->selectRaw('i.id as institucion_id, count(*) as valor')->groupBy('i.id')->get() as $r) {
+            $zona = $this->zonasAnfeca->deInstitucion($r->institucion_id !== null ? (int) $r->institucion_id : null);
+            $porZona[$zona->clave] ??= ['etiqueta' => $zona->etiqueta, 'valor' => 0, 'sin_clasificar' => !$zona->clasificada(), 'filtro' => $zona->clave];
+            $porZona[$zona->clave]['valor'] += (int) $r->valor;
+        }
+
+        return collect($porZona)->sortBy([['valor', 'desc'], ['etiqueta', 'asc']])->values();
     }
 }

@@ -189,8 +189,8 @@ onMounted(cargar);
                         <td class="col-num">{{ f.num }}</td>
                         <td class="numero col-folio">{{ f.folio }}</td>
                         <td class="col-zona">
-                            <span v-if="f.zona">{{ f.zona }}</span>
-                            <span v-else class="coord-insignia sin-zona">Pendiente de clasificación</span>
+                            <span v-if="f.zona_clasificada">{{ f.zona }}</span>
+                            <span v-else class="coord-insignia sin-zona" title="No hay información suficiente para identificar la zona">Sin clasificar</span>
                         </td>
                         <td class="col-nombre">{{ f.nombre || '—' }}</td>
                         <td class="col-institucion">{{ f.institucion || '—' }}</td>

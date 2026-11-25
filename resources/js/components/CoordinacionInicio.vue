@@ -125,8 +125,8 @@ onMounted(cargar);
                                 <td class="col-num">{{ r.num }}</td>
                                 <td><a :href="`${urlExpediente}/${r.folio}`">{{ r.folio }}</a></td>
                                 <td>
-                                    <span v-if="r.zona">{{ r.zona }}</span>
-                                    <span v-else class="coord-insignia sin-zona">Pendiente de clasificación</span>
+                                    <span v-if="r.zona_clasificada">{{ r.zona }}</span>
+                                    <span v-else class="coord-insignia sin-zona">Sin clasificar</span>
                                 </td>
                                 <td>{{ r.institucion || '—' }}</td>
                                 <td>{{ r.tramite }}</td>

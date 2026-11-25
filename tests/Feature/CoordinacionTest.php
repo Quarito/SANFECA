@@ -232,7 +232,7 @@ class CoordinacionTest extends TestCase
         $this->actingAs($z3)->get("/coordinacion/solicitudes/{$this->sol['ZF3']}/documentos/..%2F..%2F.env")->assertNotFound();
 
         // La coordinación nacional sí accede a todas.
-        $this->actingAs($this->coord['nacional'])->get("/coordinacion/solicitudes/{$this->sol['SIN']}")->assertOk()->assertSee('Pendiente de clasificación');
+        $this->actingAs($this->coord['nacional'])->get("/coordinacion/solicitudes/{$this->sol['SIN']}")->assertOk()->assertSee('Sin clasificar')->assertDontSee('Pendiente de clasificación');
         $this->actingAs($this->coord['nacional'])->get("/coordinacion/solicitudes/{$this->sol['ZF6']}/documentos/comprobante_pago_archivo")->assertOk();
     }
 
