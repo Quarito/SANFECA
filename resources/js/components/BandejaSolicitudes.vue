@@ -1,0 +1,235 @@
+<script setup>
+import { onMounted, reactive, ref, watch } from 'vue';
+
+const props = defineProps({
+    urlApi: { type: String, required: true },
+    urlExpediente: { type: String, required: true },
+    opciones: { type: Object, required: true }
+});
+
+const filtros = reactive({ q: '', estado: '', tipo_tramite: '', certificacion: '', zona: '', institucion: '' });
+const orden = reactive({ campo: 'fecha', direccion: 'desc' });
+const pagina = ref(1);
+const porPagina = ref(25);
+
+const filas = ref([]);
+const meta = ref(null);
+const cargando = ref(false);
+const error = ref('');
+
+const columnas = [
+    { clave: 'folio', etiqueta: 'Folio', orden: 'folio' },
+    { clave: 'zona', etiqueta: 'Zona', orden: 'zona' },
+    { clave: 'nombre', etiqueta: 'Nombre', orden: 'nombre' },
+    { clave: 'institucion', etiqueta: 'Institución', orden: 'institucion' },
+    { clave: 'facultad', etiqueta: 'Facultad' },
+    { clave: 'tramite', etiqueta: 'Modalidad', orden: 'tramite' },
+    { clave: 'certificacion', etiqueta: 'Certificación', orden: 'certificacion' },
+    { clave: 'tipo_personal', etiqueta: 'Tipo de personal' },
+    { clave: 'area', etiqueta: 'Área de conocimiento' },
+    { clave: 'certificado_historico', etiqueta: 'Certificado histórico' },
+    { clave: 'fecha_envio', etiqueta: 'Fecha de envío', orden: 'fecha' },
+    { clave: 'estado', etiqueta: 'Estado', orden: 'estado' }
+];
+
+let controlador = null;
+let espera = null;
+
+async function cargar() {
+    controlador?.abort();
+    controlador = new AbortController();
+    cargando.value = true;
+    error.value = '';
+
+    const parametros = new URLSearchParams();
+    Object.entries(filtros).forEach(([k, v]) => { if (v !== '') parametros.set(k, v); });
+    parametros.set('orden', orden.campo);
+    parametros.set('direccion', orden.direccion);
+    parametros.set('pagina', String(pagina.value));
+    parametros.set('por_pagina', String(porPagina.value));
+
+    try {
+        const r = await fetch(`${props.urlApi}?${parametros}`, {
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+            signal: controlador.signal
+        });
+        if (!r.ok) {
+            throw new Error(r.status === 403 ? 'Filtro fuera de su alcance.' : `HTTP ${r.status}`);
+        }
+        const json = await r.json();
+        filas.value = json.datos;
+        meta.value = json.meta;
+    } catch (e) {
+        if (e.name !== 'AbortError') {
+            error.value = e.message.startsWith('HTTP') ? 'No fue posible obtener las solicitudes.' : e.message;
+            filas.value = [];
+        }
+    } finally {
+        cargando.value = false;
+    }
+}
+
+function ordenar(campo) {
+    if (!campo) return;
+    if (orden.campo === campo) {
+        orden.direccion = orden.direccion === 'asc' ? 'desc' : 'asc';
+    } else {
+        orden.campo = campo;
+        orden.direccion = campo === 'fecha' || campo === 'folio' ? 'desc' : 'asc';
+    }
+    pagina.value = 1;
+    cargar();
+}
+
+function indicadorOrden(campo) {
+    if (orden.campo !== campo) return '';
+    return orden.direccion === 'asc' ? '▲' : '▼';
+}
+
+function limpiar() {
+    Object.keys(filtros).forEach(k => { filtros[k] = ''; });
+    pagina.value = 1;
+    cargar();
+}
+
+function irA(n) {
+    pagina.value = n;
+    cargar();
+}
+
+watch(() => ({ ...filtros, por: porPagina.value }), () => {
+    clearTimeout(espera);
+    espera = setTimeout(() => { pagina.value = 1; cargar(); }, 300);
+});
+
+onMounted(cargar);
+</script>
+
+<template>
+    <div class="coord-bandeja">
+        <form class="coord-filtros" role="search" @submit.prevent="cargar">
+            <label class="coord-filtro-busqueda">
+                Buscar
+                <input v-model.trim="filtros.q" type="search" maxlength="100"
+                       placeholder="Nombre, institución, folio o certificado histórico">
+            </label>
+            <label>Estado
+                <select v-model="filtros.estado">
+                    <option value="">Todos</option>
+                    <option v-for="o in opciones.estados" :key="o.valor" :value="o.valor">{{ o.etiqueta }}</option>
+                </select>
+            </label>
+            <label>Modalidad
+                <select v-model="filtros.tipo_tramite">
+                    <option value="">Todas</option>
+                    <option v-for="o in opciones.tramites" :key="o.valor" :value="o.valor">{{ o.etiqueta }}</option>
+                </select>
+            </label>
+            <label>Certificación
+                <select v-model="filtros.certificacion">
+                    <option value="">Todas</option>
+                    <option v-for="o in opciones.certificaciones" :key="o.valor" :value="o.valor">{{ o.etiqueta }}</option>
+                </select>
+            </label>
+            <label>Zona
+                <select v-model="filtros.zona">
+                    <option value="">Todas en su alcance</option>
+                    <option v-for="o in opciones.zonas" :key="o.valor" :value="o.valor">{{ o.etiqueta }}</option>
+                </select>
+            </label>
+            <label>Institución
+                <select v-model="filtros.institucion">
+                    <option value="">Todas</option>
+                    <option v-for="o in opciones.instituciones" :key="o.valor" :value="o.valor">{{ o.etiqueta }}</option>
+                </select>
+            </label>
+            <label>Por página
+                <select v-model.number="porPagina">
+                    <option :value="10">10</option>
+                    <option :value="25">25</option>
+                    <option :value="50">50</option>
+                </select>
+            </label>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="button" class="coord-boton secundario" @click="limpiar">Limpiar filtros</button>
+            </div>
+        </form>
+
+        <div v-if="meta" class="coord-resumen" aria-live="polite">
+            <span class="coord-insignia neutra">Resultados: {{ meta.total }}</span>
+            <span class="coord-insignia enviado">Enviadas: {{ meta.por_estado.enviado }}</span>
+            <span class="coord-insignia borrador">Iniciadas: {{ meta.por_estado.borrador }}</span>
+            <span class="coord-nota">Participación: pendiente de definición · Calificación: fase 6.4 · Convocatoria: pendiente de validación</span>
+        </div>
+
+        <div v-if="error" class="anfeca-aviso anfeca-aviso--error" role="alert" style="margin-bottom: 10px;">{{ error }}</div>
+
+        <div class="coord-tabla-contenedor" :aria-busy="cargando">
+            <table class="coord-tabla">
+                <thead>
+                    <tr>
+                        <th v-for="c in columnas" :key="c.clave" scope="col"
+                            :aria-sort="c.orden && orden.campo === c.orden ? (orden.direccion === 'asc' ? 'ascending' : 'descending') : undefined">
+                            <button v-if="c.orden" type="button" class="coord-th-boton" @click="ordenar(c.orden)">
+                                {{ c.etiqueta }} <span aria-hidden="true">{{ indicadorOrden(c.orden) }}</span>
+                            </button>
+                            <template v-else>{{ c.etiqueta }}</template>
+                        </th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-if="!cargando && !filas.length">
+                        <td :colspan="columnas.length + 1" class="coord-cargando">No hay solicitudes con los criterios seleccionados.</td>
+                    </tr>
+                    <tr v-for="f in filas" :key="f.folio">
+                        <td class="numero">{{ f.folio }}</td>
+                        <td>
+                            <span v-if="f.zona">{{ f.zona }}</span>
+                            <span v-else class="coord-insignia sin-zona">Pendiente de clasificación</span>
+                        </td>
+                        <td>{{ f.nombre || '—' }}</td>
+                        <td>{{ f.institucion || '—' }}</td>
+                        <td>{{ f.facultad || '—' }}</td>
+                        <td>{{ f.tramite }}</td>
+                        <td>{{ f.certificacion || '—' }}</td>
+                        <td>{{ f.tipo_personal || '—' }}</td>
+                        <td>{{ f.area || '—' }}</td>
+                        <td>{{ f.certificado_historico || '—' }}</td>
+                        <td>{{ f.fecha_envio || '—' }}</td>
+                        <td>
+                            <span class="coord-insignia" :class="f.estado === 'enviado' ? 'enviado' : 'borrador'">
+                                {{ f.estado === 'enviado' ? 'Enviada' : 'Iniciada' }}
+                            </span>
+                        </td>
+                        <td><a :href="`${urlExpediente}/${f.folio}`" class="coord-boton secundario">Consultar</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div v-if="meta && meta.ultima_pagina > 1" class="coord-paginacion">
+            <span>Página {{ meta.pagina }} de {{ meta.ultima_pagina }}</span>
+            <div class="coord-paginacion-botones">
+                <button type="button" class="coord-boton secundario" :disabled="meta.pagina <= 1" @click="irA(meta.pagina - 1)">Anterior</button>
+                <button type="button" class="coord-boton secundario" :disabled="meta.pagina >= meta.ultima_pagina" @click="irA(meta.pagina + 1)">Siguiente</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.coord-resumen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.coord-nota {
+    font-size: 12px;
+    color: #777;
+    margin-left: auto;
+}
+</style>

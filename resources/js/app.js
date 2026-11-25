@@ -221,3 +221,17 @@ if (contenedorCoordinacionInicio) {
         urlExpediente: contenedorCoordinacionInicio.dataset.urlExpediente
     }).mount(contenedorCoordinacionInicio);
 }
+
+
+// MÓDULO DE COORDINACIÓN: BANDEJA DE SOLICITUDES
+import BandejaSolicitudes from './components/BandejaSolicitudes.vue';
+
+const contenedorBandeja = document.getElementById('vue-coordinacion-bandeja');
+
+if (contenedorBandeja) {
+    createApp(BandejaSolicitudes, {
+        urlApi: contenedorBandeja.dataset.urlApi,
+        urlExpediente: contenedorBandeja.dataset.urlExpediente,
+        opciones: JSON.parse(contenedorBandeja.dataset.opciones || '{}')
+    }).mount(contenedorBandeja);
+}
