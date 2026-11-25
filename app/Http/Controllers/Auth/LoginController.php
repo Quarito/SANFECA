@@ -31,6 +31,11 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
+        // Perfiles administrativos: módulo de coordinación (nunca el flujo de solicitantes).
+        if ($request->user()->esCoordinador()) {
+            return redirect()->route('coordinacion.inicio');
+        }
+
         // Priorizar cualquier solicitud pendiente del usuario.
         $tieneBorrador = \App\Models\SolicitudCertificacion::query()
             ->where('user_id', $request->user()->id)

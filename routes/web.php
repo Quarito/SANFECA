@@ -22,6 +22,11 @@ Route::get('/', function () {
         return redirect()->route('login');
     }
 
+    // Perfiles administrativos: módulo de coordinación.
+    if (auth()->user()->esCoordinador()) {
+        return redirect()->route('coordinacion.inicio');
+    }
+
     $userId = auth()->id();
 
     $tieneBorrador = \App\Models\SolicitudCertificacion::query()
@@ -93,7 +98,7 @@ Route::get('/panel', [
     PanelController::class,
     'index'
 ])
-->middleware('auth')
+->middleware(['auth', 'solo.solicitantes'])
 ->name('panel');
 
 /*
@@ -103,7 +108,7 @@ Route::get('/panel', [
 | Exclusivo para usuarios autenticados.
 */
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'solo.solicitantes'])->group(function () {
 
     Route::get('/mis-datos', [
         DatosSolicitanteController::class,
@@ -119,7 +124,7 @@ Route::middleware('auth')->group(function () {
 
 // Autorizar datos personales del solicitante
 Route::post('/mis-datos/autorizar', [DatosSolicitanteController::class, 'autorizar'])
-    ->middleware('auth')
+    ->middleware(['auth', 'solo.solicitantes'])
     ->name('mis-datos.autorizar');
 
 /*
@@ -142,12 +147,12 @@ Route::redirect('/registro', '/registro/datos-personales')
 Route::get('/registro/datos-personales', [
     DatosSolicitanteController::class,
     'create'
-])->name('registro.datos');
+])->middleware('solo.solicitantes')->name('registro.datos');
 
 Route::post('/registro/datos-personales', [
     DatosSolicitanteController::class,
     'store'
-])->name('registro.datos.guardar');
+])->middleware('solo.solicitantes')->name('registro.datos.guardar');
 
 /*
 |--------------------------------------------------------------------------
@@ -205,7 +210,7 @@ Route::get('/guia', function () {
 | Todas las siguientes pantallas requieren sesión iniciada.
 */
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'solo.solicitantes'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -344,6 +349,22 @@ Route::post('/registro/certificacion/consultar', [
 });
 
 }); // Fin de rutas protegidas por autorización de datos
+/*
+|--------------------------------------------------------------------------
+| MÓDULO DE COORDINACIÓN DE CERTIFICACIÓN ACADÉMICA
+|--------------------------------------------------------------------------
+| Solo cuentas con users.rol de coordinación (middleware 'coordinacion').
+| El alcance por zona se resuelve SIEMPRE en el servidor (AlcanceZona).
+*/
+
+Route::middleware(['auth', 'coordinacion'])
+    ->prefix('coordinacion')
+    ->name('coordinacion.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Coordinacion\InicioController::class, 'index'])
+            ->name('inicio');
+    });
+
 /*
 |--------------------------------------------------------------------------
 | Vistas previas ANFECA - SOLO DESARROLLO

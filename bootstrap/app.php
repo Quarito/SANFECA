@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
 	 $middleware->alias([
         'datos.autorizados' => \App\Http\Middleware\VerificarDatosAutorizados::class,
+        // Módulo de coordinación: separación estricta de perfiles.
+        'coordinacion' => \App\Http\Middleware\AccesoCoordinacion::class,
+        'solo.solicitantes' => \App\Http\Middleware\SoloSolicitantes::class,
     ]);
         // F4/F5: en modo principal/exclusivo la petición opera sobre las vistas anfeca_compat.
         $middleware->append(\App\Http\Middleware\AplicarModoPdm::class);
