@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Fase 6.3.1 (PREPARACIÓN): prueba la migración PROPUESTA de revisiones_documentales en PostgreSQL.
+    SOLO contra la base DESECHABLE bd_anfeca_desechable_pruebas_pg (pod de Podman sin red).
+    La prueba se niega a ejecutarse con cualquier otro nombre de base. Nunca use la base del ambiente 8086.
+    Usuario, contraseña, host y puerto se pasan por el entorno; no se escriben aquí.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="RevisionDocumentalPg">
+            <file>tests/Feature/RevisionesDocumentalesEsquemaTest.php</file>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="DB_CONNECTION" value="pgsql" force="true"/>
+        <env name="DB_DATABASE" value="bd_anfeca_desechable_pruebas_pg" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="ANFECA_PDM_MODO" value="apagado" force="true"/>
+    </php>
+</phpunit>
