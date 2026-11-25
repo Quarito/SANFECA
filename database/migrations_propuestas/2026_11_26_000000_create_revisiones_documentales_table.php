@@ -18,6 +18,15 @@
 |
 | La definición de PostgreSQL es la normativa. La de SQLite es su equivalente para las
 | pruebas automáticas en memoria.
+|
+| Límites homologados: observaciones de 10 a 1000 caracteres en resultados desfavorables
+| (opcionales en «validado»); motivo_cambio de 10 a 1000 e independiente de las observaciones.
+|
+| ALCANCE DE LA PROTECCIÓN: los disparadores y restricciones impiden modificar o borrar el historial
+| mediante operaciones ordinarias, incluso al rol propietario de la aplicación. Un propietario del
+| esquema o un superusuario puede, de forma deliberada, desactivar disparadores
+| (ALTER TABLE ... DISABLE TRIGGER) o eliminar restricciones. Eso no es una operación administrativa
+| ordinaria; se mitiga con respaldos, auditoría de DDL y, en el futuro, con roles separados.
 */
 
 use Illuminate\Database\Migrations\Migration;
@@ -118,7 +127,7 @@ return new class extends Migration
                 CONSTRAINT rd_bytes_ck CHECK (version_bytes IS NULL OR version_bytes >= 0),
                 CONSTRAINT rd_validado_requiere_archivo_ck CHECK (resultado <> 'validado' OR archivo_estado = 'cargado'),
                 CONSTRAINT rd_observaciones_ck CHECK (resultado = 'validado' OR char_length(btrim(coalesce(observaciones, ''))) >= 10),
-                CONSTRAINT rd_observaciones_largo_ck CHECK (observaciones IS NULL OR char_length(observaciones) <= 2000),
+                CONSTRAINT rd_observaciones_largo_ck CHECK (observaciones IS NULL OR char_length(observaciones) <= 1000),
                 CONSTRAINT rd_motivo_ck CHECK (motivo_cambio IS NULL OR char_length(btrim(motivo_cambio)) BETWEEN 10 AND 1000),
                 CONSTRAINT rd_motivo_solo_con_anterior_ck CHECK (revision_anterior_id IS NOT NULL OR motivo_cambio IS NULL),
                 CONSTRAINT rd_rol_ck CHECK (coordinador_rol IN ('coordinador_nacional', 'coordinador_zona')),
@@ -142,7 +151,7 @@ return new class extends Migration
             CREATE INDEX rd_coordinador_idx ON public.revisiones_documentales (coordinador_id, revisado_en DESC);
 
             -- Validaciones entre filas y con otras tablas; la fecha la fija el servidor de base de datos.
-            CREATE FUNCTION public.rd_validar_insercion() RETURNS trigger
+            CREATE OR REPLACE FUNCTION public.rd_validar_insercion() RETURNS trigger
                 LANGUAGE plpgsql AS \$fn\$
             DECLARE
                 v_estado varchar;
@@ -179,7 +188,7 @@ return new class extends Migration
             END
             \$fn\$;
 
-            CREATE FUNCTION public.rd_impedir_modificacion() RETURNS trigger
+            CREATE OR REPLACE FUNCTION public.rd_impedir_modificacion() RETURNS trigger
                 LANGUAGE plpgsql AS \$fn\$
             BEGIN
                 RAISE EXCEPTION 'revisiones_documentales es un historial de solo inserción (% no permitido)', TG_OP
@@ -221,7 +230,7 @@ return new class extends Migration
                 version_sha256        char(64) CHECK (version_sha256 IS NULL OR (length(version_sha256) = 64 AND version_sha256 NOT GLOB '*[^0-9a-f]*')),
                 version_bytes         integer CHECK (version_bytes IS NULL OR version_bytes >= 0),
                 resultado             varchar(20) NOT NULL CHECK (resultado IN ('validado', 'con_observaciones', 'no_valido')),
-                observaciones         text CHECK (observaciones IS NULL OR length(observaciones) <= 2000),
+                observaciones         text CHECK (observaciones IS NULL OR length(observaciones) <= 1000),
                 motivo_cambio         text CHECK (motivo_cambio IS NULL OR length(trim(motivo_cambio)) BETWEEN 10 AND 1000),
                 revision_anterior_id  integer REFERENCES revisiones_documentales (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
                 coordinador_id        integer NOT NULL REFERENCES users (id) ON UPDATE RESTRICT ON DELETE RESTRICT,

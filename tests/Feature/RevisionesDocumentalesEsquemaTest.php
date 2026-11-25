@@ -163,7 +163,7 @@ class RevisionesDocumentalesEsquemaTest extends TestCase
             $this->rechaza(['resultado' => $r], "{$r} sin observación");
             $this->rechaza(['resultado' => $r, 'observaciones' => '   corta  '], "{$r} con observación menor de 10 caracteres");
         }
-        $this->rechaza(['resultado' => 'no_valido', 'observaciones' => str_repeat('x', 2001)], 'observación mayor de 2000');
+        $this->rechaza(['resultado' => 'no_valido', 'observaciones' => str_repeat('x', 1001)], 'observación mayor de 1000');
         $this->insertar(['resultado' => 'no_valido', 'observaciones' => 'El comprobante no corresponde al periodo.']);
         $this->assertSame(1, DB::table('revisiones_documentales')->count());
     }
