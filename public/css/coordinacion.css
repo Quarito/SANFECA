@@ -73,7 +73,7 @@
 .coord-boton-salir:hover { background: rgba(255, 255, 255, 0.12); }
 
 /* Estructura */
-.coord-layout { flex: 1; display: grid; grid-template-columns: 220px 1fr; min-height: 0; }
+.coord-layout { flex: 1; display: grid; grid-template-columns: 250px 1fr; min-height: 0; }
 .coord-menu {
     background: var(--coord-blanco);
     border-right: 1px solid var(--coord-borde);
@@ -91,6 +91,7 @@
     color: var(--coord-texto);
     text-decoration: none;
     font-size: 14px;
+    white-space: nowrap;
 }
 .coord-menu-item:hover { background: var(--coord-rojo-suave); }
 .coord-menu-item.activo { background: var(--coord-rojo); color: var(--coord-blanco); font-weight: 600; }
@@ -99,10 +100,11 @@
 .coord-menu-icono { width: 18px; text-align: center; }
 .coord-etiqueta-pendiente {
     margin-left: auto;
-    font-size: 10px;
+    font-size: 9px;
     text-transform: uppercase;
-    letter-spacing: .04em;
-    padding: 1px 6px;
+    letter-spacing: .03em;
+    padding: 1px 5px;
+    flex-shrink: 0;
     border: 1px solid #d8d2d2;
     border-radius: 999px;
     color: #8a8a8a;
@@ -158,8 +160,8 @@
 
 /* Tablas */
 .coord-tabla-contenedor { overflow-x: auto; border: 1px solid var(--coord-borde); border-radius: var(--coord-radio); background: var(--coord-blanco); }
-.coord-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
-.coord-tabla th, .coord-tabla td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #eee7e7; vertical-align: top; }
+.coord-tabla { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.coord-tabla th, .coord-tabla td { padding: 7px 8px; text-align: left; border-bottom: 1px solid #eee7e7; vertical-align: top; }
 .coord-tabla th { background: #faf7f7; color: #4a4a4a; font-weight: 600; white-space: nowrap; position: sticky; top: 0; }
 .coord-tabla tbody tr:hover { background: #fdf9f9; }
 .coord-tabla .numero { text-align: right; }
@@ -234,3 +236,5 @@
     .coord-filtros .coord-filtro-busqueda { grid-column: auto; }
     .coord-encabezado, .coord-barra-usuario { padding-left: 16px; padding-right: 16px; }
 }
+
+.coord-tabla a:not(.coord-boton) { color: var(--coord-rojo); font-weight: 600; }

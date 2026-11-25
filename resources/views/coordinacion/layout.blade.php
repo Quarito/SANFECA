@@ -10,7 +10,7 @@
 
     <link rel="stylesheet" href="{{ asset('css/tipografia-global-anfeca.css') }}?v=97159">
     <link rel="stylesheet" href="{{ asset('css/anfeca-avisos.css') }}?v=1">
-    <link rel="stylesheet" href="{{ asset('css/coordinacion.css') }}?v=1">
+    <link rel="stylesheet" href="{{ asset('css/coordinacion.css') }}?v=3">
 </head>
 <body class="coord-body">
 <div class="coord-pagina">
