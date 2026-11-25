@@ -131,7 +131,10 @@ class SolicitudesController extends Controller
             ->pluck('total', 's.estado');
 
         return response()->json([
-            'datos' => collect($pagina->items())->map(fn ($r) => [
+            // «num»: consecutivo VISUAL (no es folio ni id). Continúa entre páginas y se
+            // recalcula con filtros, búsqueda y orden porque se deriva de la posición en el resultado.
+            'datos' => collect($pagina->items())->values()->map(fn ($r, $i) => [
+                'num' => $pagina->firstItem() + $i,
                 'folio' => $r->folio,
                 'zona' => $r->zona_siglas,
                 'nombre' => trim(implode(' ', array_filter([$r->nombres, $r->apellido_paterno, $r->apellido_materno]))) ?: null,
@@ -150,6 +153,8 @@ class SolicitudesController extends Controller
                 'pagina' => $pagina->currentPage(),
                 'ultima_pagina' => $pagina->lastPage(),
                 'por_pagina' => $pagina->perPage(),
+                'desde' => $pagina->firstItem(),
+                'hasta' => $pagina->lastItem(),
                 'por_estado' => [
                     'enviado' => (int) ($porEstado['enviado'] ?? 0),
                     'borrador' => (int) ($porEstado['borrador'] ?? 0),

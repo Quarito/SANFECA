@@ -158,6 +158,7 @@ onMounted(cargar);
 
         <div v-if="meta" class="coord-resumen" aria-live="polite">
             <span class="coord-insignia neutra">Resultados: {{ meta.total }}</span>
+            <span v-if="meta.total" class="coord-rango">Mostrando {{ meta.desde }}–{{ meta.hasta }} de {{ meta.total }}</span>
             <span class="coord-insignia enviado">Enviadas: {{ meta.por_estado.enviado }}</span>
             <span class="coord-insignia borrador">Iniciadas: {{ meta.por_estado.borrador }}</span>
             <span class="coord-nota">Participación: pendiente de definición · Calificación: fase 6.4 · Convocatoria: pendiente de validación</span>
@@ -169,6 +170,7 @@ onMounted(cargar);
             <table class="coord-tabla">
                 <thead>
                     <tr>
+                        <th scope="col" class="col-num" title="Consecutivo visual; no es el folio">Núm.</th>
                         <th v-for="c in columnas" :key="c.clave" scope="col" :class="c.clase"
                             :aria-sort="c.orden && orden.campo === c.orden ? (orden.direccion === 'asc' ? 'ascending' : 'descending') : undefined">
                             <button v-if="c.orden" type="button" class="coord-th-boton" @click="ordenar(c.orden)">
@@ -181,9 +183,10 @@ onMounted(cargar);
                 </thead>
                 <tbody>
                     <tr v-if="!cargando && !filas.length">
-                        <td :colspan="columnas.length + 1" class="coord-cargando">No hay solicitudes con los criterios seleccionados.</td>
+                        <td :colspan="columnas.length + 2" class="coord-cargando">No hay solicitudes con los criterios seleccionados.</td>
                     </tr>
                     <tr v-for="f in filas" :key="f.folio">
+                        <td class="col-num">{{ f.num }}</td>
                         <td class="numero col-folio">{{ f.folio }}</td>
                         <td class="col-zona">
                             <span v-if="f.zona">{{ f.zona }}</span>
@@ -226,6 +229,10 @@ onMounted(cargar);
     align-items: center;
     gap: 8px;
     margin-bottom: 10px;
+}
+.coord-rango {
+    font-size: 12px;
+    color: #555;
 }
 .coord-nota {
     font-size: 12px;

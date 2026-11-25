@@ -25,6 +25,8 @@ class CoordinacionTest extends TestCase
     private array $sol = [];
     private array $coord = [];
     private User $solicitante;
+    private \Closure $crear;
+    private array $inst = [];
 
     public function refreshDatabase(): void
     {
@@ -88,6 +90,8 @@ class CoordinacionTest extends TestCase
         $crear('SIN', $inst['SIN'], 'enviado', 'inicial');      // institución sin zona
         $crear('BORR', null, 'borrador', 'inicial');            // sin formación: zona indeterminable
         $crear('ZF3B', $inst['ZF3'], 'borrador', 'inicial');
+        $this->crear = $crear;
+        $this->inst = $inst;
 
         $this->solicitante = User::where('email', 'sol1@example.test')->firstOrFail();
 
@@ -306,6 +310,80 @@ class CoordinacionTest extends TestCase
         $this->assertSame($this->ids('ZF4', 'ZF6'), $this->folios($nac, ['tipo_tramite' => 'refrendo']));
         $this->assertSame($this->ids('ZF4'), $this->folios($nac, ['q' => 'cuatro']));
         $this->assertSame($this->ids('ZF3B'), $this->folios($nac, ['estado' => 'borrador', 'institucion' => DB::table('instituciones_afiliadas')->where('numero_afiliacion', 'I3')->value('id')]));
+    }
+
+    // ------------------------------------------------- numeración consecutiva
+
+    public function test_numeracion_consecutiva_continua_entre_paginas_y_con_filtros(): void
+    {
+        // 6 de base + 15 adicionales en la zona 3 = 21 registros (3 páginas de 10).
+        for ($k = 1; $k <= 15; $k++) {
+            ($this->crear)("EXTRA{$k}", $this->inst['ZF3'], 'enviado', 'inicial');
+        }
+        $nac = $this->coord['nacional'];
+        $pag = fn (int $p, array $extra = []) => $this->bandeja($nac, ['por_pagina' => 10, 'pagina' => $p, 'orden' => 'folio', 'direccion' => 'asc'] + $extra);
+
+        $p1 = $pag(1); $p2 = $pag(2); $p3 = $pag(3);
+        $this->assertSame(range(1, 10), array_column($p1['datos'], 'num'));
+        $this->assertSame(range(11, 20), array_column($p2['datos'], 'num'));
+        $this->assertSame([21], array_column($p3['datos'], 'num'));
+        $this->assertSame([11, 20, 21], [$p2['meta']['desde'], $p2['meta']['hasta'], $p2['meta']['total']]);
+
+        // Independiente del folio: el consecutivo no coincide con el id y no cambia al invertir el orden.
+        $todos = array_merge($p1['datos'], $p2['datos'], $p3['datos']);
+        $this->assertSame(range(1, 21), array_column($todos, 'num'));
+        $desc = $this->bandeja($nac, ['por_pagina' => 10, 'orden' => 'folio', 'direccion' => 'desc']);
+        $this->assertSame(range(1, 10), array_column($desc['datos'], 'num'));
+        $this->assertSame(max(array_column($todos, 'folio')), $desc['datos'][0]['folio']);
+        $this->assertNotSame(array_column($desc['datos'], 'folio'), array_column($desc['datos'], 'num'));
+
+        // Se recalcula con búsqueda y filtros: siempre inicia en 1 y es consecutivo.
+        foreach ([['q' => 'cuatro'], ['tipo_tramite' => 'refrendo'], ['estado' => 'borrador'], ['zona' => 'sin_zona']] as $filtro) {
+            $d = $this->bandeja($nac, $filtro)['datos'];
+            $this->assertSame(range(1, count($d)), array_column($d, 'num'), json_encode($filtro));
+        }
+
+        // Respeta el alcance: la zona 4 solo ve su registro, numerado como 1.
+        $z4 = $this->bandeja($this->coord['z4'])['datos'];
+        $this->assertSame([1], array_column($z4, 'num'));
+        $this->assertSame($this->ids('ZF4'), array_column($z4, 'folio'));
+        // Zona 3: 2 de base + 15 adicionales.
+        $this->assertSame(range(1, 17), array_column($this->bandeja($this->coord['z3'])['datos'], 'num'));
+        $this->assertSame([], $this->bandeja($this->coord['sin'])['datos']);
+
+        // Página fuera de rango: sin filas ni números.
+        $vacia = $pag(9);
+        $this->assertSame([], $vacia['datos']);
+        $this->assertNull($vacia['meta']['desde']);
+
+        // Sin columnas nuevas en la base para este propósito.
+        $this->assertFalse(\Illuminate\Support\Facades\Schema::hasColumn('solicitudes_certificacion', 'num'));
+    }
+
+    public function test_numeracion_en_solicitudes_recientes_del_tablero(): void
+    {
+        $rec = $this->actingAs($this->coord['nacional'])->getJson('/coordinacion/api/indicadores')->assertOk()->json('recientes');
+        $this->assertSame(range(1, count($rec)), array_column($rec, 'num'));
+        $this->assertCount(5, $rec);
+        $z4 = $this->actingAs($this->coord['z4'])->getJson('/coordinacion/api/indicadores')->assertOk()->json('recientes');
+        $this->assertSame([1], array_column($z4, 'num'));
+    }
+
+    public function test_columna_num_es_primera_compacta_y_no_ordenable_en_las_tablas(): void
+    {
+        $vue = [
+            'BandejaSolicitudes' => file_get_contents(resource_path('js/components/BandejaSolicitudes.vue')),
+            'CoordinacionInicio' => file_get_contents(resource_path('js/components/CoordinacionInicio.vue')),
+        ];
+        foreach ($vue as $nombre => $fuente) {
+            // La primera celda de encabezado de cada tabla es «Núm.» y no lleva botón de orden.
+            $this->assertMatchesRegularExpression('#<thead>\s*<tr>\s*<th scope="col" class="col-num"[^>]*>Núm\.</th>#', $fuente, $nombre);
+            $this->assertMatchesRegularExpression('#<td class="col-num">\{\{ \w+\.num \}\}</td>#', $fuente, $nombre);
+        }
+        // «num» no es un criterio de ordenamiento aceptado por la API.
+        $this->actingAs($this->coord['nacional'])->getJson('/coordinacion/api/solicitudes?orden=num')->assertStatus(422);
+        $css = file_get_contents(public_path('css/coordinacion.css'));
+        $this->assertStringContainsString('.coord-tabla td.col-num', $css);
     }
 
     // ------------------------------------------------------------- integridad

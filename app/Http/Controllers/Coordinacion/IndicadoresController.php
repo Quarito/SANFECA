@@ -95,7 +95,9 @@ class IndicadoresController extends Controller
                 ->orderByDesc('s.id')
                 ->limit(5)
                 ->get()
-                ->map(fn ($r) => [
+                ->values()
+                ->map(fn ($r, $i) => [
+                    'num' => $i + 1, // consecutivo visual, independiente del folio
                     'folio' => $r->folio,
                     'estado' => $r->estado,
                     'tramite' => $r->tipo_tramite === 'refrendo' ? 'Refrendo' : 'Primera vez',

@@ -110,6 +110,7 @@ onMounted(cargar);
                     <table class="coord-tabla">
                         <thead>
                             <tr>
+                                <th scope="col" class="col-num" title="Consecutivo visual; no es el folio">Núm.</th>
                                 <th scope="col">Folio</th>
                                 <th scope="col">Zona</th>
                                 <th scope="col">Institución</th>
@@ -121,6 +122,7 @@ onMounted(cargar);
                         </thead>
                         <tbody>
                             <tr v-for="r in datos.recientes" :key="r.folio">
+                                <td class="col-num">{{ r.num }}</td>
                                 <td><a :href="`${urlExpediente}/${r.folio}`">{{ r.folio }}</a></td>
                                 <td>
                                     <span v-if="r.zona">{{ r.zona }}</span>

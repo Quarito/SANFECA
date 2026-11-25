@@ -305,3 +305,17 @@ a.coord-menu-item:hover { background: var(--coord-rosa); border-color: #dbaeb3; 
     .coord-filtros .coord-filtro-busqueda { grid-column: auto; }
     .coord-barra-usuario { margin: 8px 12px; }
 }
+
+/* ===== Numeración consecutiva visual (estándar UI/UX) ===== */
+/* Primera columna «Núm.»: compacta, centrada, no ordenable; no es folio ni id. */
+.coord-tabla th.col-num,
+.coord-tabla td.col-num {
+    width: 1%;
+    min-width: 44px;
+    padding-left: 6px;
+    padding-right: 6px;
+    text-align: center;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: #666;
+}
