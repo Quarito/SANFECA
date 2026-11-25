@@ -11,6 +11,7 @@
 
 - **6.1 Acceso y seguridad:** implementada y probada.
 - **6.2 Dashboard y bandeja:** implementada y probada, con datos reales de PostgreSQL.
+- **Homologación visual (2026-11-25):** layout administrativo común con el encabezado, el pie, la barra de usuario y las hojas institucionales del módulo de solicitantes. La consulta de solicitud tiene dos fichas y una cuadrícula de documentos. Ver `ARQUITECTURA_Y_SEGURIDAD.md` §1.1.
 - **Pendientes de datos:** el catálogo oficial de zonas, la asignación de `zona_id` a las instituciones y la asignación de zonas a los coordinadores.
 - **Fases 6.3 a 6.8:** no implementadas. Las opciones del menú aparecen como «Pendiente».
 

@@ -21,6 +21,46 @@ la bandeja y ninguna vista puede ampliar el alcance de otra.
 
 El PDM sigue apagado y no se crearon tablas ni columnas.
 
+## 1.1 Layout administrativo común (homologado con el módulo de solicitantes)
+
+Todas las vistas administrativas, actuales y futuras, extienden `resources/views/coordinacion/layout.blade.php`:
+
+| Pieza | Origen |
+|---|---|
+| Encabezado institucional | `components/anfeca/encabezado-institucional.blade.php`: mismo marcado y textos que las pantallas de solicitantes |
+| Pie de página institucional | `components/anfeca/pie-institucional.blade.php`: mismos textos («Hecho en México», D.R., aviso y administración del sitio) |
+| Barra de usuario | `coordinacion/partials/barra-usuario.blade.php`: clases `barra-usuario barra-usuario-certificacion`, más rol y alcance |
+| Menú lateral | `coordinacion/partials/menu.blade.php` (con `config/anfeca_coordinacion.php`) |
+| Hojas institucionales | `certificacion.css`, `barra-usuario-certificacion.css`, `tipografia-global-anfeca.css`, `anfeca-layout-compacto*.css`, `anfeca-avisos.css`, `anfeca-compacto-v4.css` (mismo orden que en solicitantes) |
+| Estilos propios | `public/css/coordinacion.css`, con la paleta de `panel-certificacion.css` (`--anfeca-*`) |
+
+Las vistas nuevas solo deben extender el layout y definir `@section('titulo')` y `@section('contenido')`.
+También admiten `@push('estilos')` y `@push('scripts')`.
+
+Distribución responsiva. Se usan *container queries* sobre el área de contenido, así que la distribución depende del espacio real y no del ancho de la ventana:
+
+| Elemento | Amplio (≥ 1100 px) | Intermedio (≥ 700 px) | Tableta (≥ 340 px) | Móvil |
+|---|---|---|---|---|
+| Tarjetas del dashboard (6) | 6 columnas | 3 × 2 | 2 × 3 | 1 |
+| Paneles de distribución (4) | 4 columnas | 2 × 2 (desde 640 px) | 1 | 1 |
+| Fichas de la consulta | 60 % + 40 % | 60 % + 40 % (más de 820 px) | Apiladas: primero el solicitante | Apiladas |
+| Documentos | Grupos de 6: 3 columnas con 2 documentos | 2 columnas (hasta 900 px), en pares | 2 columnas | 1 (hasta 560 px) |
+
+Nunca se muestran 5 + 1 tarjetas ni 3 + 1 paneles.
+
+Consulta de solicitud:
+- **Ficha del solicitante (≈ 60 %):** datos del solicitante y formación académica en la misma tarjeta, separados por un divisor.
+- **Datos de solicitud (≈ 40 %).**
+- Ambas fichas se alinean arriba y su altura se ajusta al contenido.
+
+Cuadrícula de documentos:
+- Se muestran los documentos aplicables al trámite. Los de artículo 13/14 solo aparecen en refrendos con `aplica_articulo_14`, con el mismo criterio que la pantalla de solicitantes. Los que no aplican se listan como «No aplica».
+- Estados de **carga** (no de validación):
+  - «Cargado»;
+  - «No cargado»;
+  - «Registrado, archivo no localizado».
+- Cada tarjeta reserva el espacio «Revisión documental: pendiente (fase 6.3)», sin acciones.
+
 ## 2. Roles y permisos (`users.rol`)
 
 | Operación | `coordinador_nacional` | `coordinador_zona` | `solicitante` | Invitado |
