@@ -77,11 +77,18 @@ class ExpedienteController extends Controller
             ];
         }
 
+        // Principales (formación y probatorios comunes) y adicionales del artículo 13/14.
+        [$adicionales, $principales] = collect($documentos)
+            ->partition(fn ($d) => str_contains($d['campo'], 'articulo_14'))
+            ->map(fn ($c) => $c->values()->all())
+            ->all();
+
         return view('coordinacion.expediente', [
             'detalle' => $detalle,
             'refrendo' => $refrendo,
             'aplicaArticulo' => $aplicaArticulo,
-            'documentos' => $documentos,
+            'principales' => $principales,
+            'adicionales' => $adicionales,
             'noAplican' => $noAplican,
         ]);
     }

@@ -6,27 +6,21 @@
     $nombre = trim(collect([$detalle->nombres, $detalle->apellido_paterno, $detalle->apellido_materno])->filter()->implode(' '));
     $fecha = fn ($v) => $v ? \Illuminate\Support\Carbon::parse($v)->timezone('America/Mexico_City')->format('d/m/Y H:i') : '—';
     $titulo = fn ($t, $otro) => $t === 'Otro' && filled($otro) ? $otro : ($t ?: '—');
-    $estadoDocumento = [
-        'cargado' => 'Cargado',
-        'no-cargado' => 'No cargado',
-        'no-localizado' => 'Registrado, archivo no localizado',
-    ];
-    // Cuadrícula: grupos de 6 documentos → 3 columnas con 2 documentos cada una (columna por columna).
-    $grupos = collect($documentos)->chunk(6)->map(fn ($g) => $g->values()->chunk(2));
+    // Cuadrícula principal: grupos de 6 → 3 columnas con 2 documentos cada una (columna por columna).
+    $grupos = collect($principales)->chunk(6)->map(fn ($g) => $g->values()->chunk(2));
 @endphp
 
 @section('contenido')
-    <div class="coord-titulo-seccion">
-        <h1>Solicitud {{ $detalle->folio }}</h1>
-        <p>Consulta de la solicitud (solo lectura). La revisión documental corresponde a la fase 6.3.</p>
+    <div class="coord-titulo-seccion coord-titulo-compacto">
+        <div>
+            <h1>Solicitud {{ $detalle->folio }}</h1>
+            <p>Consulta de la solicitud (solo lectura).</p>
+        </div>
+        <a href="{{ route('coordinacion.solicitudes') }}" class="coord-boton secundario">← Volver a Solicitudes</a>
     </div>
 
-    <p style="margin: 0 0 14px;">
-        <a href="{{ route('coordinacion.solicitudes') }}" class="coord-boton secundario">← Volver a Solicitudes</a>
-    </p>
-
     <div class="coord-fichas">
-        {{-- Ficha izquierda (≈60 %): solicitante + formación académica en una sola tarjeta --}}
+        {{-- Ficha izquierda (50 %): solicitante + formación académica en una sola tarjeta --}}
         <section class="coord-panel coord-ficha coord-ficha-solicitante" aria-labelledby="ficha-solicitante">
             <h2 id="ficha-solicitante">Ficha del solicitante</h2>
 
@@ -59,7 +53,7 @@
             </dl>
         </section>
 
-        {{-- Ficha derecha (≈40 %): datos de la solicitud --}}
+        {{-- Ficha derecha (50 %): datos de la solicitud --}}
         <section class="coord-panel coord-ficha coord-ficha-solicitud" aria-labelledby="ficha-solicitud">
             <h2 id="ficha-solicitud">Datos de solicitud</h2>
             <dl class="coord-datos">
@@ -82,38 +76,34 @@
         </section>
     </div>
 
-    <section class="coord-panel" aria-labelledby="titulo-documentos">
-        <h2 id="titulo-documentos">Documentos</h2>
+    <section class="coord-panel coord-panel-documentos" aria-labelledby="titulo-documentos">
+        <div class="coord-documentos-encabezado">
+            <h2 id="titulo-documentos">Documentos</h2>
+            {{-- Una sola leyenda para toda la sección: el estado mostrado es de CARGA, no de revisión. --}}
+            <p class="coord-documentos-leyenda">Estado de carga. Revisión documental: pendiente (fase 6.3).</p>
+        </div>
 
         @foreach ($grupos as $grupo)
             <div class="coord-documentos-grupo">
                 @foreach ($grupo as $columna)
                     <div class="coord-documentos-columna">
                         @foreach ($columna as $doc)
-                            <article class="coord-documento {{ $doc['estado'] }}" data-documento="{{ $doc['campo'] }}">
-                                <span class="coord-documento-icono" aria-hidden="true">📄</span>
-                                <div>
-                                    <div class="coord-documento-nombre">{{ $doc['etiqueta'] }}</div>
-                                    <div class="coord-documento-estado">
-                                        <span class="coord-insignia {{ $doc['estado'] }}">{{ $estadoDocumento[$doc['estado']] }}</span>
-                                    </div>
-                                </div>
-                                @if ($doc['estado'] === 'cargado')
-                                    <a href="{{ route('coordinacion.solicitudes.documento', [$detalle->folio, $doc['campo']]) }}"
-                                       class="coord-boton secundario pequeno" target="_blank" rel="noopener"
-                                       aria-label="Ver {{ $doc['etiqueta'] }}">Ver</a>
-                                @else
-                                    <span class="coord-boton secundario pequeno" aria-disabled="true">Ver</span>
-                                @endif
-                                {{-- Espacio reservado para la revisión documental (fase 6.3): sin acciones todavía. --}}
-                                <div class="coord-documento-revision">Revisión documental: pendiente (fase 6.3)</div>
-                            </article>
+                            @include('coordinacion.partials.documento', ['doc' => $doc, 'folio' => $detalle->folio])
                         @endforeach
                     </div>
                 @endforeach
             </div>
         @endforeach
 
+        <h3 class="coord-documentos-subtitulo">Documentos adicionales — Artículo 13/14</h3>
+        @if ($adicionales !== [])
+            {{-- Distribución horizontal adaptable a la cantidad real (máximo 3 por fila). --}}
+            <div class="coord-documentos-adicionales" style="--columnas: {{ min(count($adicionales), 3) }}">
+                @foreach ($adicionales as $doc)
+                    @include('coordinacion.partials.documento', ['doc' => $doc, 'folio' => $detalle->folio])
+                @endforeach
+            </div>
+        @endif
         @if ($noAplican !== [])
             <p class="coord-documentos-no-aplican">
                 <span class="coord-insignia no-aplica">No aplica</span>

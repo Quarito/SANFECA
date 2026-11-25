@@ -426,6 +426,9 @@ class CoordinacionTest extends TestCase
         $this->assertStringContainsString('coord-documento cargado', $html);
         $this->assertStringContainsString('coord-documento no-cargado', $html);
         $this->assertStringNotContainsString('Validado', $html, 'Cargado no equivale a validado.');
+        // 6.2.4: fichas 50/50 y leyenda de revisión una sola vez para toda la sección.
+        $this->assertSame(1, substr_count($html, 'Revisión documental: pendiente (fase 6.3)'));
+        $this->assertStringNotContainsString('class="coord-documentos-adicionales"', $html, 'Primera vez: sin adicionales aplicables.');
         $this->assertStringContainsString('No aplica', $html, 'Los documentos de artículo 13/14 no aplican a primera vez.');
         $this->assertStringContainsString("/coordinacion/solicitudes/{$this->sol['ZF3']}/documentos/titulo_origen_archivo", $html);
         $this->assertStringNotContainsString("/documentos/cedula_origen_archivo\"", $html, 'Sin enlace para documentos no cargados.');
@@ -440,7 +443,9 @@ class CoordinacionTest extends TestCase
         DB::table('documentos_probatorios_solicitud')->where('solicitud_id', $id)->update(['solicitud_articulo_14_archivo' => $ruta]);
 
         $html = $this->actingAs($this->coord['z4'])->get("/coordinacion/solicitudes/{$id}")->assertOk()->getContent();
-        $this->assertSame(2, substr_count($html, 'class="coord-documentos-grupo"'), '8 documentos: 6 + 2.');
+        $this->assertSame(1, substr_count($html, 'class="coord-documentos-grupo"'), 'Los 6 principales en un grupo.');
+        $this->assertStringContainsString('Documentos adicionales — Artículo 13/14', $html);
+        $this->assertStringContainsString('class="coord-documentos-adicionales" style="--columnas: 2"', $html, 'Dos adicionales en dos columnas.');
         $this->assertStringContainsString('data-documento="solicitud_articulo_14_archivo"', $html);
         $this->assertStringContainsString('data-documento="constancia_articulo_14_archivo"', $html);
         $this->assertStringContainsString('Sí, inciso 14.1', $html);
