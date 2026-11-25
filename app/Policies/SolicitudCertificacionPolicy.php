@@ -21,6 +21,12 @@ class SolicitudCertificacionPolicy
         return $usuario->esCoordinador() && $this->consulta->permite($usuario, (int) $solicitud->id);
     }
 
+    /** Revisión documental: mismo alcance que la consulta (el estado «enviado» lo valida el servicio → 409). */
+    public function revisarDocumentoComoCoordinacion(User $usuario, SolicitudCertificacion $solicitud): bool
+    {
+        return $this->consultarComoCoordinacion($usuario, $solicitud);
+    }
+
     public function descargarDocumentoComoCoordinacion(User $usuario, SolicitudCertificacion $solicitud): bool
     {
         return $this->consultarComoCoordinacion($usuario, $solicitud);

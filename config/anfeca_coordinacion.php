@@ -14,6 +14,14 @@ return [
     // Desactivados por omisión: solo se habilitan en entornos de demostración desechables.
     'prototipos' => (bool) env('ANFECA_COORDINACION_PROTOTIPOS', false),
 
+    // Revisión documental funcional (fase 6.3.1). DESACTIVADA por omisión: requiere la tabla
+    // revisiones_documentales, cuya migración sigue en database/migrations_propuestas (no aplicada en 8086).
+    'revision_documental' => (bool) env('ANFECA_COORDINACION_REVISION', false),
+
+    // Límite homologado de observaciones y motivo de cambio (Vue, Laravel, PostgreSQL y PDM futuro).
+    'revision_texto_maximo' => 1000,
+    'revision_texto_minimo' => 10,
+
     'menu' => [
         ['clave' => 'inicio', 'etiqueta' => 'Inicio', 'ruta' => 'coordinacion.inicio', 'icono' => '⌂'],
         ['clave' => 'solicitudes', 'etiqueta' => 'Solicitudes', 'ruta' => 'coordinacion.solicitudes', 'icono' => '☰'],

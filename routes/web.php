@@ -379,6 +379,15 @@ Route::middleware(['auth', 'coordinacion'])
             ->whereNumber('solicitud')->name('solicitudes.ver');
         Route::get('/solicitudes/{solicitud}/documentos/{campo}', [\App\Http\Controllers\Coordinacion\ExpedienteController::class, 'documento'])
             ->whereNumber('solicitud')->where('campo', '[a-z0-9_]+')->name('solicitudes.documento');
+
+        // Revisión documental (fase 6.3.1): 404 salvo ANFECA_COORDINACION_REVISION=true.
+        // Solo GET y POST (inserción): no existen rutas de actualización ni eliminación del historial.
+        Route::get('/solicitudes/{solicitud}/revision', [\App\Http\Controllers\Coordinacion\RevisionDocumentalController::class, 'resumen'])
+            ->whereNumber('solicitud')->name('solicitudes.revision');
+        Route::get('/solicitudes/{solicitud}/documentos/{campo}/revisiones', [\App\Http\Controllers\Coordinacion\RevisionDocumentalController::class, 'historial'])
+            ->whereNumber('solicitud')->where('campo', '[a-z0-9_]+')->name('solicitudes.revisiones');
+        Route::post('/solicitudes/{solicitud}/documentos/{campo}/revisiones', [\App\Http\Controllers\Coordinacion\RevisionDocumentalController::class, 'registrar'])
+            ->whereNumber('solicitud')->where('campo', '[a-z0-9_]+')->middleware('throttle:30,1')->name('solicitudes.revisiones.registrar');
     });
 
 /*

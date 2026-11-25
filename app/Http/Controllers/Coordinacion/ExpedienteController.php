@@ -5,31 +5,28 @@ namespace App\Http\Controllers\Coordinacion;
 use App\Http\Controllers\Controller;
 use App\Models\SolicitudCertificacion;
 use App\Services\Coordinacion\ConsultaSolicitudes;
+use App\Services\Coordinacion\DocumentosAplicables;
+use App\Services\Coordinacion\RevisionDocumental;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Consulta básica (solo lectura) del expediente desde la coordinación.
+ * Consulta del expediente desde la coordinación (solo lectura de la solicitud y sus documentos).
  * Fuera de alcance o inexistente → 404 (no revela si el registro existe).
- * No hay operaciones de escritura sobre la solicitud.
+ * Con ANFECA_COORDINACION_REVISION=true añade el estado de revisión documental (fase 6.3.1).
  */
 class ExpedienteController extends Controller
 {
-    /** Documentos permitidos: campo => [origen, etiqueta]. */
-    public const DOCUMENTOS = [
-        'titulo_origen_archivo' => ['formacion', 'Título de licenciatura'],
-        'cedula_origen_archivo' => ['formacion', 'Cédula de licenciatura'],
-        'titulo_ultimo_grado_archivo' => ['formacion', 'Título del último grado'],
-        'cedula_ultimo_grado_archivo' => ['formacion', 'Cédula del último grado'],
-        'constancia_antiguedad_archivo' => ['probatorios', 'Constancia de antigüedad'],
-        'comprobante_pago_archivo' => ['probatorios', 'Comprobante de pago'],
-        'solicitud_articulo_14_archivo' => ['probatorios', 'Solicitud por artículo'],
-        'constancia_articulo_14_archivo' => ['probatorios', 'Constancia probatoria de artículo'],
-    ];
+    /** Documentos permitidos: campo => [origen, etiqueta]. Definición única en DocumentosAplicables. */
+    public const DOCUMENTOS = DocumentosAplicables::DOCUMENTOS;
 
-    public function __construct(private readonly ConsultaSolicitudes $consulta)
-    {
+    private const ETIQUETA_CARGA = ['cargado' => 'cargado', 'no_cargado' => 'no-cargado', 'no_localizado' => 'no-localizado'];
+
+    public function __construct(
+        private readonly ConsultaSolicitudes $consulta,
+        private readonly DocumentosAplicables $documentos,
+    ) {
     }
 
     private function solicitudAutorizada(Request $request, int $id, string $habilidad): SolicitudCertificacion
@@ -50,86 +47,73 @@ class ExpedienteController extends Controller
         $detalle = $this->consulta->detalle($request->user(), $modelo->id);
         abort_if($detalle === null, 404);
 
-        $refrendo = $modelo->datosRefrendo;
-        $aplicaArticulo = $this->aplicaArticulo13o14($modelo);
+        $revisionActiva = config('anfeca_coordinacion.revision_documental') === true;
+        $revision = $revisionActiva ? app(RevisionDocumental::class)->resumen($modelo) : null;
+        $aplicaArticulo = $this->documentos->aplicaArticulo13o14($modelo);
 
         // Documentos aplicables al trámite (orden de la cuadrícula) y los que no aplican.
-        // Estado de CARGA únicamente: la validación documental es una fase posterior.
         $documentos = [];
         $noAplican = [];
-        foreach (self::DOCUMENTOS as $campo => [$origen, $etiqueta]) {
-            $ruta = $this->ruta($modelo, $campo);
-            $esArticulo = str_contains($campo, 'articulo_14');
+        foreach (self::DOCUMENTOS as $campo => [, $etiqueta]) {
+            $ruta = $this->documentos->ruta($modelo, $campo);
 
-            if ($esArticulo && !$aplicaArticulo && $ruta === null) {
+            if (DocumentosAplicables::esArticulo($campo) && !$aplicaArticulo && $ruta === null) {
                 $noAplican[] = $etiqueta;
                 continue;
             }
 
-            $documentos[] = [
+            $doc = [
                 'campo' => $campo,
                 'etiqueta' => $etiqueta,
-                'estado' => match (true) {
-                    $ruta === null => 'no-cargado',
-                    Storage::disk('local')->exists($ruta) => 'cargado',
-                    default => 'no-localizado',
-                },
+                'estado' => self::ETIQUETA_CARGA[$this->documentos->estadoCarga($ruta)],
             ];
+            if ($revision !== null) {
+                $doc['revision'] = $revision['documentos'][$campo];
+            }
+            $documentos[] = $doc;
         }
 
         // Principales (formación y probatorios comunes) y adicionales del artículo 13/14.
         [$adicionales, $principales] = collect($documentos)
-            ->partition(fn ($d) => str_contains($d['campo'], 'articulo_14'))
+            ->partition(fn ($d) => DocumentosAplicables::esArticulo($d['campo']))
             ->map(fn ($c) => $c->values()->all())
             ->all();
 
         return view('coordinacion.expediente', [
             'detalle' => $detalle,
-            'refrendo' => $refrendo,
+            'refrendo' => $modelo->datosRefrendo,
             'aplicaArticulo' => $aplicaArticulo,
             'principales' => $principales,
             'adicionales' => $adicionales,
             'noAplican' => $noAplican,
+            'revision' => $revision,
+            'solicitudEnviada' => $modelo->estado === 'enviado',
         ]);
     }
 
     public function documento(Request $request, int $solicitud, string $campo)
     {
-        abort_unless(array_key_exists($campo, self::DOCUMENTOS), 404);
+        abort_unless(DocumentosAplicables::existe($campo), 404);
         $modelo = $this->solicitudAutorizada($request, $solicitud, 'descargarDocumentoComoCoordinacion');
 
-        $ruta = $this->ruta($modelo, $campo);
+        $ruta = $this->documentos->ruta($modelo, $campo);
         abort_if(
             $ruta === null
-            || str_contains($ruta, '..')
-            || !str_starts_with($ruta, 'anfeca/')
+            || !$this->documentos->rutaSegura($ruta)
             || !Storage::disk('local')->exists($ruta),
             404
         );
+
+        // «Ver» desde la revisión documental lleva ?v=<token de versión>: si el archivo cambió, 409.
+        if ($request->filled('v')) {
+            $actual = $this->documentos->version($modelo, $campo)->token();
+            abort_unless(hash_equals($actual, (string) $request->query('v')), 409,
+                'El archivo cambió desde que se abrió el expediente. Actualice la página.');
+        }
 
         return Storage::disk('local')->response($ruta, basename($ruta), [
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
         ]);
-    }
-
-    /** Mismo criterio que Documentos probatorios del solicitante (refrendo, art. 13.1 o 14.x). */
-    private function aplicaArticulo13o14(SolicitudCertificacion $solicitud): bool
-    {
-        $datos = $solicitud->datosRefrendo;
-
-        return $solicitud->tipo_tramite === 'refrendo'
-            && $datos !== null
-            && (int) $datos->aplica_articulo_14 === 1
-            && in_array((string) $datos->inciso_articulo_14, ['13.1', '14', '14.1', '14.2', '14.3'], true);
-    }
-
-    private function ruta(SolicitudCertificacion $solicitud, string $campo): ?string
-    {
-        [$origen] = self::DOCUMENTOS[$campo];
-        $registro = $origen === 'formacion' ? $solicitud->formacionAcademica : $solicitud->documentosProbatorios;
-        $ruta = $registro?->{$campo};
-
-        return filled($ruta) ? (string) $ruta : null;
     }
 }
