@@ -454,4 +454,40 @@ class CoordinacionTest extends TestCase
         $this->actingAs($this->coord['z4'])->get("/coordinacion/solicitudes/{$id}/documentos/solicitud_articulo_14_archivo")->assertOk();
         $this->actingAs($this->coord['z3'])->get("/coordinacion/solicitudes/{$id}/documentos/solicitud_articulo_14_archivo")->assertNotFound();
     }
+
+    // ------------------------------------- prototipo aislado de revisión (6.3.0)
+
+    public function test_prototipo_de_revision_desactivado_por_omision(): void
+    {
+        $this->assertFalse(config('anfeca_coordinacion.prototipos'));
+        $this->actingAs($this->coord['nacional'])->get('/coordinacion/prototipos/revision-documental')->assertNotFound();
+    }
+
+    public function test_prototipo_de_revision_aislado_y_sin_persistencia(): void
+    {
+        config(['anfeca_coordinacion.prototipos' => true]);
+        $tablas = ['solicitudes_certificacion', 'documentos_probatorios_solicitud', 'formaciones_academicas_solicitud', 'datos_solicitantes', 'users'];
+        $antes = collect($tablas)->mapWithKeys(fn ($t) => [$t => DB::table($t)->orderBy('id')->get()->toArray()]);
+
+        $this->actingAs($this->coord['z3'])->get('/coordinacion/prototipos/revision-documental')->assertOk()
+            ->assertSee('PROTOTIPO DEMOSTRATIVO')
+            ->assertSee('id="vue-prototipo-revision"', false)
+            ->assertSee('<header class="encabezado">', false);
+        $this->actingAs($this->solicitante)->get('/coordinacion/prototipos/revision-documental')->assertForbidden();
+        $this->post('/logout');
+        $this->get('/coordinacion/prototipos/revision-documental')->assertRedirect(route('login'));
+
+        foreach ($tablas as $t) {
+            $this->assertEquals($antes[$t], DB::table($t)->orderBy('id')->get()->toArray(), "Sin cambios en {$t}");
+        }
+
+        // El componente no hace peticiones de red ni usa almacenamiento persistente.
+        $vue = file_get_contents(resource_path('js/components/RevisionDocumentalPrototipo.vue'));
+        foreach (['fetch(', 'axios', 'XMLHttpRequest', 'localStorage', 'sessionStorage', 'indexedDB'] as $prohibido) {
+            $this->assertStringNotContainsString($prohibido, $vue, $prohibido);
+        }
+        foreach (['Por revisar', 'Validado', 'Con observaciones', 'No válido', 'No aplica'] as $estado) {
+            $this->assertStringContainsString($estado, $vue);
+        }
+    }
 }

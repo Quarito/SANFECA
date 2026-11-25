@@ -65,7 +65,7 @@ Principios:
 | Documentos aplicables | Documentos del trámite (6, más 2 en refrendo por art. 13/14); **excluye «No aplica»** |
 | Cargados | Aplicables con archivo existente |
 | Faltantes | Aplicables «No cargado» o «Registrado, archivo no localizado» |
-| Por revisar | Aplicables cargados sin revisión de su versión vigente |
+| Por revisar | Aplicables sin revisión de su versión vigente (con o sin archivo). Se cumple: por revisar + validados + con observaciones + no válidos = aplicables |
 | Validados / Con observaciones / No válidos | Último resultado de la versión vigente |
 | **Avance de revisión** | (validados + con observaciones + no válidos) ÷ aplicables |
 | **Documentos validados** | validados ÷ aplicables (porcentaje distinto del avance) |

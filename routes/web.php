@@ -370,6 +370,10 @@ Route::middleware(['auth', 'coordinacion'])
         Route::get('/api/solicitudes', [\App\Http\Controllers\Coordinacion\SolicitudesController::class, 'api'])
             ->name('api.solicitudes');
 
+        // Prototipo visual aislado de revisión documental (fase 6.3.0): 404 salvo ANFECA_COORDINACION_PROTOTIPOS=true.
+        Route::get('/prototipos/revision-documental', [\App\Http\Controllers\Coordinacion\PrototipoRevisionController::class, 'index'])
+            ->name('prototipos.revision-documental');
+
         // Consulta básica del expediente y documentos (Policy + alcance por zona; 404 fuera de alcance).
         Route::get('/solicitudes/{solicitud}', [\App\Http\Controllers\Coordinacion\ExpedienteController::class, 'show'])
             ->whereNumber('solicitud')->name('solicitudes.ver');

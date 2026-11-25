@@ -10,6 +10,10 @@
 
 return [
 
+    // Prototipos visuales AISLADOS (sin consultas ni escrituras en la base).
+    // Desactivados por omisión: solo se habilitan en entornos de demostración desechables.
+    'prototipos' => (bool) env('ANFECA_COORDINACION_PROTOTIPOS', false),
+
     'menu' => [
         ['clave' => 'inicio', 'etiqueta' => 'Inicio', 'ruta' => 'coordinacion.inicio', 'icono' => '⌂'],
         ['clave' => 'solicitudes', 'etiqueta' => 'Solicitudes', 'ruta' => 'coordinacion.solicitudes', 'icono' => '☰'],

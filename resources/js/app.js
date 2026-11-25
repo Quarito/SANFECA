@@ -235,3 +235,13 @@ if (contenedorBandeja) {
         opciones: JSON.parse(contenedorBandeja.dataset.opciones || '{}')
     }).mount(contenedorBandeja);
 }
+
+
+// MÓDULO DE COORDINACIÓN: PROTOTIPO AISLADO DE REVISIÓN DOCUMENTAL (sin red ni persistencia)
+import RevisionDocumentalPrototipo from './components/RevisionDocumentalPrototipo.vue';
+
+const contenedorPrototipoRevision = document.getElementById('vue-prototipo-revision');
+
+if (contenedorPrototipoRevision) {
+    createApp(RevisionDocumentalPrototipo).mount(contenedorPrototipoRevision);
+}

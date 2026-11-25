@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
 
     {{-- Estilos propios del módulo administrativo. --}}
-    <link rel="stylesheet" href="{{ asset('css/coordinacion.css') }}?v=7">
+    <link rel="stylesheet" href="{{ asset('css/coordinacion.css') }}?v=8">
     @stack('estilos')
 </head>
 <body class="coord-body">
