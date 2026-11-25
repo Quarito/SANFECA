@@ -349,3 +349,6 @@ a.coord-menu-item:hover { background: var(--coord-rosa); border-color: #dbaeb3; 
 /* ===== Zonas resueltas (bloque B) ===== */
 .coord-nota-dato { color: var(--coord-texto-suave); font-size: 11px; }
 .coord-advertencia-zona { display: block; color: #6b4a00; font-size: 11px; }
+
+/* ===== Visor documental modal (bloque C) ===== */
+html.visor-abierto, html.visor-abierto body { overflow: hidden; }   /* la posición del expediente se conserva */

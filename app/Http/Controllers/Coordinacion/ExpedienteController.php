@@ -102,6 +102,9 @@ class ExpedienteController extends Controller
         abort_unless(DocumentosAplicables::existe($campo), 404);
         $modelo = $this->solicitudAutorizada($request, $solicitud, 'descargarDocumentoComoCoordinacion');
 
+        // Seguimiento previo al envío: la coordinación NO consulta ni descarga documentos de borradores.
+        abort_unless($modelo->estado === 'enviado', 403, 'Los documentos de solicitudes no enviadas no pueden consultarse.');
+
         $ruta = $this->documentos->ruta($modelo, $campo);
         abort_if(
             $ruta === null
@@ -117,9 +120,23 @@ class ExpedienteController extends Controller
                 'El archivo cambió desde que se abrió el expediente. Actualice la página.');
         }
 
-        return Storage::disk('local')->response($ruta, basename($ruta), [
+        // Visualización en línea (visor modal) o descarga opcional; nunca se expone la ruta física.
+        $extension = strtolower(pathinfo($ruta, PATHINFO_EXTENSION)) ?: 'pdf';
+        $nombre = "solicitud-{$modelo->id}-{$campo}.{$extension}";
+        $disposicion = $request->boolean('descargar') ? 'attachment' : 'inline';
+        $tipo = match ($extension) {
+            'pdf' => 'application/pdf',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            default => Storage::disk('local')->mimeType($ruta) ?: 'application/octet-stream',
+        };
+
+        return Storage::disk('local')->response($ruta, $nombre, [
+            'Content-Type' => $tipo,
             'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'private, no-store',
-        ]);
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'Referrer-Policy' => 'no-referrer',
+        ], $disposicion);
     }
 }

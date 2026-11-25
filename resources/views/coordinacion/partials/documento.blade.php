@@ -29,15 +29,19 @@
         </div>
     </div>
     <div class="coord-documento-acciones">
-        @if ($doc['estado'] === 'cargado')
+        @if ($doc['estado'] === 'cargado' && ($solicitudEnviada ?? false))
+            {{-- El visor modal intercepta el clic; el href se conserva como alternativa sin JavaScript. --}}
             <a href="{{ $urlVer }}" class="coord-boton secundario pequeno" target="_blank" rel="noopener"
+               data-ver="{{ $doc['campo'] }}" data-etiqueta="{{ $doc['etiqueta'] }}"
+               data-descarga="{{ $urlVer }}{{ str_contains($urlVer, '?') ? '&' : '?' }}descargar=1"
                aria-label="Ver {{ $doc['etiqueta'] }}">Ver</a>
         @else
-            <span class="coord-boton secundario pequeno" aria-disabled="true">Ver</span>
+            <span class="coord-boton secundario pequeno" aria-disabled="true"
+                  title="{{ ($solicitudEnviada ?? false) ? 'Sin archivo disponible' : 'Los documentos de solicitudes no enviadas no pueden consultarse' }}">Ver</span>
         @endif
         @if ($rev)
             @if ($rev['aplica'] && ($solicitudEnviada ?? false))
-                <button type="button" class="coord-boton pequeno" data-revisar="{{ $doc['campo'] }}"
+                <button type="button" class="coord-boton pequeno" data-revisar="{{ $doc['campo'] }}" data-etiqueta="{{ $doc['etiqueta'] }}"
                         aria-label="Revisar {{ $doc['etiqueta'] }}">Revisar</button>
             @else
                 <span class="coord-boton pequeno" aria-disabled="true"
