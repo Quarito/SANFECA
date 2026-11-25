@@ -246,13 +246,16 @@ if (contenedorPrototipoRevision) {
     createApp(RevisionDocumentalPrototipo).mount(contenedorPrototipoRevision);
 }
 
-// Revisión documental funcional (fase 6.3.1): diálogo sobre el expediente; solo con la revisión activa.
-import RevisionDocumentalDialogo from './components/RevisionDocumentalDialogo.vue';
+// Documentos del expediente (bloque C): visor PDF modal para «Ver» (siempre) y visor + panel de
+// revisión para «Revisar» (solo con la revisión documental activa).
+import ExpedienteDocumentos from './components/ExpedienteDocumentos.vue';
 
-const contenedorRevisionDocumental = document.getElementById('vue-revision-documental');
+const contenedorExpedienteDocumentos = document.getElementById('vue-expediente-documentos');
 
-if (contenedorRevisionDocumental) {
-    createApp(RevisionDocumentalDialogo, {
-        urlBase: contenedorRevisionDocumental.dataset.urlBase
-    }).mount(contenedorRevisionDocumental);
+if (contenedorExpedienteDocumentos) {
+    createApp(ExpedienteDocumentos, {
+        folio: contenedorExpedienteDocumentos.dataset.folio,
+        urlBase: contenedorExpedienteDocumentos.dataset.urlBase,
+        revisionActiva: contenedorExpedienteDocumentos.dataset.revisionActiva === '1'
+    }).mount(contenedorExpedienteDocumentos);
 }

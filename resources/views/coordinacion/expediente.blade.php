@@ -144,9 +144,8 @@
         @endif
     </section>
 
-    @if ($revision)
-        {{-- Diálogo de revisión (Vue): resultado, observaciones, motivo, coordinador, versión e historial. --}}
-        <div id="vue-revision-documental"
-             data-url-base="{{ url('/coordinacion/solicitudes/'.$detalle->folio.'/documentos') }}"></div>
-    @endif
+    {{-- Visor documental modal (siempre) y panel de revisión (solo con la revisión documental activa). --}}
+    <div id="vue-expediente-documentos" data-folio="{{ $detalle->folio }}"
+         data-url-base="{{ url('/coordinacion/solicitudes/'.$detalle->folio.'/documentos') }}"
+         data-revision-activa="{{ $revision ? '1' : '0' }}"></div>
 @endsection

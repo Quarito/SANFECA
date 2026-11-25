@@ -475,7 +475,8 @@ class RevisionDocumentalTest extends TestCase
         $this->assertSame(6, substr_count($html, 'data-revisar="'), 'Un botón «Revisar» por documento aplicable.');
         $this->assertStringContainsString('data-resultado="validado"', $html);
         $this->assertSame(5, substr_count($html, 'data-resultado="por_revisar"'));
-        $this->assertStringContainsString('id="vue-revision-documental"', $html);
+        $this->assertStringContainsString('id="vue-expediente-documentos"', $html);
+        $this->assertStringContainsString('data-revision-activa="1"', $html);
         $this->assertStringContainsString('class="coord-indicadores-revision"', $html);
         $this->assertStringContainsString('data-indicador="porcentaje_validado">17 %', $html);
         $this->assertStringNotContainsString('<textarea', $html, 'El formulario vive en el diálogo, no en las tarjetas.');
@@ -495,16 +496,17 @@ class RevisionDocumentalTest extends TestCase
         $this->actingAs($this->coord['z1'])->postJson($this->url('E1', 'comprobante_pago_archivo'), ['resultado' => 'validado'])->assertNotFound();
         $html = $this->actingAs($this->coord['z1'])->get("/coordinacion/solicitudes/{$this->sol['E1']}")->assertOk()->getContent();
         $this->assertStringNotContainsString('data-revisar', $html);
-        $this->assertStringNotContainsString('vue-revision-documental', $html);
+        $this->assertStringContainsString('data-revision-activa="0"', $html, 'El visor «Ver» funciona sin la revisión activa.');
+        $this->assertStringContainsString('data-ver="comprobante_pago_archivo"', $html);
         $this->assertStringContainsString('Revisión documental: pendiente (fase 6.3).', $html);
         $this->assertFalse((bool) env('ANFECA_COORDINACION_REVISION', false), 'Valor por omisión: apagado.');
     }
 
     public function test_componente_vue_limita_textos_a_1000_y_reutiliza_la_clave_en_reintentos(): void
     {
-        $vue = file_get_contents(resource_path('js/components/RevisionDocumentalDialogo.vue'));
+        $vue = file_get_contents(resource_path('js/components/PanelRevisionDocumental.vue'));
         $this->assertStringContainsString(':maxlength="maximo"', $vue);
-        $this->assertStringContainsString('clave_idempotencia: datos.value.clave_idempotencia', $vue);
+        $this->assertStringContainsString('clave_idempotencia: props.detalle.clave_idempotencia', $vue);
         $this->assertStringNotContainsString('localStorage', $vue);
         $this->assertSame(1000, config('anfeca_coordinacion.revision_texto_maximo'));
         $this->assertStringContainsString('maxlength="1000"', file_get_contents(resource_path('js/components/RevisionDocumentalPrototipo.vue')));
