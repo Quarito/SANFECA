@@ -43,15 +43,15 @@ Distribución responsiva. Se usan *container queries* sobre el área de contenid
 |---|---|---|---|---|
 | Tarjetas del dashboard (6) | 6 columnas | 3 × 2 | 2 × 3 | 1 |
 | Paneles de distribución (4) | 4 columnas | 2 × 2 (desde 640 px) | 1 | 1 |
-| Fichas de la consulta | 60 % + 40 % | 60 % + 40 % (más de 820 px) | Apiladas: primero el solicitante | Apiladas |
+| Fichas de la consulta | 50 % + 50 %, igual altura | 50 % + 50 % (más de 760 px) | Apiladas: primero el solicitante | Apiladas |
 | Documentos | Grupos de 6: 3 columnas con 2 documentos | 2 columnas (hasta 900 px), en pares | 2 columnas | 1 (hasta 560 px) |
 
 Nunca se muestran 5 + 1 tarjetas ni 3 + 1 paneles.
 
 Consulta de solicitud:
-- **Ficha del solicitante (≈ 60 %):** datos del solicitante y formación académica en la misma tarjeta, separados por un divisor.
-- **Datos de solicitud (≈ 40 %).**
-- Ambas fichas se alinean arriba y su altura se ajusta al contenido.
+- **Ficha del solicitante (50 %):** datos del solicitante y formación académica en la misma tarjeta, separados por un divisor.
+- **Datos de solicitud (50 %).** Campos cortos en dos columnas; institución, área y tipo de personal a ancho completo.
+- Ambas fichas tienen el mismo ancho y la misma altura en escritorio (fase 6.2.4).
 
 Cuadrícula de documentos:
 - Se muestran los documentos aplicables al trámite. Los de artículo 13/14 solo aparecen en refrendos con `aplica_articulo_14`, con el mismo criterio que la pantalla de solicitantes. Los que no aplican se listan como «No aplica».
@@ -59,7 +59,9 @@ Cuadrícula de documentos:
   - «Cargado»;
   - «No cargado»;
   - «Registrado, archivo no localizado».
-- Cada tarjeta reserva el espacio «Revisión documental: pendiente (fase 6.3)», sin acciones.
+- La leyenda «Revisión documental: pendiente (fase 6.3)» aparece una sola vez en el encabezado de la sección.
+
+Tablas de registros: la primera columna es «Núm.», un consecutivo visual calculado en el servidor. Las reglas están en `docs/anfeca/ESTANDARES_UI_UX.md` §5.
 
 ## 2. Roles y permisos (`users.rol`)
 
