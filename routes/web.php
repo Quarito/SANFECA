@@ -363,6 +363,8 @@ Route::middleware(['auth', 'coordinacion'])
     ->group(function () {
         Route::get('/', [\App\Http\Controllers\Coordinacion\InicioController::class, 'index'])
             ->name('inicio');
+        Route::get('/api/indicadores', [\App\Http\Controllers\Coordinacion\IndicadoresController::class, 'index'])
+            ->name('api.indicadores');
 
         // Consulta básica del expediente y documentos (Policy + alcance por zona; 404 fuera de alcance).
         Route::get('/solicitudes/{solicitud}', [\App\Http\Controllers\Coordinacion\ExpedienteController::class, 'show'])

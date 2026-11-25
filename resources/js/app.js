@@ -207,3 +207,17 @@ if (contenedorCompromiso) {
         soloConsulta: contenedorCompromiso.dataset.soloConsulta === '1'
     }).mount(contenedorCompromiso);
 }
+
+
+// MÓDULO DE COORDINACIÓN: DASHBOARD
+import CoordinacionInicio from './components/CoordinacionInicio.vue';
+
+const contenedorCoordinacionInicio = document.getElementById('vue-coordinacion-inicio');
+
+if (contenedorCoordinacionInicio) {
+    createApp(CoordinacionInicio, {
+        urlIndicadores: contenedorCoordinacionInicio.dataset.urlIndicadores,
+        urlBandeja: contenedorCoordinacionInicio.dataset.urlBandeja,
+        urlExpediente: contenedorCoordinacionInicio.dataset.urlExpediente
+    }).mount(contenedorCoordinacionInicio);
+}
