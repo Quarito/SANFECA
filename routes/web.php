@@ -363,6 +363,12 @@ Route::middleware(['auth', 'coordinacion'])
     ->group(function () {
         Route::get('/', [\App\Http\Controllers\Coordinacion\InicioController::class, 'index'])
             ->name('inicio');
+
+        // Consulta básica del expediente y documentos (Policy + alcance por zona; 404 fuera de alcance).
+        Route::get('/solicitudes/{solicitud}', [\App\Http\Controllers\Coordinacion\ExpedienteController::class, 'show'])
+            ->whereNumber('solicitud')->name('solicitudes.ver');
+        Route::get('/solicitudes/{solicitud}/documentos/{campo}', [\App\Http\Controllers\Coordinacion\ExpedienteController::class, 'documento'])
+            ->whereNumber('solicitud')->where('campo', '[a-z0-9_]+')->name('solicitudes.documento');
     });
 
 /*
