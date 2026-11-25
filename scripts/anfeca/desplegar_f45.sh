@@ -128,7 +128,9 @@ if [[ "$CONFIG_CACHEADA" == 1 ]]; then php artisan config:cache && echo "Caché 
 
 paso "7. Pruebas automatizadas (SQLite en memoria; phpunit.xml fuerza la conexión, no usa PostgreSQL)"
 if [[ -x vendor/bin/phpunit ]]; then
-    php artisan test 2>&1 | tail -4
+    # Ejecución autorizada dentro del sitio (tests/TestCase.php la bloquea por omisión desde el incidente
+    # 2026-11-25). Pendiente: migrar este paso a scripts/anfeca/pruebas/arbol_aislado.sh.
+    ANFECA_PRUEBAS_EN_SITIO=autorizado php artisan test 2>&1 | tail -4
 else
     echo "Sin dependencias de desarrollo en esta instalación: las pruebas se ejecutan en /home/servidorweb/anfeca_f45 (62/62 PG y 54/54 aprobadas)."
 fi

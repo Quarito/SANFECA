@@ -13,6 +13,7 @@
     <testsuites>
         <testsuite name="RevisionDocumentalPg">
             <file>tests/Feature/RevisionesDocumentalesEsquemaTest.php</file>
+            <directory>tests/Pg</directory>
         </testsuite>
     </testsuites>
     <php>
