@@ -1,6 +1,9 @@
 # Fase 6.3.1 · Diseño técnico de la persistencia de la revisión documental
 
-> **Estado: PROPUESTA PENDIENTE DE AUTORIZACIÓN.** La migración está **preparada y probada solo en bases desechables**. **No se ha ejecutado** en la base del ambiente 8086 (`bd_anfeca_ensayo_pruebas_pg`). El PDM permanece **apagado** y **no** hay espejo hacia `anfeca_modelo`.
+> **Estado (2026-11-25): IMPLEMENTADA Y PROBADA EN ENTORNOS AISLADOS · MIGRACIÓN PENDIENTE DE AUTORIZACIÓN.**
+> - La migración sigue en `database/migrations_propuestas/`, fuera de la ruta automática. **No se ha ejecutado** en la base de 8086 (`bd_anfeca_ensayo_pruebas_pg`).
+> - El código funcional está publicado pero **desactivado** (`ANFECA_COORDINACION_REVISION=false`); en 8086 las rutas responden 404 y el expediente no cambia.
+> - El PDM permanece **apagado** y **no** hay espejo hacia `anfeca_modelo`.
 
 | Elemento | Ubicación |
 |---|---|
@@ -89,7 +92,7 @@ CREATE TABLE public.revisiones_documentales (
     CONSTRAINT rd_bytes_ck   CHECK (version_bytes IS NULL OR version_bytes >= 0),
     CONSTRAINT rd_validado_requiere_archivo_ck CHECK (resultado <> 'validado' OR archivo_estado = 'cargado'),
     CONSTRAINT rd_observaciones_ck       CHECK (resultado = 'validado' OR char_length(btrim(coalesce(observaciones, ''))) >= 10),
-    CONSTRAINT rd_observaciones_largo_ck CHECK (observaciones IS NULL OR char_length(observaciones) <= 2000),
+    CONSTRAINT rd_observaciones_largo_ck CHECK (observaciones IS NULL OR char_length(observaciones) <= 1000),
     CONSTRAINT rd_motivo_ck CHECK (motivo_cambio IS NULL OR char_length(btrim(motivo_cambio)) BETWEEN 10 AND 1000),
     CONSTRAINT rd_motivo_solo_con_anterior_ck CHECK (revision_anterior_id IS NOT NULL OR motivo_cambio IS NULL),
     CONSTRAINT rd_rol_ck     CHECK (coordinador_rol IN ('coordinador_nacional','coordinador_zona')),
@@ -131,7 +134,7 @@ CREATE VIEW public.revisiones_documentales_vigentes AS
 | `version_ruta` | Sí | Nula solo si `no_cargado`. Debe iniciar con `anfeca/` y no contener `..` |
 | `version_sha256` / `version_bytes` | Sí | Obligatorias solo si `cargado`. Huella en hexadecimal minúscula de 64 caracteres |
 | `resultado` | No | `validado` exige `cargado` |
-| `observaciones` | Sí | Obligatoria (≥ 10 caracteres sin espacios extremos) en `con_observaciones` y `no_valido`; máximo 2000 |
+| `observaciones` | Sí | Obligatoria (≥ 10 caracteres sin espacios extremos) en `con_observaciones` y `no_valido`; opcional en `validado`; máximo **1000** |
 | `motivo_cambio` | Sí | Solo cuando hay revisión anterior; obligatorio si cambia el resultado; 10 a 1000 caracteres |
 | `revision_anterior_id` | Sí | Nula solo en la primera revisión del documento |
 | `coordinador_nombre`, `coordinador_rol`, `solicitud_estado` | No | Copias que conservan el contexto aunque después cambie el usuario |
@@ -155,42 +158,65 @@ CREATE VIEW public.revisiones_documentales_vigentes AS
 | Sin dictamen automático | El servicio no cambia `solicitudes_certificacion` ni calcula puntajes | Sin columnas de dictamen |
 | Archivos originales protegidos | Solo lectura (`Storage::readStream` para la huella); nunca se mueven ni reescriben | La ruta se guarda como texto |
 
-### 5.1 Concurrencia y verificación de versión (HTTP 409)
+### 5.1 Concurrencia, versión e idempotencia (HTTP 409)
 
-El formulario de revisión envía tres datos de control, obtenidos al **mostrar** el documento:
+Al **abrir** el documento (`GET …/revisiones`), el servidor entrega:
+- `revision_vigente_id`, o nulo;
+- `version.token`: SHA-256 de **estado de carga + ruta + SHA-256 del archivo + tamaño**, calculado leyendo el archivo real;
+- una `clave_idempotencia` (UUID) nueva por cada apertura.
 
-1. `revision_vigente_id`: id de la revisión vigente que vio el coordinador, o nulo.
-2. `version_sha256`: huella del archivo que abrió el coordinador. El enlace «Ver» lleva `?v=<sha256>` y la descarga responde 409 si la versión ya cambió.
-3. `clave_idempotencia`: UUID del formulario.
+El navegador devuelve esos tres valores sin modificarlos. **Nunca** son la fuente de verdad: el servidor los vuelve a calcular.
 
-Dentro de una transacción, el servicio hace lo siguiente:
+`RevisionDocumental::registrar()` sigue estos pasos dentro de una transacción:
 
-1. Si `clave_idempotencia` ya existe y es del mismo coordinador, devuelve **200** con esa revisión (reintento). Si es de otro coordinador, devuelve **409**.
-2. Recalcula la vigente actual. Si difiere de `revision_vigente_id`, devuelve **409** «otra persona registró una revisión» junto con la vigente.
-3. Recalcula la ruta y la huella del archivo actual. Si la huella difiere de `version_sha256` o el archivo cambió de estado, devuelve **409** «el archivo cambió desde que lo consultó». Así nadie valida una versión distinta de la que vio.
-4. Inserta con `revision_anterior_id` igual a la vigente.
-5. Si la base rechaza por `rd_sucesor_unico_uq`, `rd_primera_revision_uq` o `rd_idempotencia_uq`, por una carrera entre los pasos 2 y 4, la excepción se traduce a **409**. **La base garantiza que la cadena no se bifurque** aunque la aplicación falle.
+| Paso | Comprobación | Respuesta |
+|---|---|---|
+| 0 | `SELECT … FOR SHARE` de la solicitud. No la modifica, pero espera a cualquier cambio en curso del solicitante (que bloquea con `FOR UPDATE`) | — |
+| 1 | **Idempotencia.** Si la clave ya existe y coinciden coordinador, solicitud, documento, versión (token), resultado, observaciones, motivo y revisión anterior, devuelve la existente. Si algo difiere | **200** (reintento) / **409** `idempotencia` |
+| 2 | La solicitud está `enviado` (estado actual) | **409** `estado` |
+| 3 | La vigente actual es la consultada. Si no lo es, antes de responder se **vuelve a consultar la clave**: un reintento de la misma petición confirmado entre los pasos 1 y 3 se reconoce como reintento (carrera hallada con procesos reales) | **409** `concurrencia` (incluye la vigente) / **200** |
+| 4 | El token de versión **recalculado desde el archivo** coincide con el consultado: misma ruta, huella, tamaño y estado | **409** `version` |
+| 5 | «Validado» exige archivo cargado; cambiar el resultado exige `motivo_cambio` | **422** |
+| 6 | Inserción; la base rechaza una bifurcación o un duplicado simultáneo | **409** `concurrencia` (o reintento si es la misma clave) |
 
-No se bloquean filas de `solicitudes_certificacion`: el control es optimista y las restricciones únicas son la red de seguridad.
+- **Autorización en cada petición.** La política y el alcance por zona se verifican **antes** de buscar una revisión previa. Si el coordinador perdió la zona, el reintento responde 404 y no devuelve la revisión.
+- **«Ver» de una versión obsoleta.** El enlace lleva `?v=<token>` y responde **409** si el archivo cambió.
+- **Sin bloqueos sobre el historial.** No se usa `FOR UPDATE` en `revisiones_documentales`, porque exigiría privilegio UPDATE. Las restricciones únicas son la garantía final.
 
-### 5.2 Integración en la interfaz (sin perder la compactación 6.2.4)
+**Probado con concurrencia real** en PostgreSQL 18.6 desechable (`tests/Pg/RevisionDocumentalConcurrenciaPgTest.php`), con procesos PHP independientes y transacciones confirmadas:
+- 6 primeras revisiones simultáneas: 1 creada y 5 con 409;
+- 6 sucesores simultáneos de la misma vigente: 1 creado y 5 con 409, con un solo sucesor;
+- 4 reintentos simultáneos con la misma clave: 1 creada y 3 que devuelven la misma fila. Una primera ejecución falló de forma intermitente; la corrección del paso 3 quedó estable en 10 de 10 rondas;
+- carrera de **sustitución del archivo**: la revisión espera al bloqueo del solicitante y recibe 409 `version`.
 
-Se mantienen sin cambios:
-- las fichas 50/50 de igual altura y su orden;
-- la cuadrícula 3 × 2 de documentos de unos 58 px;
-- los adicionales del artículo 13/14 en horizontal;
-- el encabezado, el pie y el menú lateral.
+### 5.2 Integración en la interfaz (implementada, sin perder la compactación 6.2.4)
 
-Cada tarjeta de documento añade, **en la misma fila**:
-- una segunda insignia de **resultado** («Por revisar», «Validado», «Con observaciones», «No válido»), distinta de la de **carga**;
-- un botón compacto «Revisar», junto a «Ver».
+Se conservan:
+- las fichas 50/50 de igual altura (medidas: 526 × 461 px a 1366 px, solicitante a la izquierda);
+- la cuadrícula 3 × 2;
+- los adicionales en horizontal;
+- el encabezado, el pie, el menú lateral y la numeración.
 
-El registro se hace en un **diálogo modal**, como en el prototipo:
-- opciones de resultado;
-- observaciones y motivo del cambio cuando proceden;
-- versión revisada (nombre y huella abreviada).
+Cada tarjeta muestra, **sin formularios**:
+- nombre;
+- insignia de **carga**;
+- insignia de **resultado** (texto y color, distinta de la de carga);
+- botones «Ver» y «Revisar», apilados y compactos.
 
-El historial se consulta en un panel desplegable `<details>` dentro del diálogo, **no** en la tarjeta. La altura permanente del expediente aumenta como máximo en una línea de indicadores de revisión en el encabezado de la sección «Documentos»: aplicables, por revisar, validados, con observaciones, no válidos y avance.
+La tarjeta mide **62 px** en 1366×768, 1920×1080, tableta y móvil.
+
+Una línea de **indicadores** encabeza la sección: aplicables, cargados, faltantes, por revisar, validados, con observaciones, no válidos, % revisado y % validado. Los dos porcentajes se muestran por separado y los no aplicables se excluyen de todos los denominadores.
+
+El **diálogo modal** (`RevisionDocumentalDialogo.vue`) muestra:
+- la versión revisada (archivo, SHA-256 abreviado y tamaño);
+- el resultado vigente (y si corresponde a otra versión);
+- quién registrará la revisión, con la fecha y hora del servidor;
+- las opciones de resultado («Validado» deshabilitado sin archivo);
+- observaciones (contador de 0 a 1000);
+- el motivo del cambio, que solo aparece y es obligatorio si cambia el resultado;
+- el **historial** en un panel desplegable, con la columna «Núm.».
+
+Tras registrar, la página se recarga y muestra solo estados persistidos.
 
 ## 6. Protección del historial (solo inserción)
 
@@ -211,7 +237,9 @@ El historial se consulta en un panel desplegable `<details>` dentro del diálogo
 ### 6.3 Límite conocido y endurecimiento recomendado
 Hallazgo de la prueba en PostgreSQL desechable: **no se puede revocar `UPDATE` al rol propietario**. La verificación de la llave foránea autorreferida usa `SELECT … FOR KEY SHARE`, que requiere ese privilegio, y sin él toda inserción encadenada falla con `42501`.
 
-Por eso, la protección efectiva frente al propietario son los **disparadores**. Un propietario o superusuario podría desactivarlos deliberadamente con `ALTER TABLE … DISABLE TRIGGER`. Esa operación no es ordinaria y queda fuera de este alcance.
+Por eso, la protección efectiva frente al propietario son los **disparadores**.
+
+**Advertencia expresa:** un **propietario del esquema o un superusuario** puede modificar deliberadamente estas protecciones: desactivar disparadores (`ALTER TABLE … DISABLE TRIGGER`), eliminar restricciones o borrar la tabla. Las protecciones impiden modificaciones mediante **operaciones administrativas ordinarias**, no frente a un administrador con privilegios de DDL que actúe deliberadamente. En esta intervención **no se alteraron** roles ni propietarios de PostgreSQL.
 
 Endurecimiento recomendado, que requiere decisión del administrador de base de datos:
 - separar el propietario del esquema (`rol_anfeca_esquema`) del rol de la aplicación;
@@ -229,7 +257,7 @@ Endurecimiento recomendado, que requiere decisión del administrador de base de 
 |---|---|
 | `solicitud_id` + `documento_clave` + `version_ruta` | `SOLICITUD_DOCUMENTO` (una fila por versión de archivo) |
 | `resultado` | Nuevos valores del catálogo `ESTADO_DOCUMENTO` (Validado, Con observaciones, No válido) |
-| `observaciones` | `ESTADO_SOLICITUD_DOCUMENTO.ESDO_OBSERVACION` (ampliar a 1000 o más) |
+| `observaciones` | `ESTADO_SOLICITUD_DOCUMENTO.ESDO_OBSERVACION` (ampliar a **1000** caracteres: límite homologado con Vue, Laravel y PostgreSQL) |
 | `coordinador_id` | Extensión `ESDO_ID_USUARIO` |
 | `version_sha256` | Extensión `ESDO_HUELLA` |
 | `revisado_en` | `ESDO_FECHA` |
@@ -238,25 +266,49 @@ El espejo se diseñará en la fase de integración con el PDM. Mientras tanto, `
 
 ## 9. Procedimiento de aplicación, respaldo y recuperación (cuando se autorice)
 
-Ambiente: 8086, base `bd_anfeca_ensayo_pruebas_pg`. No se ejecuta hasta recibir autorización expresa.
+Ambiente: 8086, base `bd_anfeca_ensayo_pruebas_pg`. **No se ejecuta** hasta recibir autorización definitiva.
 
-1. **Espacio:** `df -h /` con al menos 1 GB libre (la base pesa ≈ 16 MB; el respaldo, menos de 5 MB).
-2. **Respaldo previo verificado:**
+> ⚠ **Migración pendiente ajena en 8086.** `2026_11_20_190000_add_escuela_facultad_to_instituciones_afiliadas` figura como pendiente. Por eso **nunca** debe ejecutarse `php artisan migrate` general, ni `migrate:fresh` o `db:wipe`, porque aplicaría o destruiría otros cambios. Solo se permite `--path` con el archivo exacto.
+
+1. **Comprobaciones:** al menos 5 GB libres (criterio preventivo), rama `desarrollo/modulo-coordinacion` y commit autorizado.
+2. **Respaldo verificado por restauración real** (ensayo realizado el 2026-11-25, §9.1):
    ```sh
-   pg_dump -Fc -d bd_anfeca_ensayo_pruebas_pg -f ~/ANFECA_RESPALDOS/ensayo_pre_6_3_1_<fecha>.dump
-   pg_restore -l ~/ANFECA_RESPALDOS/ensayo_pre_6_3_1_<fecha>.dump > /dev/null   # verifica legibilidad
-   sha256sum ~/ANFECA_RESPALDOS/ensayo_pre_6_3_1_<fecha>.dump > ….sha256
+   cd /var/www/ANFECA_ENSAYO
+   bash scripts/anfeca/respaldo_verificado.sh bd_anfeca_ensayo_pruebas_pg desarrollo/modulo-coordinacion <commit>
    ```
-3. **Huella de datos previa:** `scripts/anfeca/huella_bd.sh` (conteos de tablas existentes).
-4. **Aplicación:** copiar la propuesta a `database/migrations/` en un commit propio y ejecutar `php artisan migrate --path=database/migrations/2026_11_26_000000_create_revisiones_documentales_table.php --force` **solo** en 8086.
-5. **Verificación:**
-   - `\d+ revisiones_documentales`: restricciones, índices y disparadores presentes;
-   - la huella de datos posterior es idéntica en las tablas existentes;
+   El script:
+   - verifica la base, la rama y el commit;
+   - ejecuta `pg_dump -Fc` y calcula su SHA-256;
+   - **restaura** el respaldo en PostgreSQL 18.6 desechable sin red;
+   - compara el inventario exacto del catálogo, el DDL normalizado, los conteos y la huella MD5 de **todas** las filas por tabla;
+   - ejecuta Laravel (`migrate:status`) sobre la restauración.
+   
+   Si algo difiere, se detiene.
+3. **Aplicación**, en un commit propio:
+   - copiar la propuesta a `database/migrations/`;
+   - ejecutar `php artisan migrate --path=database/migrations/2026_11_26_000000_create_revisiones_documentales_table.php --force`.
+4. **Verificación:**
+   - `\d+ revisiones_documentales`: restricciones, índices, 3 disparadores y la vista;
+   - huellas de las tablas existentes idénticas a las del paso 2 (se repite el bloque de huellas del script);
    - un `UPDATE` de prueba dentro de `BEGIN … ROLLBACK` es rechazado.
+5. **Activación** (decisión separada): `ANFECA_COORDINACION_REVISION=true` en el `.env` de 8086 y `php artisan config:clear`.
 6. **Reversión:**
-   - si la tabla está vacía, `php artisan migrate:rollback --step=1`, que `down()` permite;
-   - si tiene historial, `down()` se niega y se restaura desde el respaldo **solo** con autorización: `pg_restore` sobre una base nueva, comprobación y cambio controlado.
-7. **Respaldo continuo:** la tabla entra en los respaldos `pg_dump` habituales. Para recuperar una revisión puntual se usa `pg_restore -t revisiones_documentales` sobre una base temporal y se consulta. **Nunca** se reinsertan filas con UPDATE.
+   - desactivar la bandera (efecto inmediato, sin tocar datos);
+   - si la tabla está vacía, `php artisan migrate:rollback --path=…`, que `down()` permite;
+   - si tiene historial, `down()` se niega y solo con autorización se restaura el respaldo del paso 2 en una base nueva, con comprobación y cambio controlado.
+7. **Respaldo continuo:** la tabla entra en los `pg_dump` habituales. Para recuperar una revisión puntual se usa `pg_restore -t revisiones_documentales` sobre una base temporal. **Nunca** se reinsertan ni se actualizan filas.
+
+### 9.1 Ensayo del respaldo verificado (2026-11-25, sin migrar)
+
+| Comprobación | Resultado |
+|---|---|
+| Base / servidor | `bd_anfeca_ensayo_pruebas_pg`, PostgreSQL 18.6, 16 MB |
+| `pg_dump -Fc` | 340 KB · SHA-256 `345925d930ddb9f6…` |
+| Restauración real | Correcta en PostgreSQL 18.6 desechable sin red |
+| Inventario del catálogo | **Idéntico**: 1429 elementos (602 columnas, 432 restricciones, 196 índices, 19 disparadores, 35 funciones, 74 tablas, 9 vistas, 62 secuencias) |
+| DDL | Idéntico tras normalizar. 6 líneas difieren solo en la forma de las conversiones de `ANY(ARRAY[…])`, que PostgreSQL re-escribe al restaurar |
+| Datos | Conteos y MD5 de filas **idénticos** en 74 tablas (174 filas) |
+| Funcional | Laravel `migrate:status`: 34 ejecutadas y 1 pendiente (la ajena indicada arriba); consultas: 7 usuarios y 3 solicitudes |
 
 ## 10. Visualización segura del prototipo (6.3.0)
 
@@ -281,38 +333,74 @@ bash scripts/anfeca/demo_prototipo/detener.sh   # elimina contenedor, copia y ba
 
 Requisitos: unos 600 MB libres (el script lo verifica) y `public/build` compilado.
 
-## 11. Matriz de pruebas actualizada
+## 10.1 Revisión funcional en la demostración (6.3.1)
 
-Estado: **E** = automatizada y pasando hoy (restricciones de la migración propuesta); **6.3.1** = se implementa con el servicio y el controlador.
+`iniciar.sh` también activa la revisión funcional sobre el SQLite desechable:
+- aplica allí la migración propuesta;
+- crea PDF **ficticios**;
+- arranca con `ANFECA_COORDINACION_REVISION=true` solo dentro del contenedor.
 
-| # | Caso | Resultado esperado | Estado |
+Para usarla: `/coordinacion/solicitudes/1`.
+
+## 11. Matriz de pruebas (27 casos + adicionales): todos automatizados
+
+Archivos de prueba:
+- **F:** `tests/Feature/RevisionDocumentalTest.php` (SQLite en memoria y disco falso);
+- **E:** `tests/Feature/RevisionesDocumentalesEsquemaTest.php` (SQLite y PostgreSQL desechable);
+- **C:** `tests/Pg/RevisionDocumentalConcurrenciaPgTest.php` (PostgreSQL desechable, procesos reales);
+- **N:** `tests/Feature/CoordinacionTest.php`.
+
+| # | Caso | Resultado esperado | Prueba |
 |---|---|---|---|
-| 1 | Validar un documento cargado | Fila con coordinador, fecha, ruta, huella y bytes | E (esquema) / 6.3.1 |
-| 2 | Validar un documento no cargado o no localizado | 422; la base también lo rechaza | E / 6.3.1 |
-| 3 | Desfavorable sin observación o con menos de 10 caracteres | 422; la base también lo rechaza | E / 6.3.1 |
-| 4 | Guardado parcial y nueva sesión | Avance recuperado desde la vista de vigentes | 6.3.1 |
-| 5 | Historial | Todas las revisiones, en orden e inmutables | E / 6.3.1 |
-| 6 | Cambio de resultado | Exige motivo; la anterior se conserva | E / 6.3.1 |
-| 7 | Documento no aplicable | 404; no se puede revisar ni guardar «no_aplica» | E (no_aplica rechazado) / 6.3.1 |
-| 8 | Adicionales del artículo 13/14 | Solo en refrendo con `aplica_articulo_14` | 6.3.1 |
-| 9 | Nueva versión (huella distinta) | Vuelve a «Por revisar»; la validación anterior no se traslada | 6.3.1 |
-| 10 | Otra zona (GET/POST) | 404, sin inserción | 6.3.1 |
-| 11 | Coordinación nacional | Revisa todas las zonas, incluidas las pendientes | 6.3.1 |
-| 12 | Solicitante | 403 | 6.3.1 |
-| 13 | Solicitud en borrador | 409; la base también lo rechaza | E / 6.3.1 |
-| 14 | Concurrencia sobre la misma vigente | La primera se registra; la segunda recibe 409 y la base impide la bifurcación | E (bifurcación) / 6.3.1 |
-| 15 | Integridad de originales | Filas de solicitud y archivos idénticos (huellas) | E (fila) / 6.3.1 |
-| 16 | Parámetros manipulados (`no_aplica`, `por_revisar`, clave inexistente, rol falso) | 422 o 404; la base también lo rechaza | E / 6.3.1 |
-| 17 | Regresión de solicitantes y del PDM | Sin cambios | E |
-| 18 | **Archivo cambia entre la consulta y el guardado** | 409 «el archivo cambió»; sin inserción | 6.3.1 |
-| 19 | **Documento sin ruta o sin huella** | Solo resultados desfavorables; huella o ruta inválida rechazada | E |
-| 20 | **Intento de modificar o eliminar el historial** (UPDATE, DELETE, DELETE masivo, TRUNCATE, cascada desde solicitud o usuario, `down()` con datos) | Todos rechazados; filas idénticas | E |
-| 21 | **Reintento con la misma clave de idempotencia** | Sin duplicado; 200 con la fila existente (mismo coordinador) | E (unicidad) / 6.3.1 |
-| 22 | **Doble clic o dos pestañas** (misma vigente, claves distintas) | Una inserción; la otra recibe 409 | E (sucesor único) / 6.3.1 |
-| 23 | **Consistencia tras cerrar sesión** | Al volver a entrar, los indicadores y la vigente son iguales a los de antes del cierre | 6.3.1 |
-| 24 | **Integridad de las solicitudes** | `solicitudes_certificacion`, formación y documentos sin cambios tras N revisiones | E (fila) / 6.3.1 |
-| 25 | **Suplantación del rol** (usuario solicitante declarado como coordinación) | Rechazado por la base | E |
-| 26 | **Fecha forjada por el cliente** | Ignorada; `revisado_en` = hora de la base | E (PG) |
-| 27 | **La propuesta no se ejecuta con `migrate`** | No está en la ruta de migraciones ni en la tabla `migrations` | E |
+| 1 | Validar un documento cargado | 201; coordinador de la sesión; huella y tamaño leídos del archivo; fecha del servidor | F `test_01` |
+| 2 | Validar sin archivo o con archivo no localizado | 422; también lo rechaza la base | F `test_02`, E |
+| 3 | Desfavorable sin observación, menor de 10 o mayor de 1000 | 422; 1000 se acepta | F `test_03`, E |
+| 4 | Guardado parcial y nueva sesión | Indicadores idénticos | F `test_04_23` |
+| 5 | Historial ordenado e inmutable | «Núm.» 1..n; el modelo impide `save()` y `delete()` | F `test_05_06` |
+| 6 | Cambio de resultado | Exige motivo; la anterior se conserva | F `test_05_06`, E |
+| 7 | No aplica | 404; `no_aplica` da 422 | F `test_07`, E |
+| 8 | Adicionales art. 13/14 | Solo en refrendo aplicable; denominador 8 | F `test_08` |
+| 9 | Nueva versión | Vuelve a «Por revisar»; no se traslada la validación | F `test_09` |
+| 10 | Otra zona | 404 en GET y POST, sin inserción | F `test_10` |
+| 11 | Coordinación nacional | Revisa cualquier zona, incluso sin zona | F `test_11` |
+| 12 | Solicitante o invitado | 403 / 401 | F `test_12` |
+| 13 | Borrador | 409 `estado`; sin botón «Revisar» | F `test_13`, E |
+| 14 | Dos coordinadores sobre la misma vigente | 409 `concurrencia` con la vigente | F `test_14_22`, C |
+| 15 | Integridad de los originales | Tablas y archivos (SHA-256) idénticos | F `test_15_24` |
+| 16 | Parámetros manipulados | `por_revisar` y UUID inválido dan 422; campo inexistente 404; versión o vigente falsificadas 409 | F `test_16` (2) |
+| 17 | Regresión de solicitantes y PDM | Suite completa (§12) | Todas |
+| 18 | Archivo cambia entre consulta y guardado | 409 `version` | F `test_18`, C (carrera real) |
+| 19 | Documento sin ruta o sin huella | Solo desfavorables; columnas nulas coherentes | F `test_19`, E |
+| 20 | Modificar o eliminar el historial | Rechazado: UPDATE, DELETE, TRUNCATE, cascadas, rutas PUT/PATCH/DELETE y `down()` con datos | F `test_20`, E, C |
+| 21 | Reintento idéntico | 200 con la misma fila, sin duplicar | F `test_21`, C (4 simultáneos) |
+| 22 | Doble clic o dos pestañas | Una inserción; la otra recibe 409 | F `test_14_22`, C |
+| 23 | Consistencia tras cerrar sesión | Indicadores idénticos con otra cuenta autorizada | F `test_04_23` |
+| 24 | Integridad de las solicitudes | Sin cambios tras 4 revisiones | F `test_15_24` |
+| 25 | Suplantación de rol | Rechazada por la base | E |
+| 26 | Fecha forjada | Ignorada (aplicación y disparador de PG) | F `test_01`, E (PG) |
+| 27 | La propuesta no corre con `migrate` | Fuera de la ruta y de `migrations` | E |
+| A1 | Clave reutilizada con otro contenido (resultado, observación, documento, coordinador, solicitud) | 409 `idempotencia` | F `test_extra_clave…`, C |
+| A2 | Permisos retirados antes de un reintento | 404 sin devolver la revisión previa | F `test_extra_permisos…` |
+| A3 | Cambio de ruta con la misma huella | 409 `version` | F `test_extra_cambio_de_ruta…` |
+| A4 | Cambio de estado de carga sin huella (no cargado a no localizado) | 409 `version` | F `test_extra_cambio_de_estado…` |
+| A5 | Concurrencia real en PostgreSQL | 6 primeras y 6 sucesores simultáneos sin bifurcación | C |
+| A6 | Aislamiento de archivos de prueba | Raíz de Laravel = árbol de pruebas, fuera de `/var/www`; disco falso dentro del árbol | F `test_aislamiento…`, `tests/TestCase.php` |
+| A7 | Numeración del historial | «Núm.» 1..n | F `test_05_06` |
+| A8 | Desactivada por omisión | 404 y expediente sin cambios | F `test_desactivada…` |
+| A9 | Interfaz compacta | Sin formularios en tarjetas; indicadores; fichas 50/50 | F `test_interfaz…` |
+| A10 | Ver con versión obsoleta | 409 | F `test_extra_ver…` |
+| A11 | Límite de 1000 homologado | Vue, Laravel, PostgreSQL y SQLite | F `test_componente_vue…`, E |
 
-Pruebas automatizadas hoy: `RevisionesDocumentalesEsquemaTest`, 14 pruebas, pasando en SQLite en memoria (13, más 1 omitida porque la regla de fecha es exclusiva de PostgreSQL) y en PostgreSQL 18.6 desechable (14).
+## 12. Inventario de la implementación (fase 6.3.1)
+
+| Pieza | Archivo |
+|---|---|
+| Bandera (apagada por omisión) y límites 10/1000 | `config/anfeca_coordinacion.php` (`revision_documental`, `revision_texto_*`) |
+| Enumeraciones | `app/Enums/ResultadoRevision.php` (3 resultados guardados), `app/Enums/EstadoRevision.php` (+ por revisar, no aplica) |
+| Modelo de solo inserción | `app/Models/RevisionDocumental.php` |
+| Aplicabilidad y versión real | `app/Services/Coordinacion/DocumentosAplicables.php`, `VersionDocumento.php` |
+| Servicio | `app/Services/Coordinacion/RevisionDocumental.php` (resumen, indicadores, detalle, historial, registrar) |
+| Controlador y validación | `RevisionDocumentalController.php`, `app/Http/Requests/Coordinacion/RegistrarRevisionRequest.php` |
+| Policy | `SolicitudCertificacionPolicy::revisarDocumentoComoCoordinacion` |
+| Rutas (solo GET y POST) | `coordinacion.solicitudes.revision`, `.revisiones`, `.revisiones.registrar` (throttle 30/min) |
+| Interfaz | `partials/documento.blade.php`, `expediente.blade.php`, `RevisionDocumentalDialogo.vue`, `coordinacion.css` v10 |

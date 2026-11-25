@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
-# ANFECA · Visualización TEMPORAL del prototipo de revisión documental (fase 6.3.0).
+# ANFECA · Visualización TEMPORAL de la revisión documental: prototipo (6.3.0) y versión
+#          funcional (6.3.1) con la migración PROPUESTA aplicada SOLO en el SQLite desechable.
 #
 #   bash scripts/anfeca/demo_prototipo/iniciar.sh     # crea y arranca la demostración
 #   bash scripts/anfeca/demo_prototipo/detener.sh     # la detiene y elimina por completo
@@ -43,7 +44,7 @@ sed -i -e 's/^APP_ENV=.*/APP_ENV=production/' -e 's/^APP_DEBUG=.*/APP_DEBUG=fals
 chmod -R a+rwX "$DEMO/storage" "$DEMO/bootstrap/cache"
 
 ENTORNO=(-e DB_CONNECTION=sqlite -e DB_DATABASE=/app/storage/demo.sqlite -e CACHE_STORE=file
-         -e ANFECA_PDM_MODO=apagado -e ANFECA_COORDINACION_PROTOTIPOS=true)
+         -e ANFECA_PDM_MODO=apagado -e ANFECA_COORDINACION_PROTOTIPOS=true -e ANFECA_COORDINACION_REVISION=true)
 podman run --rm --network=none -v "$DEMO:/app:Z" -w /app "${ENTORNO[@]}" "$IMAGEN" php artisan key:generate --force -q
 podman run --rm --network=none -v "$DEMO:/app:Z" -w /app "${ENTORNO[@]}" -e DEMO_CLAVE="$CLAVE" "$IMAGEN" php scripts/anfeca/demo_prototipo/sembrar.php
 podman run -d --name "$NOMBRE" -p 127.0.0.1:8099:8099 -v "$DEMO:/app:Z" -w /app/public "${ENTORNO[@]}" "$IMAGEN" \
@@ -51,5 +52,5 @@ podman run -d --name "$NOMBRE" -p 127.0.0.1:8099:8099 -v "$DEMO:/app:Z" -w /app/
 
 for _ in $(seq 1 20); do curl -fs -o /dev/null http://127.0.0.1:8099/login && break; sleep 1; done
 curl -fs -o /dev/null http://127.0.0.1:8099/login || { echo "La demostración no respondió; revise: podman logs $NOMBRE" >&2; exit 1; }
-echo "Demostración activa en http://127.0.0.1:8099 (solo local). Prototipo: /coordinacion/prototipos/revision-documental"
+echo "Demostración activa en http://127.0.0.1:8099 (solo local). Prototipo: /coordinacion/prototipos/revision-documental · Revisión funcional: /coordinacion/solicitudes/1"
 echo "Credenciales de un solo uso: $DEMO/CLAVE_DEMO.txt"

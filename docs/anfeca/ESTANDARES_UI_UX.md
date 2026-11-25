@@ -122,6 +122,7 @@ El encabezado de cada columna **DEBE** decir exactamente qué contiene. «Núm.�
 | Neutro | `#f4f4f4` / `#e2e2e2` / `#555` | No cargado, Iniciada, Por revisar |
 | No aplica | Transparente / `#e2e2e2` / `#8a8a8a` | No aplica |
 
+- Insignias de **resultado de revisión** (clase `coord-insignia rev rev-<estado>`): Por revisar (neutro), Validado (verde), Con observaciones (ámbar), No válido (rojo atenuado), No aplica (transparente). Van **junto a** la insignia de carga, nunca en su lugar.
 - Hay que distinguir siempre el **estado de carga** (Cargado / No cargado / No localizado / No aplica) del **resultado de revisión** (Por revisar / Validado / Con observaciones / No válido). No se mezclan en una misma insignia.
 
 ## 7. Exportaciones de listados (Excel, PDF, CSV)
