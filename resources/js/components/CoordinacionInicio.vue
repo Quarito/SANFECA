@@ -140,11 +140,3 @@ onMounted(cargar);
         </template>
     </div>
 </template>
-
-<style scoped>
-.coord-subtitulo {
-    font-size: 15px;
-    margin: 4px 0 10px;
-    color: #2f2f2f;
-}
-</style>

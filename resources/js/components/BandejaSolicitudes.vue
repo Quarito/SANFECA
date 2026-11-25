@@ -18,18 +18,18 @@ const cargando = ref(false);
 const error = ref('');
 
 const columnas = [
-    { clave: 'folio', etiqueta: 'Folio', orden: 'folio' },
-    { clave: 'zona', etiqueta: 'Zona', orden: 'zona' },
-    { clave: 'nombre', etiqueta: 'Nombre', orden: 'nombre' },
-    { clave: 'institucion', etiqueta: 'Institución', orden: 'institucion' },
-    { clave: 'facultad', etiqueta: 'Facultad' },
-    { clave: 'tramite', etiqueta: 'Modalidad', orden: 'tramite' },
-    { clave: 'certificacion', etiqueta: 'Certificación', orden: 'certificacion' },
-    { clave: 'tipo_personal', etiqueta: 'Tipo de personal' },
-    { clave: 'area', etiqueta: 'Área de conocimiento' },
-    { clave: 'certificado_historico', etiqueta: 'Certificado histórico' },
-    { clave: 'fecha_envio', etiqueta: 'Fecha de envío', orden: 'fecha' },
-    { clave: 'estado', etiqueta: 'Estado', orden: 'estado' }
+    { clave: 'folio', etiqueta: 'Folio', orden: 'folio', clase: 'col-folio' },
+    { clave: 'zona', etiqueta: 'Zona', orden: 'zona', clase: 'col-zona' },
+    { clave: 'nombre', etiqueta: 'Nombre', orden: 'nombre', clase: 'col-nombre' },
+    { clave: 'institucion', etiqueta: 'Institución', orden: 'institucion', clase: 'col-institucion' },
+    { clave: 'facultad', etiqueta: 'Facultad', clase: 'col-facultad' },
+    { clave: 'tramite', etiqueta: 'Modalidad', orden: 'tramite', clase: 'col-tramite' },
+    { clave: 'certificacion', etiqueta: 'Certificación', orden: 'certificacion', clase: 'col-certificacion' },
+    { clave: 'tipo_personal', etiqueta: 'Tipo de personal', clase: 'col-personal' },
+    { clave: 'area', etiqueta: 'Área de conocimiento', clase: 'col-area' },
+    { clave: 'certificado_historico', etiqueta: 'Certificado histórico', clase: 'col-certificado' },
+    { clave: 'fecha_envio', etiqueta: 'Fecha de envío', orden: 'fecha', clase: 'col-fecha' },
+    { clave: 'estado', etiqueta: 'Estado', orden: 'estado', clase: 'col-estado' }
 ];
 
 let controlador = null;
@@ -169,14 +169,14 @@ onMounted(cargar);
             <table class="coord-tabla">
                 <thead>
                     <tr>
-                        <th v-for="c in columnas" :key="c.clave" scope="col"
+                        <th v-for="c in columnas" :key="c.clave" scope="col" :class="c.clase"
                             :aria-sort="c.orden && orden.campo === c.orden ? (orden.direccion === 'asc' ? 'ascending' : 'descending') : undefined">
                             <button v-if="c.orden" type="button" class="coord-th-boton" @click="ordenar(c.orden)">
                                 {{ c.etiqueta }} <span aria-hidden="true">{{ indicadorOrden(c.orden) }}</span>
                             </button>
                             <template v-else>{{ c.etiqueta }}</template>
                         </th>
-                        <th scope="col">Acciones</th>
+                        <th scope="col" class="col-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -184,26 +184,26 @@ onMounted(cargar);
                         <td :colspan="columnas.length + 1" class="coord-cargando">No hay solicitudes con los criterios seleccionados.</td>
                     </tr>
                     <tr v-for="f in filas" :key="f.folio">
-                        <td class="numero">{{ f.folio }}</td>
-                        <td>
+                        <td class="numero col-folio">{{ f.folio }}</td>
+                        <td class="col-zona">
                             <span v-if="f.zona">{{ f.zona }}</span>
                             <span v-else class="coord-insignia sin-zona">Pendiente de clasificación</span>
                         </td>
-                        <td>{{ f.nombre || '—' }}</td>
-                        <td>{{ f.institucion || '—' }}</td>
-                        <td>{{ f.facultad || '—' }}</td>
-                        <td>{{ f.tramite }}</td>
-                        <td>{{ f.certificacion || '—' }}</td>
-                        <td>{{ f.tipo_personal || '—' }}</td>
-                        <td>{{ f.area || '—' }}</td>
-                        <td>{{ f.certificado_historico || '—' }}</td>
-                        <td>{{ f.fecha_envio || '—' }}</td>
-                        <td>
+                        <td class="col-nombre">{{ f.nombre || '—' }}</td>
+                        <td class="col-institucion">{{ f.institucion || '—' }}</td>
+                        <td class="col-facultad">{{ f.facultad || '—' }}</td>
+                        <td class="col-tramite">{{ f.tramite }}</td>
+                        <td class="col-certificacion">{{ f.certificacion || '—' }}</td>
+                        <td class="col-personal">{{ f.tipo_personal || '—' }}</td>
+                        <td class="col-area">{{ f.area || '—' }}</td>
+                        <td class="col-certificado">{{ f.certificado_historico || '—' }}</td>
+                        <td class="col-fecha">{{ f.fecha_envio || '—' }}</td>
+                        <td class="col-estado">
                             <span class="coord-insignia" :class="f.estado === 'enviado' ? 'enviado' : 'borrador'">
                                 {{ f.estado === 'enviado' ? 'Enviada' : 'Iniciada' }}
                             </span>
                         </td>
-                        <td><a :href="`${urlExpediente}/${f.folio}`" class="coord-boton secundario">Consultar</a></td>
+                        <td class="col-acciones"><a :href="`${urlExpediente}/${f.folio}`" class="coord-boton secundario pequeno">Consultar</a></td>
                     </tr>
                 </tbody>
             </table>
