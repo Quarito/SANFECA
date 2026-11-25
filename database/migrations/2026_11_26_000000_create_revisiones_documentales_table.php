@@ -2,12 +2,14 @@
 
 /*
 |--------------------------------------------------------------------------
-| PROPUESTA — Fase 6.3.1 · public.revisiones_documentales
+| AUTORIZADA — Fase 6.3.1 · public.revisiones_documentales
 |--------------------------------------------------------------------------
-| ESTADO: PENDIENTE DE AUTORIZACIÓN. Este archivo está FUERA de database/migrations, así que
-| «php artisan migrate» no lo ejecuta. Para aplicarlo, una vez autorizado, se copia a
-| database/migrations siguiendo el procedimiento de docs/anfeca/modulo-coordinacion/
-| PERSISTENCIA_REVISION_DOCUMENTAL_FASE_6_3_1.md §9.
+| Incorporada a database/migrations por autorización expresa (2026-11-25). En el ambiente de
+| ensayo se aplica EXCLUSIVAMENTE con:
+|   php artisan migrate --path=database/migrations/2026_11_26_000000_create_revisiones_documentales_table.php --force
+| Nunca con «php artisan migrate» general: en 8086 existe otra migración ajena pendiente
+| (2026_11_20_190000_add_escuela_facultad_to_instituciones_afiliadas). Procedimiento completo en
+| docs/anfeca/modulo-coordinacion/PERSISTENCIA_REVISION_DOCUMENTAL_FASE_6_3_1.md §9.
 |
 | Historial de SOLO INSERCIÓN de revisiones documentales hechas por la coordinación.
 | - Cada fila es un evento inmutable. La revisión «vigente» de un documento es la última de su

@@ -18,8 +18,7 @@ if (!is_string($clave) || strlen($clave) < 16) {
 }
 
 Artisan::call('migrate', ['--force' => true]);
-// Revisión documental funcional (6.3.1): la migración PROPUESTA solo se aplica en esta base desechable.
-(require __DIR__.'/../../../database/migrations_propuestas/2026_11_26_000000_create_revisiones_documentales_table.php')->up();
+// Revisión documental funcional (6.3.1): revisiones_documentales ya se creó con «migrate» en esta base desechable.
 $disco = Illuminate\Support\Facades\Storage::disk('local');
 
 $zona = DB::table('zonas')->insertGetId(['siglas' => 'Z-DEMO', 'descripcion' => 'Zona FICTICIA de demostración']);

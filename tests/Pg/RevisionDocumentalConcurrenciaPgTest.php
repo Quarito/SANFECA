@@ -19,8 +19,6 @@ use Tests\TestCase;
  */
 class RevisionDocumentalConcurrenciaPgTest extends TestCase
 {
-    private const PROPUESTA = 'database/migrations_propuestas/2026_11_26_000000_create_revisiones_documentales_table.php';
-
     private int $solicitud;
     private array $coord = [];
     private array $archivos = [];
@@ -31,8 +29,7 @@ class RevisionDocumentalConcurrenciaPgTest extends TestCase
         if (DB::getDriverName() !== 'pgsql' || DB::connection()->getDatabaseName() !== 'bd_anfeca_desechable_pruebas_pg') {
             throw new RuntimeException('SEGURIDAD: la concurrencia real solo se prueba en bd_anfeca_desechable_pruebas_pg.');
         }
-        Artisan::call('migrate:fresh', ['--force' => true]);
-        (require base_path(self::PROPUESTA))->up();
+        Artisan::call('migrate:fresh', ['--force' => true]);   // incluye revisiones_documentales (solo base desechable)
 
         $zona = DB::table('zonas')->insertGetId(['siglas' => 'ZPG', 'descripcion' => 'Zona ficticia PG']);
         $inst = DB::table('instituciones_afiliadas')->insertGetId(['numero_afiliacion' => 'IPG', 'nombre' => 'Institución ficticia PG', 'zona_id' => $zona]);

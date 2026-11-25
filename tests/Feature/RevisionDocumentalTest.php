@@ -16,15 +16,13 @@ use Tests\TestCase;
 
 /**
  * Fase 6.3.1 · Revisión documental funcional (matriz de 27 casos + casos adicionales).
- * Solo SQLite en memoria y disco falso: la migración PROPUESTA se aplica aquí de forma aislada.
+ * Solo SQLite en memoria y disco falso (árbol aislado; nunca sobre el sitio).
  */
 class RevisionDocumentalTest extends TestCase
 {
     use RefreshDatabase {
         refreshDatabase as protected refreshDatabaseLaravel;
     }
-
-    private const PROPUESTA = 'database/migrations_propuestas/2026_11_26_000000_create_revisiones_documentales_table.php';
 
     private array $zona = [];
     private array $inst = [];
@@ -46,7 +44,7 @@ class RevisionDocumentalTest extends TestCase
         Storage::fake('local');
         $this->withoutVite();
         config(['anfeca_coordinacion.revision_documental' => true]);
-        (require base_path(self::PROPUESTA))->up();
+        // revisiones_documentales se crea con las migraciones ordinarias (RefreshDatabase).
 
         foreach (['ZR1', 'ZR2'] as $s) {
             $this->zona[$s] = DB::table('zonas')->insertGetId(['siglas' => $s, 'descripcion' => "Zona ficticia {$s}"]);

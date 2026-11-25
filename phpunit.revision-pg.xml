@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-    Fase 6.3.1 (PREPARACIÓN): prueba la migración PROPUESTA de revisiones_documentales en PostgreSQL.
+    Fase 6.3.1: restricciones y concurrencia real de revisiones_documentales en PostgreSQL.
     SOLO contra la base DESECHABLE bd_anfeca_desechable_pruebas_pg (pod de Podman sin red).
     La prueba se niega a ejecutarse con cualquier otro nombre de base. Nunca use la base del ambiente 8086.
     Usuario, contraseña, host y puerto se pasan por el entorno; no se escriben aquí.

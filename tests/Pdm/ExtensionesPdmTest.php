@@ -111,7 +111,7 @@ class ExtensionesPdmTest extends PdmTestCase
 
         $this->assertSame(36, DB::table('pg_tables')->where('schemaname', 'anfeca_modelo')->whereNotIn('tablename', ['integracion_control', 'seleccion_certificacion', 'solicitud_refrendo', 'formacion_solicitud', 'documentos_solicitud'])->count());
         $this->assertSame(35, (int) DB::selectOne("select count(*) as n from pg_constraint where contype = 'f' and connamespace = 'anfeca_modelo'::regnamespace and conrelid::regclass::text not in ('anfeca_modelo.seleccion_certificacion', 'anfeca_modelo.solicitud_refrendo', 'anfeca_modelo.formacion_solicitud', 'anfeca_modelo.documentos_solicitud')")->n);
-        $this->assertSame(25, DB::table('pg_tables')->where('schemaname', 'public')->count(), 'public no cambia');
+        $this->assertSame(26, DB::table('pg_tables')->where('schemaname', 'public')->count(), 'public no cambia (25 + revisiones_documentales)');
         $this->assertSame(32, DB::table('anfeca_modelo.entidad_federativa')->count(), 'los catálogos se conservan');
 
         $this->migracion()->up();

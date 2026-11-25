@@ -93,9 +93,11 @@ class EsquemaPdmTest extends PdmTestCase
         $this->assertSame(0, DB::table('anfeca_modelo.integracion_control')->count(), 'el espejo no queda activado por omisión');
     }
 
-    public function test_public_conserva_las_25_tablas_de_laravel(): void
+    public function test_public_conserva_las_26_tablas_de_laravel(): void
     {
-        $this->assertSame(25, DB::table('pg_tables')->where('schemaname', 'public')->count());
+        // 25 tablas originales + revisiones_documentales (fase 6.3.1, migración autorizada 2026-11-25).
+        $this->assertSame(26, DB::table('pg_tables')->where('schemaname', 'public')->count());
+        $this->assertNotNull(DB::selectOne("select to_regclass('public.revisiones_documentales') as t")->t);
     }
 
     public function test_tablas_de_etapa_2_listas_y_vacias(): void

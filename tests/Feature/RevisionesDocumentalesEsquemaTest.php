@@ -13,7 +13,7 @@ use RuntimeException;
 use Tests\TestCase;
 
 /**
- * Fase 6.3.1 (PREPARACIÓN): restricciones de la migración PROPUESTA de revisiones_documentales.
+ * Fase 6.3.1: restricciones de la migración AUTORIZADA de revisiones_documentales.
  *
  * Aplica la migración solo sobre bases desechables:
  * - SQLite en memoria (phpunit.xml);
@@ -26,7 +26,7 @@ class RevisionesDocumentalesEsquemaTest extends TestCase
         refreshDatabase as protected refreshDatabaseLaravel;
     }
 
-    private const PROPUESTA = 'database/migrations_propuestas/2026_11_26_000000_create_revisiones_documentales_table.php';
+    private const MIGRACION = 'database/migrations/2026_11_26_000000_create_revisiones_documentales_table.php';
     private const SHA = 'a3f1c2d4e5b6978877665544332211ffeeddccbbaa99887766554433221100aa';
 
     private object $migracion;
@@ -42,7 +42,7 @@ class RevisionesDocumentalesEsquemaTest extends TestCase
         $permitido = ($motor === 'sqlite' && $base === ':memory:')
             || ($motor === 'pgsql' && $base === 'bd_anfeca_desechable_pruebas_pg');
         if (!$permitido) {
-            throw new RuntimeException("SEGURIDAD: la migración propuesta solo se prueba en bases desechables ({$motor}:{$base}).");
+            throw new RuntimeException("SEGURIDAD: las restricciones de revisiones_documentales solo se prueban en bases desechables ({$motor}:{$base}).");
         }
         $this->refreshDatabaseLaravel();
     }
@@ -50,8 +50,9 @@ class RevisionesDocumentalesEsquemaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->migracion = require base_path(self::PROPUESTA);
-        $this->migracion->up();
+        // La tabla ya existe: la crean las migraciones ordinarias (RefreshDatabase). Se conserva la
+        // instancia para probar down()/up() de forma aislada.
+        $this->migracion = require base_path(self::MIGRACION);
 
         $this->solicitante = User::create(['name' => 'Solicitante ficticio', 'email' => 'sol@example.test', 'password' => Hash::make('ContrasenaFicticia1')]);
         $this->nacional = new User();
@@ -105,13 +106,14 @@ class RevisionesDocumentalesEsquemaTest extends TestCase
 
     // -------------------------------------------------------------- ubicación segura
 
-    public function test_la_propuesta_no_esta_en_la_ruta_de_migraciones_ordinarias(): void
+    public function test_migracion_autorizada_en_la_ruta_ordinaria_y_aplicable_por_path(): void
     {
         $archivos = array_keys(app(Migrator::class)->getMigrationFiles([database_path('migrations')]));
-        $this->assertNotContains('2026_11_26_000000_create_revisiones_documentales_table', $archivos);
-        $this->assertFileDoesNotExist(database_path('migrations/2026_11_26_000000_create_revisiones_documentales_table.php'));
-        // La tabla de migraciones no la registra al aplicarla de forma aislada.
-        $this->assertFalse(DB::table('migrations')->where('migration', 'like', '%revisiones_documentales%')->exists());
+        $this->assertContains('2026_11_26_000000_create_revisiones_documentales_table', $archivos);
+        $this->assertSame('2026_11_26_000000_create_revisiones_documentales_table', end($archivos), 'Es la última migración: --path la aplica sola.');
+        $this->assertDirectoryDoesNotExist(base_path('database/migrations_propuestas'));
+        $this->assertTrue(DB::table('migrations')->where('migration', '2026_11_26_000000_create_revisiones_documentales_table')->exists());
+        $this->assertSame(1, collect($archivos)->filter(fn ($m) => str_contains($m, 'revisiones_documentales'))->count());
     }
 
     // ------------------------------------------------------------ valores permitidos
