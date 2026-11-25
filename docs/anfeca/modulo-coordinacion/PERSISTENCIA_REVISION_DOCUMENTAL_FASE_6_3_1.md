@@ -1,7 +1,7 @@
 # Fase 6.3.1 · Diseño técnico de la persistencia de la revisión documental
 
 > **Estado (2026-11-25): IMPLEMENTADA Y PROBADA EN ENTORNOS AISLADOS · MIGRACIÓN PENDIENTE DE AUTORIZACIÓN.**
-> - La migración sigue en `database/migrations_propuestas/`, fuera de la ruta automática. **No se ha ejecutado** en la base de 8086 (`bd_anfeca_ensayo_pruebas_pg`).
+> - La migración está en `database/migrations/` (autorizada, commit `66d40dc`) y se aplica **solo con `--path`**. **Aún no se ha ejecutado** en la base de 8086 (`bd_anfeca_ensayo_pruebas_pg`); ver §9.0.
 > - El código funcional está publicado pero **desactivado** (`ANFECA_COORDINACION_REVISION=false`); en 8086 las rutas responden 404 y el expediente no cambia.
 > - El PDM permanece **apagado** y **no** hay espejo hacia `anfeca_modelo`.
 
@@ -297,6 +297,35 @@ Ambiente: 8086, base `bd_anfeca_ensayo_pruebas_pg`. **No se ejecuta** hasta reci
    - si la tabla está vacía, `php artisan migrate:rollback --path=…`, que `down()` permite;
    - si tiene historial, `down()` se niega y solo con autorización se restaura el respaldo del paso 2 en una base nueva, con comprobación y cambio controlado.
 7. **Respaldo continuo:** la tabla entra en los `pg_dump` habituales. Para recuperar una revisión puntual se usa `pg_restore -t revisiones_documentales` sobre una base temporal. **Nunca** se reinsertan ni se actualizan filas.
+
+### 9.0 Estado de la aplicación en 8086 (2026-11-25)
+
+| Paso | Estado |
+|---|---|
+| Condiciones previas | ✔ 5.2 GB libres · rotación de `coordinador.nacional` verificada (contraseña nueva válida, anterior rechazada, 0 sesiones de la cuenta) · rama y commit autorizados · PDM `apagado` (`integracion_control` vacía) · bandera de revisión `false` · conexión efectiva `pgsql` 127.0.0.1:5432 `bd_anfeca_ensayo_pruebas_pg` · sin configuración en caché |
+| Migración en la ruta autorizada | ✔ commit `66d40dc` (`database/migrations/2026_11_26_000000_…`) |
+| Respaldo verificado inmediatamente antes | ✔ SHA-256 `5c981f12…`; restauración real idéntica (1429 elementos de catálogo, 74 tablas, 174 filas); Laravel sobre la restauración: 34 ejecutadas, 2 pendientes (esta y la ajena) |
+| Ensayo en seco (`--pretend`) en 8086 | ✔ Solo la migración autorizada; sin `escuela_facultad` |
+| **Ensayo completo sobre la restauración del respaldo** (clon del commit `66d40dc`, PostgreSQL 18.6 desechable) | ✔ `aplicar_revisiones_documentales.sh`: solo cambian `migrations` (38 → 39) y la tabla nueva vacía; `verificar_revisiones_documentales.sh`: 0 fallas; con datos reales restaurados: reintento idéntico reconocido, 409 por clave con otro contenido, UPDATE, DELETE, TRUNCATE y borrado de solicitud rechazados |
+| **Aplicación en 8086** | ⏸ **No ejecutada.** El control de permisos de la herramienta bloqueó la orden. Queda lista para ejecutarse con los scripts (abajo) |
+
+Orden de aplicación en 8086 (el respaldo debe regenerarse en el commit vigente y tener menos de 2 horas):
+
+```sh
+cd /var/www/ANFECA_ENSAYO
+bash scripts/anfeca/respaldo_verificado.sh bd_anfeca_ensayo_pruebas_pg desarrollo/modulo-coordinacion $(git rev-parse --short HEAD)
+R=$(ls -d ~/ANFECA_RESPALDOS/respaldo_verificado_bd_anfeca_ensayo_pruebas_pg_* | tail -1)
+ANFECA_AUTORIZO_MIGRACION=revisiones_documentales \
+  bash scripts/anfeca/aplicar_revisiones_documentales.sh bd_anfeca_ensayo_pruebas_pg $(git rev-parse --short HEAD) "$R"
+```
+
+El script de aplicación:
+- revisa todas las condiciones previas;
+- ejecuta solo `migrate --path`;
+- compara las huellas de **todas** las tablas antes y después, y se detiene si cambia algo más que `migrations` y la tabla nueva;
+- ejecuta la verificación estructural.
+
+Los resultados quedan en `$R/aplicacion/`.
 
 ### 9.1 Ensayo del respaldo verificado (2026-11-25, sin migrar)
 
