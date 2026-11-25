@@ -79,16 +79,39 @@
     <section class="coord-panel coord-panel-documentos" aria-labelledby="titulo-documentos">
         <div class="coord-documentos-encabezado">
             <h2 id="titulo-documentos">Documentos</h2>
-            {{-- Una sola leyenda para toda la sección: el estado mostrado es de CARGA, no de revisión. --}}
-            <p class="coord-documentos-leyenda">Estado de carga. Revisión documental: pendiente (fase 6.3).</p>
+            @if ($revision)
+                <p class="coord-documentos-leyenda">Estado de carga y resultado de revisión. La revisión no califica ni dictamina la solicitud.</p>
+            @else
+                {{-- Una sola leyenda para toda la sección: el estado mostrado es de CARGA, no de revisión. --}}
+                <p class="coord-documentos-leyenda">Estado de carga. Revisión documental: pendiente (fase 6.3).</p>
+            @endif
         </div>
+
+        @if ($revision)
+            @php $ind = $revision['indicadores']; @endphp
+            {{-- Indicadores en una sola línea compacta. Excluyen los no aplicables de los denominadores. --}}
+            <dl class="coord-indicadores-revision" aria-label="Avance de revisión documental">
+                <div><dt>Aplicables</dt><dd data-indicador="aplicables">{{ $ind['aplicables'] }}</dd></div>
+                <div><dt>Cargados</dt><dd data-indicador="cargados">{{ $ind['cargados'] }}</dd></div>
+                <div><dt>Faltantes</dt><dd data-indicador="faltantes">{{ $ind['faltantes'] }}</dd></div>
+                <div><dt>Por revisar</dt><dd data-indicador="por_revisar">{{ $ind['por_revisar'] }}</dd></div>
+                <div><dt>Validados</dt><dd data-indicador="validados">{{ $ind['validados'] }}</dd></div>
+                <div><dt>Con observaciones</dt><dd data-indicador="con_observaciones">{{ $ind['con_observaciones'] }}</dd></div>
+                <div><dt>No válidos</dt><dd data-indicador="no_validos">{{ $ind['no_validos'] }}</dd></div>
+                <div class="separado"><dt>Revisado</dt><dd data-indicador="porcentaje_revisado">{{ $ind['porcentaje_revisado'] }} %</dd></div>
+                <div><dt>Validado</dt><dd data-indicador="porcentaje_validado">{{ $ind['porcentaje_validado'] }} %</dd></div>
+            </dl>
+            @unless ($solicitudEnviada)
+                <p class="coord-documentos-leyenda">La solicitud no ha sido enviada: la revisión documental no está disponible.</p>
+            @endunless
+        @endif
 
         @foreach ($grupos as $grupo)
             <div class="coord-documentos-grupo">
                 @foreach ($grupo as $columna)
                     <div class="coord-documentos-columna">
                         @foreach ($columna as $doc)
-                            @include('coordinacion.partials.documento', ['doc' => $doc, 'folio' => $detalle->folio])
+                            @include('coordinacion.partials.documento', ['doc' => $doc, 'folio' => $detalle->folio, 'solicitudEnviada' => $solicitudEnviada ?? false])
                         @endforeach
                     </div>
                 @endforeach
@@ -100,7 +123,7 @@
             {{-- Distribución horizontal adaptable a la cantidad real (máximo 3 por fila). --}}
             <div class="coord-documentos-adicionales" style="--columnas: {{ min(count($adicionales), 3) }}">
                 @foreach ($adicionales as $doc)
-                    @include('coordinacion.partials.documento', ['doc' => $doc, 'folio' => $detalle->folio])
+                    @include('coordinacion.partials.documento', ['doc' => $doc, 'folio' => $detalle->folio, 'solicitudEnviada' => $solicitudEnviada ?? false])
                 @endforeach
             </div>
         @endif
@@ -111,4 +134,10 @@
             </p>
         @endif
     </section>
+
+    @if ($revision)
+        {{-- Diálogo de revisión (Vue): resultado, observaciones, motivo, coordinador, versión e historial. --}}
+        <div id="vue-revision-documental"
+             data-url-base="{{ url('/coordinacion/solicitudes/'.$detalle->folio.'/documentos') }}"></div>
+    @endif
 @endsection

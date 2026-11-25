@@ -245,3 +245,14 @@ const contenedorPrototipoRevision = document.getElementById('vue-prototipo-revis
 if (contenedorPrototipoRevision) {
     createApp(RevisionDocumentalPrototipo).mount(contenedorPrototipoRevision);
 }
+
+// Revisión documental funcional (fase 6.3.1): diálogo sobre el expediente; solo con la revisión activa.
+import RevisionDocumentalDialogo from './components/RevisionDocumentalDialogo.vue';
+
+const contenedorRevisionDocumental = document.getElementById('vue-revision-documental');
+
+if (contenedorRevisionDocumental) {
+    createApp(RevisionDocumentalDialogo, {
+        urlBase: contenedorRevisionDocumental.dataset.urlBase
+    }).mount(contenedorRevisionDocumental);
+}

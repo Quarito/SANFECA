@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('titulo', 'Coordinación') | ANFECA</title>
@@ -18,7 +19,7 @@
     <link rel="stylesheet" href="{{ asset('css/anfeca-compacto-v4.css') }}?v=4">
 
     {{-- Estilos propios del módulo administrativo. --}}
-    <link rel="stylesheet" href="{{ asset('css/coordinacion.css') }}?v=9">
+    <link rel="stylesheet" href="{{ asset('css/coordinacion.css') }}?v=10">
     @stack('estilos')
 </head>
 <body class="coord-body">
