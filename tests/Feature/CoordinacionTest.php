@@ -376,4 +376,77 @@ class CoordinacionTest extends TestCase
         unlink($archivo);
         rmdir($dir);
     }
+
+    // ------------------------------------------------- homologación visual
+
+    public function test_layout_administrativo_homologado_con_el_modulo_de_solicitantes(): void
+    {
+        foreach (['/coordinacion', '/coordinacion/solicitudes', "/coordinacion/solicitudes/{$this->sol['ZF3']}"] as $url) {
+            $this->actingAs($this->coord['nacional'])->get($url)->assertOk()
+                ->assertSee('<header class="encabezado">', false)
+                ->assertSee('CERTIFICACIÓN DE LA ANFECA')
+                ->assertSee('Coordinación Nacional de')
+                ->assertSee('<footer class="pie-pagina">', false)
+                ->assertSee('Hecho en México')
+                ->assertSee('Sitio web administrado por el Centro de Informática')
+                ->assertSee('css/certificacion.css', false)
+                ->assertSee('css/barra-usuario-certificacion.css', false)
+                ->assertSee('barra-usuario barra-usuario-certificacion', false)
+                ->assertSee('Cerrar sesión')
+                ->assertSee('Coordinación nacional')
+                ->assertSee('Todas las zonas')
+                ->assertSee('class="coord-menu"', false);
+        }
+    }
+
+    public function test_consulta_con_dos_fichas_y_cuadricula_de_documentos(): void
+    {
+        $html = $this->actingAs($this->coord['z3'])->get("/coordinacion/solicitudes/{$this->sol['ZF3']}")
+            ->assertOk()->getContent();
+
+        // Dos fichas en el orden obligatorio; formación académica dentro de la ficha del solicitante.
+        $this->assertSame(2, substr_count($html, 'class="coord-panel coord-ficha '));
+        $posSolicitante = strpos($html, 'Ficha del solicitante');
+        $posFormacion = strpos($html, 'Formación académica');
+        $posSolicitud = strpos($html, 'Datos de solicitud');
+        $this->assertTrue($posSolicitante < $posFormacion && $posFormacion < $posSolicitud);
+        $this->assertStringContainsString('class="coord-divisor"', $html);
+        foreach (['Nombre completo', 'CURP', 'Correo electrónico', 'Institución Tres', 'Facultad Tres', 'Campus', 'Zona ANFECA',
+                  'Nivel de origen', 'Título de origen', 'Último grado', 'Título del último grado',
+                  'Folio de solicitud', 'Tipo de trámite', 'Tipo de personal', 'Área de conocimiento', 'Fecha de envío', 'Compromiso de entrega'] as $texto) {
+            $this->assertStringContainsString($texto, $html, $texto);
+        }
+
+        // Cuadrícula: primer grupo de 6 en 3 columnas × 2 (columna por columna) y estados de carga.
+        $this->assertSame(1, substr_count($html, 'class="coord-documentos-grupo"'));
+        $this->assertSame(3, substr_count($html, 'class="coord-documentos-columna"'));
+        preg_match_all('/data-documento="([a-z0-9_]+)"/', $html, $m);
+        $this->assertSame(['titulo_origen_archivo', 'cedula_origen_archivo', 'titulo_ultimo_grado_archivo',
+            'cedula_ultimo_grado_archivo', 'constancia_antiguedad_archivo', 'comprobante_pago_archivo'], $m[1]);
+        $this->assertStringContainsString('coord-documento cargado', $html);
+        $this->assertStringContainsString('coord-documento no-cargado', $html);
+        $this->assertStringNotContainsString('Validado', $html, 'Cargado no equivale a validado.');
+        $this->assertStringContainsString('No aplica', $html, 'Los documentos de artículo 13/14 no aplican a primera vez.');
+        $this->assertStringContainsString("/coordinacion/solicitudes/{$this->sol['ZF3']}/documentos/titulo_origen_archivo", $html);
+        $this->assertStringNotContainsString("/documentos/cedula_origen_archivo\"", $html, 'Sin enlace para documentos no cargados.');
+    }
+
+    public function test_refrendo_por_articulo_14_muestra_documentos_adicionales_en_un_segundo_grupo(): void
+    {
+        $id = $this->sol['ZF4'];
+        DB::table('datos_refrendo')->insert(['solicitud_id' => $id, 'aplica_articulo_14' => true, 'inciso_articulo_14' => '14.1']);
+        $ruta = "anfeca/documentos/solicitudes/{$id}/sol14.pdf";
+        Storage::disk('local')->put($ruta, '%PDF-1.4 ficticio art14');
+        DB::table('documentos_probatorios_solicitud')->where('solicitud_id', $id)->update(['solicitud_articulo_14_archivo' => $ruta]);
+
+        $html = $this->actingAs($this->coord['z4'])->get("/coordinacion/solicitudes/{$id}")->assertOk()->getContent();
+        $this->assertSame(2, substr_count($html, 'class="coord-documentos-grupo"'), '8 documentos: 6 + 2.');
+        $this->assertStringContainsString('data-documento="solicitud_articulo_14_archivo"', $html);
+        $this->assertStringContainsString('data-documento="constancia_articulo_14_archivo"', $html);
+        $this->assertStringContainsString('Sí, inciso 14.1', $html);
+        $this->assertStringNotContainsString('coord-documentos-no-aplican', $html);
+
+        $this->actingAs($this->coord['z4'])->get("/coordinacion/solicitudes/{$id}/documentos/solicitud_articulo_14_archivo")->assertOk();
+        $this->actingAs($this->coord['z3'])->get("/coordinacion/solicitudes/{$id}/documentos/solicitud_articulo_14_archivo")->assertNotFound();
+    }
 }

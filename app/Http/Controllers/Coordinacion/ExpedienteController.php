@@ -51,23 +51,38 @@ class ExpedienteController extends Controller
         abort_if($detalle === null, 404);
 
         $refrendo = $modelo->datosRefrendo;
+        $aplicaArticulo = $this->aplicaArticulo13o14($modelo);
+
+        // Documentos aplicables al trámite (orden de la cuadrícula) y los que no aplican.
+        // Estado de CARGA únicamente: la validación documental es una fase posterior.
         $documentos = [];
+        $noAplican = [];
         foreach (self::DOCUMENTOS as $campo => [$origen, $etiqueta]) {
             $ruta = $this->ruta($modelo, $campo);
-            if ($origen === 'probatorios' && str_contains($campo, 'articulo_14') && $ruta === null) {
-                continue; // solo aplica a refrendos por artículo 13/14
+            $esArticulo = str_contains($campo, 'articulo_14');
+
+            if ($esArticulo && !$aplicaArticulo && $ruta === null) {
+                $noAplican[] = $etiqueta;
+                continue;
             }
+
             $documentos[] = [
                 'campo' => $campo,
                 'etiqueta' => $etiqueta,
-                'disponible' => $ruta !== null && Storage::disk('local')->exists($ruta),
+                'estado' => match (true) {
+                    $ruta === null => 'no-cargado',
+                    Storage::disk('local')->exists($ruta) => 'cargado',
+                    default => 'no-localizado',
+                },
             ];
         }
 
         return view('coordinacion.expediente', [
             'detalle' => $detalle,
             'refrendo' => $refrendo,
+            'aplicaArticulo' => $aplicaArticulo,
             'documentos' => $documentos,
+            'noAplican' => $noAplican,
         ]);
     }
 
@@ -89,6 +104,17 @@ class ExpedienteController extends Controller
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
         ]);
+    }
+
+    /** Mismo criterio que Documentos probatorios del solicitante (refrendo, art. 13.1 o 14.x). */
+    private function aplicaArticulo13o14(SolicitudCertificacion $solicitud): bool
+    {
+        $datos = $solicitud->datosRefrendo;
+
+        return $solicitud->tipo_tramite === 'refrendo'
+            && $datos !== null
+            && (int) $datos->aplica_articulo_14 === 1
+            && in_array((string) $datos->inciso_articulo_14, ['13.1', '14', '14.1', '14.2', '14.3'], true);
     }
 
     private function ruta(SolicitudCertificacion $solicitud, string $campo): ?string
