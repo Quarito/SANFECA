@@ -187,6 +187,12 @@ const textoTituloGuardado = computed(() =>
     claveTitulo.value && claveTitulo.value === f.clave_posgrado_catalogo
         ? (f.titulo_ultimo_grado_especifico ?? '') : ''
 );
+// Selección guardada vigente para el nivel y el área guardados (se conserva aunque la versión actual del
+// catálogo ya no la incluya: el servidor la mantiene sin cambios mientras no se modifique).
+const enSeleccionGuardada = () => Boolean(f.clave_posgrado_catalogo)
+    && nivelUltimoGrado.value === f.nivel_ultimo_grado_guardado
+    && tituloUltimoGrado.value === f.titulo_ultimo_grado_guardado;
+const tituloFueraDeVersion = ref(false);
 const placeholderTitulo = computed(() => {
     if (!nivelUltimoGrado.value || !tituloUltimoGrado.value) return 'Seleccione primero el nivel y el área';
     return 'Seleccione o busque su título';
@@ -221,8 +227,12 @@ async function cargarTitulos() {
         cacheTitulos.set(llave, datos.titulos);
         if (llave === `${nivelUltimoGrado.value}|${tituloUltimoGrado.value}`) {
             opcionesTitulo.value = datos.titulos;
-            // Una clave que no pertenece al nivel y al área vigentes se descarta (el servidor también la rechaza).
-            if (claveTitulo.value && !datos.titulos.some(t => t.clave === claveTitulo.value)) {
+            const presente = datos.titulos.some(t => t.clave === claveTitulo.value);
+            tituloFueraDeVersion.value = Boolean(claveTitulo.value) && !presente
+                && claveTitulo.value === f.clave_posgrado_catalogo && enSeleccionGuardada();
+            // Una clave ajena al nivel y al área vigentes se descarta (el servidor también la rechaza), salvo la
+            // selección guardada sin cambios, que se conserva con un aviso (nunca se borra en silencio).
+            if (claveTitulo.value && !presente && !tituloFueraDeVersion.value) {
                 claveTitulo.value = '';
                 notificarCambio(campoClave);
             }
@@ -237,6 +247,7 @@ async function cargarTitulos() {
 
 function seleccionarTitulo(clave) {
     claveTitulo.value = clave;
+    tituloFueraDeVersion.value = false;
     modoTitulo.value = 'catalogo';
     notificarCambio(campoClave);
 }
@@ -254,11 +265,12 @@ function volverAlCatalogo() {
 }
 
 watch([nivelUltimoGrado, tituloUltimoGrado], () => {
-    // Cambiar nivel o área invalida la selección del catálogo (no el texto manual).
-    if (claveTitulo.value) {
-        claveTitulo.value = '';
-        notificarCambio(campoClave);
-    }
+    // Cambiar nivel o área invalida la selección del catálogo (no el texto manual); al volver al nivel y al
+    // área guardados se recupera la selección guardada, para evitar recapturas innecesarias.
+    const anterior = claveTitulo.value;
+    claveTitulo.value = enSeleccionGuardada() ? f.clave_posgrado_catalogo : '';
+    tituloFueraDeVersion.value = false;
+    if (anterior !== claveTitulo.value) notificarCambio(campoClave);
     cargarTitulos();
 });
 onMounted(cargarTitulos);
@@ -543,6 +555,10 @@ const institucionSeleccionada = computed(() => {
                                minlength="5" maxlength="200" :required="!formacionBloqueada" :disabled="formacionBloqueada"
                                placeholder="Escriba el nombre completo de su título, como aparece en el documento">
                         <small v-if="errorTitulos" class="ug-error" role="alert">{{ errorTitulos }}</small>
+                        <small v-if="tituloFueraDeVersion && modoTitulo === 'catalogo'" class="ug-aviso" role="status">
+                            Título registrado con la versión {{ f.version_catalogo_posgrados }} del catálogo; ya no figura en la versión vigente.
+                            Se conserva sin cambios; puede elegir otro si lo desea.
+                        </small>
                     </div>
 
                     <!-- Licenciatura: comportamiento actual (título libre solo con el área «Otro»). -->
@@ -969,6 +985,7 @@ const institucionSeleccionada = computed(() => {
 #vue-formacion-academica .ug-manual:focus { outline: 2px solid #2563eb; outline-offset: 1px; border-color: #2563eb; }
 #vue-formacion-academica .ug-manual:disabled { background: #f1f1f1; cursor: not-allowed; }
 #vue-formacion-academica .ug-error { display: block; margin-top: 4px; color: #c62828; font-size: 12px; }
+#vue-formacion-academica .ug-aviso { display: block; margin-top: 4px; color: #7a4b00; font-size: 12px; }
 @media (max-width: 480px) {
     #vue-formacion-academica .ug-fila-nivel-area { grid-template-columns: 1fr; gap: 8px; }
 }

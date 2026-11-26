@@ -80,7 +80,12 @@ class TituloUltimoGrado
         }
 
         $modo = $datos['modo_titulo_ultimo_grado'];
-        if ($modo === 'catalogo') {
+        if ($modo === 'catalogo' && $this->sinCambios($datos, $formacion)) {
+            // Selección guardada SIN cambios (misma clave, nivel y área): se conserva tal como se registró, con su
+            // título y su versión de origen, aunque la versión vigente la haya retirado, renombrado o reclasificado.
+            $columnas = ['titulo_ultimo_grado_especifico' => $formacion->titulo_ultimo_grado_especifico, 'origen_titulo_ultimo_grado' => 'catalogo',
+                'clave_posgrado_catalogo' => $formacion->clave_posgrado_catalogo, 'version_catalogo_posgrados' => $formacion->version_catalogo_posgrados];
+        } elseif ($modo === 'catalogo') {
             $t = $this->catalogo->validar($datos['clave_posgrado_catalogo'] ?? null, $datos['nivel_ultimo_grado'], $datos['titulo_ultimo_grado']);
             if ($t === null) {
                 throw ValidationException::withMessages(['clave_posgrado_catalogo' => 'El título no corresponde al nivel y al área seleccionados.']);
@@ -97,6 +102,17 @@ class TituloUltimoGrado
             ? mb_substr($columnas['titulo_ultimo_grado_especifico'], 0, 200) : null;
 
         return $datos + $columnas;
+    }
+
+    /** ¿La selección enviada es exactamente la guardada (clave, nivel y área) y proviene del catálogo? */
+    private function sinCambios(array $datos, ?object $formacion): bool
+    {
+        return $formacion !== null
+            && ($formacion->origen_titulo_ultimo_grado ?? null) === 'catalogo'
+            && filled($formacion->clave_posgrado_catalogo ?? null)
+            && ($datos['clave_posgrado_catalogo'] ?? null) === $formacion->clave_posgrado_catalogo
+            && ($datos['nivel_ultimo_grado'] ?? null) === $formacion->nivel_ultimo_grado
+            && ($datos['titulo_ultimo_grado'] ?? null) === $formacion->titulo_ultimo_grado;
     }
 
     /**
