@@ -1,0 +1,67 @@
+{
+ "version": "FICTICIO-2",
+ "reglas": "reglas-prueba",
+ "aviso": "Catálogo FICTICIO versión 2 para probar el versionado: alta, baja, reclasificación y cambios de denominación.",
+ "niveles": [
+  "Especialidad",
+  "Maestría",
+  "Doctorado"
+ ],
+ "areas": [
+  "Administración",
+  "Contaduría",
+  "Informática",
+  "Negocios Internacionales",
+  "Otro"
+ ],
+ "titulos": [
+  {
+   "clave": "ESP-00000000000A",
+   "nivel": "Especialidad",
+   "area": "Administración",
+   "titulo": "Especialidad Ficticia en Gestión Organizacional"
+  },
+  {
+   "clave": "MAE-00000000000A",
+   "nivel": "Maestría",
+   "area": "Administración",
+   "titulo": "MAESTRIA FICTICIA EN DIRECCION DE EMPRESAS"
+  },
+  {
+   "clave": "MAE-00000000000C",
+   "nivel": "Maestría",
+   "area": "Administración",
+   "titulo": "Maestría Ficticia en Auditoría y Tributación"
+  },
+  {
+   "clave": "MAE-00000000000D",
+   "nivel": "Maestría",
+   "area": "Informática",
+   "titulo": "Maestría Ficticia en Ciencias Computacionales"
+  },
+  {
+   "clave": "MAE-00000000000F",
+   "nivel": "Maestría",
+   "area": "Otro",
+   "titulo": "Maestría Ficticia en Economía Aplicada y Políticas Públicas con Enfoque Regional para el Desarrollo Sostenible de Comunidades"
+  },
+  {
+   "clave": "DOC-00000000000A",
+   "nivel": "Doctorado",
+   "area": "Administración",
+   "titulo": "Doctorado Ficticio en Administración Estratégica"
+  },
+  {
+   "clave": "MAE-000000000011",
+   "nivel": "Maestría",
+   "area": "Administración",
+   "titulo": "Maestría Ficticia en Gestión Pública Comparada"
+  },
+  {
+   "clave": "MAE-000000000010",
+   "nivel": "Maestría",
+   "area": "Informática",
+   "titulo": "Maestría Ficticia en Inteligencia de Negocios"
+  }
+ ]
+}
