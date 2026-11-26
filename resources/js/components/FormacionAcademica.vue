@@ -83,7 +83,7 @@ const mensajeTituloOrigen = computed(() => {
     if (licActivo.value) {
         return modoOrigen.value === 'manual'
             ? 'El título capturado manualmente queda sujeto a revisión de procedencia.'
-            : 'Busque y seleccione su título de licenciatura. Área de certificación: ' + (props.areaCertificacion || '—') + '.';
+            : 'Título permitido con el área de certificación: ' + props.titulosPermitidos.join(', ');
     }
     if (tituloHistoricoIncompatible.value) {
         return 'El título histórico se conserva aunque no coincida '
