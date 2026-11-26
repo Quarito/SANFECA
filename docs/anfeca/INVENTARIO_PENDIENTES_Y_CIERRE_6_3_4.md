@@ -1,6 +1,6 @@
 # Inventario consolidado de pendientes y criterios de cierre de la fase 6.3.4 · 2026-11-26
 
-**Commit de referencia:** `9b21c42` (`desarrollo/modulo-coordinacion`; `ensayo/principal` sin cambios en `ff8f826`).
+**Commit de referencia:** `9b21c42` (`desarrollo/modulo-coordinacion`; `ensayo/principal` sin cambios en `ff8f826`). **Actualizado el 2026-11-26** tras la activación del catálogo en el ensayo (HEAD `8d9e5df` y commits de documentación posteriores).
 
 > **Numeración.** En `normativa/ANALISIS_BRECHAS_Y_DECISIONES.md` §13, «6.3.4» designaba la administración de convocatorias. El responsable denomina **6.3.4** a la fase actual (catálogo de posgrados y verificaciones complementarias). Se propone conservar esa denominación y renumerar convocatorias como **6.3.6**. **Decisión pendiente.**
 
@@ -21,12 +21,12 @@
 
 | ID | Fase | Módulo | Descripción | Prioridad | Estado | Dependencias | Riesgo | Evidencia | ¿Autoriz.? | Criterio de aceptación |
 |---|---|---|---|---|---|---|---|---|---|---|
-| CAT-01 | 6.3.4 | Solicitantes | Pantalla de Formación con catálogo (Nivel/Área 50/50, título 100 %, búsqueda, lista flotante, captura manual) | Alta | Impl. · Prob. · Despl. (código; compilación **no** servida) · **No activ.** · Aceptación visual **pendiente** | — | Bajo | Demo 8099; `CatalogoPosgrados*Test` (23); 31 + 9 verificaciones visuales | Sí (aceptación) | Visto bueno del responsable en la demo |
+| CAT-01 | 6.3.4 | Solicitantes | Pantalla de Formación con catálogo (Nivel/Área 50/50, título 100 %, búsqueda, lista flotante, captura manual) | Alta | Impl. · Prob. · Despl. · **Activ. en ensayo (26-nov)** · Aceptación visual **pendiente** | — | Bajo | Validación en 8086: 25/25; `CatalogoPosgrados*Test` (23) | Sí (aceptación) | Visto bueno del responsable en 8086 con `aceptacion.catalogo@example.test` |
 | CAT-02 | 6.3.4 | Catálogo | Clasificación de los 1794 títulos; 572 por revisar | Alta | Impl. · Prob. · **Pend. autorización** | — | Medio (clasificación administrativa) | Matriz y resumen por bloques (A 182 · B 219 · C 171) | Sí | Columna «Clasificación autorizada» completada o decisiones por bloque registradas |
-| CAT-03 | 6.3.4 | Base de datos | Migración aditiva (4 columnas + CHECK) | Alta | Impl. · Prob. (PG desechable 15/15) · **Pend. autorización** | CAT-02 (recomendado) | Bajo | `probar_migracion_catalogo.sh`; `CatalogoPosgradosMigracionPgTest` | Sí | `aplicar_catalogo_posgrados.sh` y `verificar_…` sin fallas en 8086 |
-| CAT-04 | 6.3.4 | Catálogo | Instalar el JSON en `storage/app/private/catalogos` (0640, grupo apache) con su huella | Alta | Pend. autorización | CAT-02 | Bajo | Procedimiento en `PROPUESTA_CATALOGO_POSGRADOS.md` §8 | Sí | Archivo con la SHA-256 esperada y legible solo por la aplicación |
-| CAT-05 | 6.3.4 | Frontend | Compilar y servir la compilación con el catálogo en 8086 | Alta | Pend. autorización | CAT-01 | Bajo (respaldo `app-JYtMCHvV.js`) | Compilación aislada `app-CYBBpN_p.js` | Sí | Manifiesto nuevo; pantallas existentes sin regresión |
-| CAT-06 | 6.3.4 | Solicitantes | Activar `ANFECA_CATALOGO_POSGRADOS=true` en 8086 | Alta | Pend. autorización | CAT-03, 04, 05 | Medio | — | Sí | Estado «activo»; prueba en vivo con cuenta ficticia; reversión por bandera probada |
+| CAT-03 | 6.3.4 | Base de datos | Migración aditiva (4 columnas + CHECK) | Alta | Impl. · Prob. · **Aplicada y verificada en 8086 (26-nov)** | — | Bajo | `aplicacion_catalogo_posgrados_20261126_133618` (0 fallas) | Hecho | — |
+| CAT-04 | 6.3.4 | Catálogo | Instalar el JSON en `storage/app/private/catalogos` (0640, grupo apache) con su huella | Alta | **Instalado (26-nov)** · huella verificada | — | Bajo | `PROPUESTA_CATALOGO_POSGRADOS.md` §0 | Hecho | — |
+| CAT-05 | 6.3.4 | Frontend | Compilar y servir la compilación con el catálogo en 8086 | Alta | **Servida (26-nov)** `app-CYBBpN_p.js`; anterior restaurable | — | Bajo | `desplegar_compilacion.sh` | Hecho | — |
+| CAT-06 | 6.3.4 | Solicitantes | Activar `ANFECA_CATALOGO_POSGRADOS=true` en 8086 | Alta | **Activ. en ensayo (26-nov)** · pendiente de aceptación | CAT-01 | Medio | Estado efectivo `activo` | Hecho (ensayo) | Aceptación del responsable; reversión por bandera disponible |
 | CAT-07 | 6.3.4 | Presentación | Presentador único del título (acuse, expediente y futuros reportes) | Media | **Pend. desarrollo** | — | Bajo | `TRAZABILIDAD_Y_VERIFICACIONES_CATALOGO.md` §2 | No (cambio menor) | Una sola regla; acuse y expediente idénticos |
 | CAT-08 | 6.3.4 | Concurrencia | Evaluar la protección de la bandera desactivada con la fila bloqueada | Baja | Pend. desarrollo | — | Bajo | Ídem §6 | No | Prueba de concurrencia en PG desechable |
 | CAT-09 | — | PDM | Extender `anfeca_compat` y el modelo PDM a las 4 columnas | Alta **antes de activar el PDM** | Pend. desarrollo | CAT-03 | **Alto** si se activa el PDM sin esto (se perderían los títulos) | Ídem §1 (nota PDM) | Sí | Espejo PDM con título, origen, clave y versión |
@@ -54,12 +54,12 @@
 
 | Criterio | Estado | ¿Bloquea el cierre de 6.3.4? | ¿Bloquea el inicio de 6.4? |
 |---|---|---|---|
-| Aceptación visual de la nueva Formación (CAT-01) | Demo disponible | **Sí** | No |
+| Aceptación visual de la nueva Formación (CAT-01) | Disponible en 8086 (la demo 8099 se retiró: el túnel no funcionó desde Windows) | **Sí** | No |
 | Decisión sobre la clasificación (CAT-02), al menos los bloques A y B | Pendiente | **Sí** (antes de activar) | No |
-| Migración aditiva aplicada y verificada en 8086 (CAT-03) | Scripts probados | **Sí** (si se decide activar en esta fase) | No |
-| Instalación del JSON (CAT-04) | Procedimiento listo | Sí (ídem) | No |
-| Compilación servida (CAT-05) | Compilación aislada lista | Sí (ídem) | No |
-| Activación de la bandera (CAT-06) | Pendiente | Sí, si la fase incluye la activación; si no, queda como pendiente independiente | No |
+| Migración aditiva aplicada y verificada en 8086 (CAT-03) | ✔ Aplicada (26-nov) | **Sí** (si se decide activar en esta fase) | No |
+| Instalación del JSON (CAT-04) | ✔ Instalado (26-nov) | Sí (ídem) | No |
+| Compilación servida (CAT-05) | ✔ Servida (26-nov) | Sí (ídem) | No |
+| Activación de la bandera (CAT-06) | ✔ Activada en ensayo (26-nov) | Sí, si la fase incluye la activación; si no, queda como pendiente independiente | No |
 | Normalización de zonas (ZON-01) y asignación de coordinadores (ZON-02) | Pendiente | No (pendientes independientes de 6.3.3) | **Sí**: la evaluación regional requiere el alcance por zona |
 | Activación de la revisión documental (REV-01) | Pendiente | No | **Sí**: la evaluación parte de expedientes revisados |
 | Seguridad del catálogo (endpoint, roles, manipulación, archivo privado) | ✔ Probada | — | No |

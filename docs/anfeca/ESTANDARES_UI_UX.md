@@ -231,4 +231,4 @@ Aplica a toda lista de más de ≈ 30 opciones (primer uso: títulos de posgrado
 | Seguimiento de etapas y avance; personas frente a trámites | Aplicado (bloque D) |
 | Zonas homogéneas («Sin clasificar») | Aplicado (bloque B) |
 | «Núm.» en bandeja de seguimiento, historial de revisiones y otros trámites | Aplicado |
-| Catálogos extensos con `SelectorBuscable` | Aplicado en «Último grado de estudios» (módulo de solicitantes, detrás de la bandera `ANFECA_CATALOGO_POSGRADOS`, desactivada) |
+| Catálogos extensos con `SelectorBuscable` | Aplicado en «Último grado de estudios» (módulo de solicitantes). **Activado en el ensayo 8086 el 2026-11-26** para aceptación (bandera `ANFECA_CATALOGO_POSGRADOS`); clasificación provisional |
