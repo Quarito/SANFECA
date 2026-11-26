@@ -13,13 +13,6 @@ use Illuminate\Support\Facades\Storage;
 
 class RegistroCompletadoController extends Controller
 {
-    private const ACADEMICOS = [
-        'titulo_origen_archivo',
-        'cedula_origen_archivo',
-        'titulo_ultimo_grado_archivo',
-        'cedula_ultimo_grado_archivo',
-    ];
-
     private const PROBATORIOS = [
         'constancia_antiguedad_archivo',
         'comprobante_pago_archivo',
@@ -174,14 +167,9 @@ private function obtenerSolicitud(
             'documentos_probatorios' => $documentos !== null,
         ];
 
-        // Todos los trámites requieren datos académicos completos.
-        $camposAcademicos = [
-            'nivel_origen',
-            'titulo_origen',
-            'nivel_ultimo_grado',
-            'titulo_ultimo_grado',
-            'institucion_afiliada_id',
-        ];
+        // Todos los trámites requieren datos académicos completos (centralizado: en el escenario «solo
+        // licenciatura» el último grado es la licenciatura y no se exigen campos ni documentos duplicados).
+        $camposAcademicos = \App\Services\Formacion\RequisitosFormacion::campos($formacion);
 
         foreach ($camposAcademicos as $campo) {
             $valor = $formacion?->{$campo};
@@ -193,7 +181,7 @@ private function obtenerSolicitud(
 
         // Todos los trámites requieren los cuatro documentos
         // académicos, incluidos los refrendos del artículo 14.
-	    foreach (self::ACADEMICOS as $campo) {
+	    foreach (\App\Services\Formacion\RequisitosFormacion::documentos($formacion) as $campo) {
 	        $ruta = $formacion?->{$campo};
 
 	        if (

@@ -77,7 +77,10 @@ class ConsultaSolicitudes
                 's.compromiso_aceptado_en',
             ], \App\Services\Catalogos\CatalogoPosgrados::persistenciaDisponible()
                 // Título exacto del catálogo de posgrados (columnas aditivas; solo si la migración está aplicada).
-                ? ['f.titulo_ultimo_grado_especifico', 'f.origen_titulo_ultimo_grado'] : []))
+                ? ['f.titulo_ultimo_grado_especifico', 'f.origen_titulo_ultimo_grado'] : [],
+                // Nombre exacto de la licenciatura y declaración de posgrado (solo si la migración 2026_11_28 está aplicada).
+                \App\Services\Catalogos\CatalogoLicenciaturas::persistenciaDisponible()
+                    ? ['f.titulo_origen_especifico', 'f.origen_titulo_origen', 'f.cuenta_con_posgrado'] : []))
             ->first();
     }
 

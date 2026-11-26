@@ -61,6 +61,11 @@ class ExpedienteController extends Controller
                 $noAplican[] = $etiqueta;
                 continue;
             }
+            // Solo licenciatura: los documentos del último grado no aplican (la licenciatura ya está en origen).
+            if (!\App\Services\Formacion\RequisitosFormacion::documentoAplica($modelo->formacionAcademica, $campo)) {
+                $noAplican[] = $etiqueta.' (solo licenciatura)';
+                continue;
+            }
 
             $doc = [
                 'campo' => $campo,

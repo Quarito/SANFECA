@@ -272,6 +272,9 @@ Route::post('/registro/certificacion/consultar', [
     // Catálogo de posgrados del último grado (bandera ANFECA_CATALOGO_POSGRADOS; 404 si no está activo).
     Route::get('/registro/catalogos/posgrados', [\App\Http\Controllers\Catalogos\CatalogoPosgradosController::class, 'titulos'])
         ->middleware('throttle:60,1')->name('registro.catalogos.posgrados');
+    // Catálogo de licenciaturas (bandera ANFECA_CATALOGO_LICENCIATURAS; 404 si no está activo).
+    Route::get('/registro/catalogos/licenciaturas', [\App\Http\Controllers\Catalogos\CatalogoLicenciaturasController::class, 'buscar'])
+        ->middleware('throttle:120,1')->name('registro.catalogos.licenciaturas');
 
     Route::get('/registro/formacion-academica', [
         FormacionAcademicaController::class,

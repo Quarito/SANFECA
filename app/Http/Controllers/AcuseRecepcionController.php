@@ -42,6 +42,11 @@ class AcuseRecepcionController extends Controller
             'Comprobante de pago' => $documentos?->comprobante_pago_archivo,
         ];
 
+        // Solo licenciatura: el último grado es la licenciatura; no se listan documentos de posgrado.
+        if (\App\Services\Formacion\RequisitosFormacion::soloLicenciatura($formacion)) {
+            unset($archivos['Título del último grado'], $archivos['Cédula del último grado']);
+        }
+
         $refrendo = $solicitud->datosRefrendo;
 
         $esArticulo14 = $solicitud->tipo_tramite === 'refrendo'

@@ -44,10 +44,14 @@ class DocumentosAplicables
             && in_array((string) $datos->inciso_articulo_14, ['13.1', '14', '14.1', '14.2', '14.3'], true);
     }
 
-    /** ¿El documento aplica al trámite? (los 6 principales siempre; los del artículo según la regla). */
+    /**
+     * ¿El documento aplica al trámite? Los del artículo según la regla; los del último grado NO aplican cuando el
+     * solicitante declaró que solo cuenta con licenciatura (no se revisan dos veces los mismos documentos).
+     */
     public function aplica(SolicitudCertificacion $solicitud, string $campo): bool
     {
-        return self::existe($campo) && (!self::esArticulo($campo) || $this->aplicaArticulo13o14($solicitud));
+        return self::existe($campo) && (!self::esArticulo($campo) || $this->aplicaArticulo13o14($solicitud))
+            && \App\Services\Formacion\RequisitosFormacion::documentoAplica($solicitud->formacionAcademica, $campo);
     }
 
     public function ruta(SolicitudCertificacion $solicitud, string $campo): ?string

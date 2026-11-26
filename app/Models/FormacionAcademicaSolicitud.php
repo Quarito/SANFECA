@@ -28,6 +28,17 @@ class FormacionAcademicaSolicitud extends Model
         'origen_titulo_ultimo_grado',
         'clave_posgrado_catalogo',
         'version_catalogo_posgrados',
+        // Columnas aditivas del catálogo de licenciaturas y declaración de posgrado (migración 2026_11_28_000000).
+        'titulo_origen_especifico',
+        'origen_titulo_origen',
+        'clave_licenciatura_catalogo',
+        'version_catalogo_licenciaturas',
+        'cuenta_con_posgrado',
+    ];
+
+    protected $casts = [
+        // TRUE = licenciatura con posgrado · FALSE = solo licenciatura · NULL = histórico o no declarado.
+        'cuenta_con_posgrado' => 'boolean',
     ];
 
     public function solicitud(): BelongsTo

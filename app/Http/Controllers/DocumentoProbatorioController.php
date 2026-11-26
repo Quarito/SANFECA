@@ -190,6 +190,9 @@ private function solicitudActiva(
         $academicos = [];
 
         foreach (self::ACADEMICOS as $campo => $nombre) {
+            if (!\App\Services\Formacion\RequisitosFormacion::documentoAplica($formacion, $campo)) {
+                continue;   // solo licenciatura: sin documentos de posgrado
+            }
             $ruta = $formacion?->{$campo};
             $disponible = !empty($ruta)
                 && Storage::disk('local')->exists($ruta);

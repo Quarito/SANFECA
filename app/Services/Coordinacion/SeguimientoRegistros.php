@@ -53,11 +53,9 @@ class SeguimientoRegistros
         'enviada' => 'Solicitud enviada',
     ];
 
-    /** Mismas listas que RegistroCompletadoController (módulo de solicitantes). */
-    private const ACADEMICOS = ['titulo_origen_archivo', 'cedula_origen_archivo', 'titulo_ultimo_grado_archivo', 'cedula_ultimo_grado_archivo'];
+    /** Documentos probatorios (los académicos se definen en RequisitosFormacion, igual que en el módulo de solicitantes). */
     private const PROBATORIOS = ['constancia_antiguedad_archivo', 'comprobante_pago_archivo'];
     private const ARTICULO = ['solicitud_articulo_14_archivo', 'constancia_articulo_14_archivo'];
-    private const CAMPOS_FORMACION = ['nivel_origen', 'titulo_origen', 'nivel_ultimo_grado', 'titulo_ultimo_grado', 'institucion_afiliada_id'];
     /** Incisos que el sistema actual acepta (ver discrepancia normativa sobre 13.1 en docs/anfeca/normativa). */
     private const INCISOS_SISTEMA = ['13.1', '14', '14.1', '14.2', '14.3'];
 
@@ -139,9 +137,10 @@ class SeguimientoRegistros
         $existe = fn (?object $r, string $campo) => $r !== null && filled($r->{$campo} ?? null) && Storage::disk('local')->exists($r->{$campo});
         $estado = fn (bool $completa, bool $iniciada = false) => $completa ? self::COMPLETADA : ($iniciada ? self::EN_PROCESO : self::PENDIENTE);
 
+        // Requisitos centralizados (RequisitosFormacion): con «solo licenciatura» no se exigen datos ni documentos del último grado.
         $formacionCompleta = $formacion !== null
-            && collect(self::CAMPOS_FORMACION)->every(fn ($c) => filled(trim((string) ($formacion->{$c} ?? ''))))
-            && collect(self::ACADEMICOS)->every(fn ($c) => $existe($formacion, $c));
+            && collect(\App\Services\Formacion\RequisitosFormacion::campos($formacion))->every(fn ($c) => filled(trim((string) ($formacion->{$c} ?? ''))))
+            && collect(\App\Services\Formacion\RequisitosFormacion::documentos($formacion))->every(fn ($c) => $existe($formacion, $c));
 
         $etapas = [
             'cuenta' => self::COMPLETADA,

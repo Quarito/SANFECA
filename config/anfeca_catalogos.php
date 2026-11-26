@@ -24,4 +24,28 @@ return [
         'titulo_manual_maximo' => 200,   // cabe también en titulo_ultimo_grado_otro (varchar 200)
         'titulo_manual_minimo' => 5,
     ],
+
+    /*
+     * Catálogo PRELIMINAR de licenciaturas (Anuario ANUIES 2000-2001 a 2025-2026) para «Nombre del Título» de la
+     * Formación Académica de Origen. Desactivado por omisión; requiere la migración propuesta 2026_11_28_000000.
+     * La clasificación es administrativa (no es equivalencia normativa ni criterio de elegibilidad).
+     */
+    'licenciaturas' => [
+        'activo' => (bool) env('ANFECA_CATALOGO_LICENCIATURAS', false),
+        'ruta' => env('ANFECA_CATALOGO_LICENCIATURAS_RUTA', storage_path('app/private/catalogos/licenciaturas_anuies.json')),
+        'sha256' => env('ANFECA_CATALOGO_LICENCIATURAS_SHA256'),
+        'version' => env('ANFECA_CATALOGO_LICENCIATURAS_VERSION', 'ANUIES-2000-2026-LIC-PRELIMINAR'),
+        'maximo_resultados' => 60,
+        'busqueda_minima' => 3,
+        'titulo_manual_maximo' => 200,
+        'titulo_manual_minimo' => 5,
+    ],
+
+    /*
+     * Casilla «Cuento con estudios de posgrado concluidos» (escenarios: solo licenciatura / licenciatura con posgrado).
+     * Bandera independiente del catálogo de licenciaturas. Requiere la columna cuenta_con_posgrado.
+     */
+    'declaracion_posgrado' => [
+        'activo' => (bool) env('ANFECA_DECLARACION_POSGRADO', false),
+    ],
 ];
