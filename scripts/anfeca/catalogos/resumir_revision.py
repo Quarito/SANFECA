@@ -143,6 +143,53 @@ def main(matriz, salida):
         te.append([t, sum(c.values())] + [c.get(a, 0) for a in AREAS])
     estilo(te, [45, 10, 16, 14, 14, 16, 10])
 
+    # --- Propuestas por bloques (para decisión del responsable; NADA se aprueba aquí) -----------------------
+    BASE = AREAS[:4]
+    def tipo_bloque(sid, k, a, l):
+        g = grupos[k]
+        cuota = len(l) / len(g)
+        bajas = sum(1 for p in l if p['confianza'] == 'baja')
+        if len(l) >= 3 and cuota >= 0.8 and bajas <= len(l) / 2:
+            return 'A. Aprobar el área propuesta en bloque'
+        if len(l) >= 3 and cuota < 0.8:
+            return 'B. Grupo con clasificaciones contradictorias: decidir el área del grupo'
+        return 'C. Revisión individual'
+    bl = wb.create_sheet('Bloques propuestos', 3)
+    bl.append(['Tipo de propuesta', 'Subgrupo', 'Carrera genérica', 'Carrera específica', 'Área propuesta', 'Títulos', 'Cuota del grupo',
+               'Confianza baja', 'Temas', 'Ejemplos', 'Decisión del responsable', 'Área autorizada'])
+    resumen_bloques = Counter()
+    for sid, k, a, l in sorted(subgrupos, key=lambda x: (tipo_bloque(*x), -len(x[3]))):
+        t = tipo_bloque(sid, k, a, l)
+        resumen_bloques[t] += len(l)
+        bl.append([t, sid, k[1], k[2], a, len(l), f'{len(l) / len(grupos[k]):.0%}', sum(1 for p in l if p['confianza'] == 'baja'),
+                   temas(l), '\n'.join(sorted(p['titulo'] for p in l)[:3]), None, None])
+    estilo(bl, [44, 10, 26, 32, 20, 8, 9, 9, 24, 60, 22, 18])
+
+    co = wb.create_sheet('Contradicciones', 4)
+    co.append(['Grupo', 'Carrera genérica', 'Carrera específica', 'Títulos'] + AREAS + ['Áreas en conflicto'])
+    contradictorios = 0
+    for k in orden:
+        c = Counter(p['area'] for p in grupos[k])
+        relevantes = [x for x in AREAS if c.get(x, 0) >= max(2, 0.2 * len(grupos[k]))]
+        if len(relevantes) >= 2:
+            contradictorios += 1
+            co.append([ids[k], k[1], k[2], len(grupos[k])] + [c.get(x, 0) for x in AREAS] + [' / '.join(relevantes)])
+    estilo(co, [8, 28, 34, 8, 14, 12, 12, 14, 8, 40])
+
+    ot = wb.create_sheet('Otro relacionable', 5)
+    ot.append(['Subgrupo', 'Clave estable', 'Nivel', 'Nombre original del posgrado', 'Área alternativa (base)', 'Confianza', 'Tema', 'Criterio'])
+    otro_rel = [p for p in pend if p['area'] == 'Otro' and p['alt'] in BASE]
+    for p in sorted(otro_rel, key=lambda p: (p['alt'], p['titulo'])):
+        ot.append([p['sub'], p['clave'], p['nivel'], p['titulo'], p['alt'], p['confianza'], p['tema'], p['criterio']])
+    estilo(ot, [10, 18, 13, 60, 22, 10, 22, 50])
+
+    mu = wb.create_sheet('Multiárea', 6)
+    mu.append(['Subgrupo', 'Clave estable', 'Nivel', 'Nombre original del posgrado', 'Área propuesta', 'Área alternativa', 'Confianza', 'Tema'])
+    multi = [p for p in pend if p['area'] in BASE and p['alt'] in BASE and p['alt'] != p['area']]
+    for p in sorted(multi, key=lambda p: (p['area'], p['alt'], p['titulo'])):
+        mu.append([p['sub'], p['clave'], p['nivel'], p['titulo'], p['area'], p['alt'], p['confianza'], p['tema']])
+    estilo(mu, [10, 18, 13, 60, 20, 20, 10, 22])
+
     de = wb.create_sheet('Detalle')
     de.append(['Subgrupo', 'Clave estable', 'Nivel', 'Nombre original del posgrado', 'Familia académica', 'Carrera genérica', 'Carrera específica',
                'Área propuesta', 'Área alternativa', 'Confianza', 'Tema de revisión', 'Criterio'])
@@ -158,6 +205,9 @@ def main(matriz, salida):
     total_grupos = sum(len(v) for v in grupos.values())
     assert total_grupos == len(pend)
     assert sum(len(x[3]) for x in subgrupos) == len(pend)
+    print('bloques: ' + ' · '.join(f'{t[:2]} {n}' for t, n in sorted(resumen_bloques.items()))
+          + f' · grupos contradictorios={contradictorios} · otro_relacionable={len(otro_rel)} '
+          + f'({dict(Counter(p["alt"] for p in otro_rel))}) · multiarea={len(multi)}')
     print(f'pendientes={len(pend)} grupos={len(grupos)} subgrupos={len(subgrupos)} familias={len(porfam)} '
           f'subgrupos_de_5_o_mas={sum(1 for x in subgrupos if len(x[3]) >= 5)} (cubren {sum(len(x[3]) for x in subgrupos if len(x[3]) >= 5)} títulos) '
           f'matriz_sin_cambios={huella[:16]}')
