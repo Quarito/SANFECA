@@ -1,0 +1,102 @@
+{
+ "version": "FICTICIO-LIC-1",
+ "reglas": "prueba",
+ "aviso": "Catálogo FICTICIO de licenciaturas para pruebas automatizadas.",
+ "areas": [
+  "Administración",
+  "Contaduría",
+  "Informática",
+  "Negocios Internacionales",
+  "Otro"
+ ],
+ "titulos": [
+  {
+   "clave": "LIC-00000000000A",
+   "titulo": "Licenciatura Ficticia en Contaduría Pública",
+   "niveles": [
+    "LICENCIATURA UNIVERSITARIA Y TECNOLÓGICA"
+   ],
+   "area": "Contaduría",
+   "confianza": "alta",
+   "requiere_revision": false,
+   "campos": []
+  },
+  {
+   "clave": "LIC-00000000000B",
+   "titulo": "Licenciatura Ficticia en Administración",
+   "niveles": [
+    "LICENCIATURA UNIVERSITARIA Y TECNOLÓGICA"
+   ],
+   "area": "Administración",
+   "confianza": "alta",
+   "requiere_revision": false,
+   "campos": []
+  },
+  {
+   "clave": "LIC-00000000000C",
+   "titulo": "Ingeniería Ficticia en Computación",
+   "niveles": [
+    "LICENCIATURA UNIVERSITARIA Y TECNOLÓGICA"
+   ],
+   "area": "Informática",
+   "confianza": "alta",
+   "requiere_revision": false,
+   "campos": []
+  },
+  {
+   "clave": "LIC-00000000000D",
+   "titulo": "Licenciatura Ficticia en Negocios Internacionales",
+   "niveles": [
+    "LICENCIATURA UNIVERSITARIA Y TECNOLÓGICA"
+   ],
+   "area": "Negocios Internacionales",
+   "confianza": "alta",
+   "requiere_revision": false,
+   "campos": []
+  },
+  {
+   "clave": "LIC-00000000000E",
+   "titulo": "Licenciatura Ficticia en Derecho",
+   "niveles": [
+    "LICENCIATURA UNIVERSITARIA Y TECNOLÓGICA"
+   ],
+   "area": "Otro",
+   "confianza": "alta",
+   "requiere_revision": false,
+   "campos": []
+  },
+  {
+   "clave": "LIC-00000000000F",
+   "titulo": "Licenciatura Ficticia en Economía Aplicada",
+   "niveles": [
+    "LICENCIATURA UNIVERSITARIA Y TECNOLÓGICA"
+   ],
+   "area": "Otro",
+   "confianza": "alta",
+   "requiere_revision": false,
+   "campos": []
+  },
+  {
+   "clave": "LIC-000000000010",
+   "titulo": "Licenciatura Ficticia en Administración de Empresas Turísticas",
+   "niveles": [
+    "LICENCIATURA UNIVERSITARIA Y TECNOLÓGICA"
+   ],
+   "area": "Administración",
+   "confianza": "alta",
+   "requiere_revision": false,
+   "campos": []
+  },
+  {
+   "clave": "LIC-000000000011",
+   "titulo": "Licenciatura Ficticia en Administración Pública",
+   "niveles": [
+    "LICENCIATURA UNIVERSITARIA Y TECNOLÓGICA"
+   ],
+   "area": "Administración",
+   "confianza": "alta",
+   "requiere_revision": false,
+   "campos": []
+  }
+ ]
+}
