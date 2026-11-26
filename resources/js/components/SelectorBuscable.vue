@@ -7,6 +7,9 @@
  * - Búsqueda parcial, por palabras, sin acentos ni mayúsculas; orden recibido (alfabético).
  * - Teclado: ↑/↓, Inicio/Fin, Re Pág/Av Pág, Intro, Escape; cierre con clic fuera y al seleccionar.
  * - Opción final opcional («No encuentro mi título») que emite «manual».
+ * - Modo remoto opcional (prop «buscar»): para catálogos muy extensos la búsqueda se hace en el servidor; el navegador
+ *   nunca recibe el catálogo completo. Si hay más coincidencias que el límite se pide afinar la búsqueda (ningún título
+ *   queda inaccesible). Sin «buscar», el comportamiento es el original (filtrado local de «opciones»).
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
@@ -19,9 +22,12 @@ const props = defineProps({
     deshabilitado: { type: Boolean, default: false },
     cargando: { type: Boolean, default: false },
     opcionManual: { type: String, default: '' },
-    invalido: { type: Boolean, default: false }
+    invalido: { type: Boolean, default: false },
+    buscar: { type: Function, default: null },          // async (texto) => { total, titulos: [{ clave, titulo }] }
+    minimo: { type: Number, default: 3 },
+    ayudaBusqueda: { type: String, default: 'Escriba al menos 3 letras de su título.' }
 });
-const emit = defineEmits(['update:modelValue', 'manual', 'abrir']);
+const emit = defineEmits(['update:modelValue', 'manual', 'abrir', 'elegido']);
 
 const abierto = ref(false);
 const busqueda = ref('');
@@ -34,7 +40,16 @@ const idLista = `${props.id}-lista`;
 
 const normalizar = t => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
+const remotos = ref([]);
+const totalRemoto = ref(0);
+const buscando = ref(false);
+const errorRemoto = ref('');
+let temporizador = null;
+let consulta = 0;
+const busquedaCorta = computed(() => Boolean(props.buscar) && normalizar(busqueda.value).replace(/ /g, '').length < props.minimo);
+
 const filtradas = computed(() => {
+    if (props.buscar) return remotos.value;
     const palabras = normalizar(busqueda.value).split(' ').filter(Boolean);
     return props.opciones.filter(o => {
         const n = normalizar(o.titulo);
@@ -67,6 +82,7 @@ async function abrir() {
     emit('abrir');
     abierto.value = true;
     busqueda.value = '';
+    if (props.buscar) { remotos.value = []; totalRemoto.value = 0; errorRemoto.value = ''; }
     activo.value = Math.max(0, elementos.value.findIndex(o => o.clave === props.modelValue));
     colocar();
     await nextTick();
@@ -81,7 +97,7 @@ function cerrar(devolverFoco = true) {
 
 function elegir(o) {
     if (o.manual) emit('manual');
-    else emit('update:modelValue', o.clave);
+    else { emit('update:modelValue', o.clave); emit('elegido', o); }
     cerrar();
 }
 
@@ -114,7 +130,30 @@ function clicFuera(e) {
     if (!lista.value?.closest('.selector-flotante')?.contains(e.target) && !disparador.value?.contains(e.target)) cerrar(false);
 }
 
-watch(busqueda, () => { activo.value = elementos.value.length ? 0 : -1; });
+watch(busqueda, (texto) => {
+    activo.value = elementos.value.length ? 0 : -1;
+    if (!props.buscar) return;
+    clearTimeout(temporizador);
+    errorRemoto.value = '';
+    if (busquedaCorta.value) { remotos.value = []; totalRemoto.value = 0; buscando.value = false; return; }
+    buscando.value = true;
+    const numero = ++consulta;
+    temporizador = setTimeout(async () => {
+        try {
+            const r = await props.buscar(texto);
+            if (numero !== consulta) return;
+            remotos.value = Array.isArray(r?.titulos) ? r.titulos : [];
+            totalRemoto.value = Number(r?.total ?? remotos.value.length);
+            activo.value = elementos.value.length ? 0 : -1;
+        } catch (e) {
+            if (numero !== consulta) return;
+            remotos.value = []; totalRemoto.value = 0;
+            errorRemoto.value = 'No fue posible consultar el catálogo. Puede elegir «' + (props.opcionManual || 'captura manual') + '».';
+        } finally {
+            if (numero === consulta) buscando.value = false;
+        }
+    }, 250);
+});
 watch(abierto, v => {
     const accion = v ? 'addEventListener' : 'removeEventListener';
     document[accion]('mousedown', clicFuera);
@@ -146,7 +185,13 @@ onBeforeUnmount(() => {
                         :aria-selected="o.clave === modelValue" :data-activo="i === activo"
                         :class="{ activo: i === activo, seleccionado: o.clave === modelValue, manual: o.manual }"
                         @mousedown.prevent="elegir(o)" @mousemove="activo = i">{{ o.titulo }}</li>
-                    <li v-if="!filtradas.length" class="selector-vacio" role="presentation">Sin coincidencias para «{{ busqueda }}».</li>
+                    <li v-if="buscar && busquedaCorta" class="selector-vacio" role="presentation">{{ ayudaBusqueda }}</li>
+                    <li v-else-if="buscar && buscando" class="selector-vacio" role="presentation">Buscando…</li>
+                    <li v-else-if="errorRemoto" class="selector-vacio" role="presentation">{{ errorRemoto }}</li>
+                    <li v-else-if="!filtradas.length" class="selector-vacio" role="presentation">Sin coincidencias para «{{ busqueda }}».</li>
+                    <li v-else-if="buscar && totalRemoto > filtradas.length" class="selector-vacio" role="presentation">
+                        Se muestran {{ filtradas.length }} de {{ totalRemoto }} coincidencias; escriba más palabras para afinar.
+                    </li>
                 </ul>
             </div>
         </Teleport>

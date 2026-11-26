@@ -378,6 +378,13 @@
         'version' => $catalogoPosgrados['version'] ?? null,
     ]) }}"
 	    
+    data-catalogo-licenciaturas="{{ json_encode([
+        'estado' => $catalogoLicenciaturas['estado'] ?? 'desactivado',
+        'aplica' => (bool) ($catalogoLicenciaturas['aplica'] ?? false),
+        'url' => ($catalogoLicenciaturas['aplica'] ?? false) ? route('registro.catalogos.licenciaturas') : null,
+        'minimo' => (int) config('anfeca_catalogos.licenciaturas.busqueda_minima', 3),
+    ]) }}"
+    data-declaracion-posgrado="{{ ($declaracionPosgrado ?? false) ? 'true' : 'false' }}"
 	data-formacion="{{ json_encode([
 	    'titulo_origen' => old('titulo_origen', $formacion?->titulo_origen),
 	    'titulo_origen_otro' => old('titulo_origen_otro', $formacion?->titulo_origen_otro),
@@ -390,6 +397,18 @@
         'version_catalogo_posgrados' => $formacion?->version_catalogo_posgrados,
         'nivel_ultimo_grado_guardado' => $formacion?->nivel_ultimo_grado,
         'titulo_ultimo_grado_guardado' => $formacion?->titulo_ultimo_grado,
+        // Formación de origen (catálogo de licenciaturas) y declaración de posgrado.
+        'titulo_origen_especifico' => $formacion?->titulo_origen_especifico,
+        'origen_titulo_origen' => $formacion?->origen_titulo_origen,
+        'clave_licenciatura_catalogo' => $formacion?->clave_licenciatura_catalogo,
+        'version_catalogo_licenciaturas' => $formacion?->version_catalogo_licenciaturas,
+        'modo_titulo_origen' => old('modo_titulo_origen'),
+        'clave_licenciatura_catalogo_old' => old('clave_licenciatura_catalogo'),
+        'titulo_origen_manual' => old('titulo_origen_manual'),
+        'titulo_origen_texto_old' => old('titulo_origen_texto'),
+        'cuenta_con_posgrado' => old('cuenta_con_posgrado', $formacion?->cuenta_con_posgrado === null ? null : ($formacion->cuenta_con_posgrado ? '1' : '0')),
+        'cuenta_con_posgrado_guardado' => $formacion?->cuenta_con_posgrado,
+        'tiene_datos_posgrado' => filled($formacion?->nivel_ultimo_grado) && $formacion?->nivel_ultimo_grado !== 'Licenciatura',
         'modo_titulo_ultimo_grado' => old('modo_titulo_ultimo_grado'),
         'clave_posgrado_catalogo_old' => old('clave_posgrado_catalogo'),
         'titulo_ultimo_grado_manual' => old('titulo_ultimo_grado_manual'),
@@ -556,7 +575,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (!campos.some(function (campo) {
-            return campo.name === 'titulo_ultimo_grado';
+            // nivel_origen siempre existe cuando Vue terminó de montar (con o sin posgrado declarado).
+            return campo.name === 'nivel_origen';
         })) {
             return false;
         }

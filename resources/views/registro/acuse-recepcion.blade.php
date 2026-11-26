@@ -423,7 +423,11 @@ body {
     <div class="etiqueta">
         Formación de origen · {{ $formacion?->nivel_origen ?? 'No registrada' }}
     </div>
-    @if(
+    @if(filled($formacion?->titulo_origen_especifico))
+        {{-- Nombre exacto de la licenciatura (catálogo ANUIES o captura manual) y su área académica. --}}
+        <div class="valor">{{ $formacion->titulo_origen_especifico }}</div>
+        <div class="etiqueta">Área: {{ $formacion->titulo_origen }}</div>
+    @elseif(
         $formacion?->titulo_origen === 'Otro'
         && filled($formacion?->titulo_origen_otro)
     )
@@ -434,6 +438,12 @@ body {
     @endif
 </td>
 <td>
+    @if(\App\Services\Formacion\RequisitosFormacion::soloLicenciatura($formacion))
+        {{-- Solo licenciatura: el máximo nivel es la formación de origen (sin duplicar título ni cédula). --}}
+        <div class="etiqueta">Último grado · Licenciatura</div>
+        <div class="valor">Corresponde a la formación de origen</div>
+        <div class="etiqueta">Sin estudios de posgrado declarados</div>
+    @else
     <div class="etiqueta">
         Último grado · {{ $formacion?->nivel_ultimo_grado ?? 'No registrado' }}
     </div>
@@ -449,6 +459,7 @@ body {
         <div class="etiqueta">Otro (título especificado)</div>
     @else
         <div class="valor">{{ $formacion?->titulo_ultimo_grado ?? 'No registrado' }}</div>
+    @endif
     @endif
 </td>
 </tr>

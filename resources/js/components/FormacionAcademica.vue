@@ -27,6 +27,10 @@ const props = defineProps({
 	},
     // Catálogo de posgrados (bandera ANFECA_CATALOGO_POSGRADOS): { estado, url, version }.
     catalogo: { type: Object, default: () => ({ estado: 'desactivado' }) },
+    // Catálogo de licenciaturas (bandera ANFECA_CATALOGO_LICENCIATURAS): { estado, aplica, url, minimo }.
+    catalogoLicenciaturas: { type: Object, default: () => ({ estado: 'desactivado' }) },
+    // Casilla «Cuento con estudios de posgrado concluidos» (bandera ANFECA_DECLARACION_POSGRADO o declaración guardada).
+    declaracionPosgrado: { type: Boolean, default: false },
 });
 
 const titulosOrigen = [
@@ -76,6 +80,11 @@ const tituloActualIncompatible = computed(() =>
 );
 
 const mensajeTituloOrigen = computed(() => {
+    if (licActivo.value) {
+        return modoOrigen.value === 'manual'
+            ? 'El título capturado manualmente queda sujeto a revisión de procedencia.'
+            : 'Busque y seleccione su título de licenciatura. Área de certificación: ' + (props.areaCertificacion || '—') + '.';
+    }
     if (tituloHistoricoIncompatible.value) {
         return 'El título histórico se conserva aunque no coincida '
             + 'con el área actual.';
@@ -274,6 +283,78 @@ watch([nivelUltimoGrado, tituloUltimoGrado], () => {
     cargarTitulos();
 });
 onMounted(cargarTitulos);
+/*
+ * Formación de origen con el catálogo ANUIES de licenciaturas (mismo espacio de «Nombre del Título»; sin campos nuevos).
+ * El navegador solo envía la clave (o el texto manual); el área, el nombre exacto y la versión los determina el servidor.
+ */
+const licActivo = computed(() => props.catalogoLicenciaturas?.aplica === true && Boolean(props.catalogoLicenciaturas?.url));
+const licError = computed(() => props.catalogoLicenciaturas?.estado === 'error');
+const historicoOrigenOtro = !f.origen_titulo_origen && f.titulo_origen === 'Otro' && Boolean(f.titulo_origen_otro);
+const modoOrigen = ref(f.modo_titulo_origen || (f.origen_titulo_origen === 'manual' || historicoOrigenOtro ? 'manual' : 'catalogo'));
+const claveOrigen = ref(f.clave_licenciatura_catalogo_old ?? f.clave_licenciatura_catalogo ?? '');
+const textoOrigen = ref(
+    f.titulo_origen_texto_old
+    ?? (claveOrigen.value && claveOrigen.value === f.clave_licenciatura_catalogo ? (f.titulo_origen_especifico ?? '') : '')
+);
+const origenManual = ref(
+    f.titulo_origen_manual
+    ?? (f.origen_titulo_origen === 'manual' ? f.titulo_origen_especifico : (historicoOrigenOtro ? f.titulo_origen_otro : ''))
+    ?? ''
+);
+const campoClaveOrigen = ref(null);
+const campoModoOrigen = ref(null);
+const campoManualOrigen = ref(null);
+
+async function buscarLicenciaturas(texto) {
+    const parametros = new URLSearchParams({ q: texto });
+    const r = await fetch(`${props.catalogoLicenciaturas.url}?${parametros}`, {
+        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin'
+    });
+    if (!r.ok) throw new Error(String(r.status));
+    return r.json();
+}
+function elegirOrigen(opcion) {
+    claveOrigen.value = opcion.clave;
+    textoOrigen.value = opcion.titulo;
+    modoOrigen.value = 'catalogo';
+    notificarCambio(campoClaveOrigen);
+}
+function origenManualActivar() {
+    modoOrigen.value = 'manual';
+    notificarCambio(campoModoOrigen);
+    nextTick(() => campoManualOrigen.value?.focus());
+}
+function origenVolverAlCatalogo() {
+    modoOrigen.value = 'catalogo';
+    notificarCambio(campoModoOrigen);
+}
+
+/*
+ * Casilla «Cuento con estudios de posgrado concluidos». Dos escenarios: solo licenciatura (desmarcada) o licenciatura
+ * con posgrado (marcada). Registros nuevos: desmarcada. Registros con posgrado guardado: se recupera marcada (solo
+ * visualmente; nada se escribe hasta que el solicitante guarde). Al desmarcar con información o documentos de posgrado
+ * guardados se pide confirmación: se CONSERVAN (no se borran), solo dejan de considerarse vigentes.
+ */
+const declaracion = computed(() => props.declaracionPosgrado === true);
+const cuentaConPosgrado = ref(
+    f.cuenta_con_posgrado === '1' ? true : (f.cuenta_con_posgrado === '0' ? false : Boolean(f.tiene_datos_posgrado))
+);
+const campoPosgrado = ref(null);
+const muestraPosgrado = computed(() => !declaracion.value || cuentaConPosgrado.value);
+const nivelesUltimo = computed(() => declaracion.value ? niveles.filter(n => n !== 'Licenciatura') : niveles);
+function cambiarCasillaPosgrado(evento) {
+    const guardado = f.cuenta_con_posgrado_guardado === true || Boolean(f.tiene_datos_posgrado)
+        || Boolean(f.titulo_ultimo_grado_archivo) || Boolean(f.cedula_ultimo_grado_archivo);
+    if (!evento.target.checked && guardado && !window.confirm(
+        'Ya registró información o documentos de posgrado. Si indica que solo cuenta con licenciatura, se conservarán '
+        + 'pero no se considerarán en esta solicitud. ¿Desea continuar?')) {
+        cuentaConPosgrado.value = true;
+        evento.target.checked = true;
+        return;
+    }
+    notificarCambio(campoPosgrado);
+}
+
 const institucionId = ref(
     String(props.formacion?.institucion_afiliada_id ?? '')
 );
@@ -311,7 +392,41 @@ const institucionSeleccionada = computed(() => {
 			    value="Licenciatura"
 			>
 		</div>
+                <p v-if="licError" class="aviso-catalogo-posgrados" role="status">
+                    El catálogo de licenciaturas no está disponible por el momento; capture su información como de costumbre.
+                </p>
+                <div v-if="licActivo" class="fila-titulos-origen">
+                    <div class="campo campo-selector-origen">
+                        <input ref="campoModoOrigen" type="hidden" name="modo_titulo_origen" :value="modoOrigen">
+                        <input ref="campoClaveOrigen" type="hidden" name="clave_licenciatura_catalogo" :value="modoOrigen === 'catalogo' ? claveOrigen : ''">
+                        <input type="hidden" name="titulo_origen_texto" :value="modoOrigen === 'catalogo' ? textoOrigen : ''">
+                        <div class="ug-encabezado-titulo">
+                            <label :for="modoOrigen === 'manual' ? 'titulo_origen_manual' : 'titulo_origen'">Nombre del Título</label>
+                            <button v-if="modoOrigen === 'manual' && !formacionBloqueada" type="button" class="ug-enlace"
+                                    @click="origenVolverAlCatalogo">Volver al catálogo</button>
+                        </div>
+                        <SelectorBuscable
+                            v-if="modoOrigen === 'catalogo'"
+                            id="titulo_origen"
+                            :model-value="claveOrigen"
+                            :texto-seleccionado="textoOrigen"
+                            placeholder="Seleccione o busque su título"
+                            :deshabilitado="formacionBloqueada"
+                            :buscar="buscarLicenciaturas"
+                            :minimo="catalogoLicenciaturas.minimo || 3"
+                            :ayuda-busqueda="`Escriba al menos ${catalogoLicenciaturas.minimo || 3} letras de su título (p. ej., «contaduría», «sistemas computacionales»).`"
+                            opcion-manual="No encuentro mi título"
+                            @elegido="elegirOrigen"
+                            @manual="origenManualActivar"
+                        />
+                        <input v-else id="titulo_origen_manual" ref="campoManualOrigen" type="text" name="titulo_origen_manual"
+                               class="ug-manual" v-model="origenManual" minlength="5" maxlength="200"
+                               :required="!formacionBloqueada" :disabled="formacionBloqueada"
+                               placeholder="Escriba el nombre completo de su título, como aparece en el documento">
+                    </div>
+                </div>
                 <div
+                    v-else
                     class="fila-titulos-origen"
                     :class="{
                         'fila-titulos-origen--doble': mostrarTituloOrigenOtro
@@ -504,6 +619,21 @@ const institucionSeleccionada = computed(() => {
                     El catálogo de títulos de posgrado no está disponible por el momento; capture su información como de costumbre.
                 </p>
 
+                <!-- Declaración de posgrado: única incorporación visible autorizada. -->
+                <div v-if="declaracion" class="ug-declaracion">
+                    <input ref="campoPosgrado" type="hidden" name="cuenta_con_posgrado" :value="cuentaConPosgrado ? '1' : '0'">
+                    <label class="ug-casilla" for="cuenta_con_posgrado_casilla">
+                        <input id="cuenta_con_posgrado_casilla" type="checkbox" v-model="cuentaConPosgrado"
+                               :disabled="formacionBloqueada" @change="cambiarCasillaPosgrado">
+                        Cuento con estudios de posgrado concluidos
+                    </label>
+                    <div v-if="!cuentaConPosgrado" class="ug-solo-licenciatura" role="status">
+                        <p>Su formación académica de origen corresponde a su último grado de estudios.</p>
+                        <p>No es necesario registrar nuevamente el título ni la cédula profesional.</p>
+                    </div>
+                </div>
+
+                <template v-if="muestraPosgrado">
                 <!-- Con el catálogo de posgrados activo: fila 1 Nivel | Área (50/50); fila 2 Nombre del título (100 %). -->
                 <div v-if="catalogoActivo" class="ug-catalogo">
                     <div class="ug-fila-nivel-area">
@@ -512,7 +642,7 @@ const institucionSeleccionada = computed(() => {
                             <select id="nivel_ultimo_grado" name="nivel_ultimo_grado" v-model="nivelUltimoGrado"
                                     :disabled="formacionBloqueada" required>
                                 <option value="">Seleccione</option>
-                                <option v-for="nivel in niveles" :key="nivel" :value="nivel">{{ nivel }}</option>
+                                <option v-for="nivel in nivelesUltimo" :key="nivel" :value="nivel">{{ nivel }}</option>
                             </select>
                         </div>
                         <div class="ug-campo">
@@ -588,7 +718,7 @@ const institucionSeleccionada = computed(() => {
 		        <option value="">Seleccione</option>
 
 		        <option
-		            v-for="nivel in niveles"
+		            v-for="nivel in nivelesUltimo"
 		            :key="nivel"
 		            :value="nivel"
 		        >
@@ -734,6 +864,7 @@ const institucionSeleccionada = computed(() => {
     <small v-if="!formacionBloqueada" class="ayuda-documento">PDF, JPG o PNG. Máximo 5 MB.</small>
 </div>
 		</div>
+                </template>
             </section>
         </div>
 
@@ -990,3 +1121,15 @@ const institucionSeleccionada = computed(() => {
     #vue-formacion-academica .ug-fila-nivel-area { grid-template-columns: 1fr; gap: 8px; }
 }
 </style>
+
+<style>
+/* Formación de origen con catálogo de licenciaturas y declaración de posgrado (sin campos nuevos salvo la casilla). */
+#vue-formacion-academica .ug-declaracion { margin: -8px 0 10px; }
+#vue-formacion-academica .ug-casilla { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; font-weight: 600; cursor: pointer; }
+#vue-formacion-academica .ug-casilla input { width: 16px; height: 16px; margin: 0; accent-color: #9e1b32; }
+#vue-formacion-academica .ug-solo-licenciatura { margin-top: 8px; padding: 8px 10px; border: 1px solid #d8e6dc; border-radius: 6px;
+    background: #f4faf6; color: #326b48; font-size: 12.5px; line-height: 1.35; text-align: center; }
+#vue-formacion-academica .ug-solo-licenciatura p { margin: 0; }
+#vue-formacion-academica .fila-titulos-origen .selector-buscable { width: 100%; }
+</style>
+

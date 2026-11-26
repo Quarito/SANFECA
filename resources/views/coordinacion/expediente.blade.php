@@ -54,7 +54,16 @@
             <h3>Formación académica</h3>
             <dl class="coord-datos">
                 <div><dt>Nivel de origen</dt><dd>{{ $detalle->nivel_origen ?? '—' }}</dd></div>
-                <div><dt>Título de origen</dt><dd>{{ $titulo($detalle->titulo_origen, $detalle->titulo_origen_otro) }}</dd></div>
+                @if(filled($detalle->titulo_origen_especifico ?? null))
+                    <div><dt>Título de origen</dt><dd>{{ \App\Services\Catalogos\TituloOrigen::presentar($detalle) }}
+                        <small>({{ ($detalle->origen_titulo_origen ?? null) === 'catalogo' ? 'catálogo de licenciaturas' : 'captura manual' }})</small></dd></div>
+                    <div><dt>Área del título de origen</dt><dd>{{ $detalle->titulo_origen ?? '—' }}</dd></div>
+                @else
+                    <div><dt>Título de origen</dt><dd>{{ $titulo($detalle->titulo_origen, $detalle->titulo_origen_otro) }}</dd></div>
+                @endif
+                @if(\App\Services\Formacion\RequisitosFormacion::soloLicenciatura($detalle))
+                    <div><dt>Último grado</dt><dd>Licenciatura <small>(formación de origen; sin estudios de posgrado declarados)</small></dd></div>
+                @else
                 <div><dt>Último grado</dt><dd>{{ $detalle->nivel_ultimo_grado ?? '—' }}</dd></div>
                 @if(filled($detalle->titulo_ultimo_grado_especifico ?? null))
                     <div><dt>Título del último grado</dt><dd>{{ \App\Services\Catalogos\TituloUltimoGrado::presentar($detalle) }}
@@ -62,6 +71,7 @@
                     <div><dt>Área del último grado</dt><dd>{{ $detalle->titulo_ultimo_grado ?? '—' }}</dd></div>
                 @else
                     <div><dt>Título del último grado</dt><dd>{{ $titulo($detalle->titulo_ultimo_grado, $detalle->titulo_ultimo_grado_otro) }}</dd></div>
+                @endif
                 @endif
                 <div><dt>Autorizada por el solicitante</dt><dd>{{ $detalle->formacion_completada_at ? $fecha($detalle->formacion_completada_at) : 'No' }}</dd></div>
             </dl>
