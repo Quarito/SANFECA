@@ -193,6 +193,17 @@ Aplica a toda lista de más de ≈ 30 opciones (primer uso: títulos de posgrado
 - **Bandera y degradación:** si el catálogo no está disponible (bandera, archivo, huella o migración), se muestra el formulario anterior con un aviso; nunca una lista vacía en silencio.
 - **Verificación:** altura del documento con la lista abierta y cerrada, título más largo, apertura hacia arriba, móvil sin desplazamiento horizontal, sin errores de consola.
 
+### 7 bis.8 Datos de catálogo versionados y funciones con bandera (2026-11-26)
+- **El servidor determina el texto.** El navegador solo envía la clave; nombres, orígenes o versiones enviados por POST se ignoran.
+- **Lo registrado no se reescribe.** Una selección guardada conserva su texto y su versión de origen. Si la versión vigente la retira o la cambia:
+  - se muestra con un aviso;
+  - guardar sin cambios la conserva;
+  - nunca se borra ni se obliga a recapturar en silencio.
+- **Presentación única.** Cada dato con varias fuentes (título específico, texto libre histórico, área) se muestra mediante **un** presentador de servidor (p. ej., `TituloUltimoGrado::presentar()`), no con reglas repetidas en cada vista. El **área** se muestra aparte del nombre.
+- **Estados de una función con bandera.** `desactivado` · `activo` · `error`. En `error` se muestra el formulario anterior con un aviso visible y el motivo queda en el registro; nunca una lista vacía.
+- **Mensajes en español.** Las reglas propias llevan mensajes explícitos. El sitio debe ejecutarse con `APP_LOCALE=es` y traducciones completas: los mensajes genéricos en inglés no son aceptables para el solicitante.
+- **Los errores de sesión deben verse.** Toda pantalla destino de una redirección con `with('error', …)` debe mostrar `session('error')` con el aviso homologado. Un bloqueo sin explicación visible es un defecto.
+
 ## 8. Accesibilidad mínima
 - Etiquetas `<label>` en todos los campos, `role="search"` en la barra de filtros y `aria-live="polite"` en resúmenes que cambian.
 - Las acciones deshabilitadas usan `aria-disabled`. Los enlaces que abren pestaña nueva usan `rel="noopener"`.
