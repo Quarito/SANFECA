@@ -271,8 +271,13 @@ def main(fuente, salida):
                 'area_alternativa': alternativa if alternativa != area else None, 'observaciones': '; '.join(obs) or None,
             })
             conteo_hojas[hoja]['titulos'] += 1
+    # Claves estables únicas: dos nombres que solo difieren en acentos, mayúsculas, puntuación o espacios producen la
+    # misma clave. Se detiene con el detalle (nunca se descarta ni se fusiona un título en silencio).
     claves = Counter(r['clave'] for r in registros)
-    assert all(c == 1 for c in claves.values()), 'Colisión de claves'
+    colisiones = [r for r in registros if claves[r['clave']] > 1]
+    if colisiones:
+        detalle = '\n'.join(f"  {r['clave']}  {r['hoja']} fila {r['fila']}: {r['titulo']}" for r in sorted(colisiones, key=lambda r: r['clave']))
+        sys.exit(f'DETENIDO: colisión de claves estables (nombres equivalentes al normalizar):\n{detalle}')
 
     registros.sort(key=lambda r: (['Especialidad', 'Maestría', 'Doctorado'].index(r['nivel']), normal(r['titulo'])))
     catalogo = {
