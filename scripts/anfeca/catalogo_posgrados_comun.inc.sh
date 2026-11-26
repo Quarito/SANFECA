@@ -1,9 +1,19 @@
-# ANFECA · Funciones comunes de aplicación y reversión de la migración del catálogo de posgrados.
-CAT_MIG=2026_11_27_000000_add_titulo_especifico_to_formaciones_academicas_solicitud
-CAT_RUTA=database/migrations_propuestas/$CAT_MIG.php
-CAT_COLUMNAS="'titulo_ultimo_grado_especifico','origen_titulo_ultimo_grado','clave_posgrado_catalogo','version_catalogo_posgrados'"
+# ANFECA · Funciones comunes de aplicación y reversión de migraciones ADITIVAS de formación académica.
+# Por omisión: migración del catálogo de posgrados. Otros scripts fijan estas variables ANTES de incluir el archivo
+# (p. ej., aplicar_licenciaturas_posgrado.sh para la migración del catálogo de licenciaturas y la declaración de posgrado).
+: "${CAT_MIG:=2026_11_27_000000_add_titulo_especifico_to_formaciones_academicas_solicitud}"
+: "${CAT_RUTA:=database/migrations_propuestas/$CAT_MIG.php}"
+: "${CAT_COLUMNAS:='titulo_ultimo_grado_especifico','origen_titulo_ultimo_grado','clave_posgrado_catalogo','version_catalogo_posgrados'}"
 # Archivos cuya versión en disco debe ser IDÉNTICA a HEAD (correspondencia código ↔ commit autorizado).
-CAT_ARCHIVOS="$CAT_RUTA app/Services/Catalogos app/Http/Controllers/FormacionAcademicaController.php app/Models/FormacionAcademicaSolicitud.php config/anfeca_catalogos.php"
+: "${CAT_ARCHIVOS:=$CAT_RUTA app/Services/Catalogos app/Http/Controllers/FormacionAcademicaController.php app/Models/FormacionAcademicaSolicitud.php config/anfeca_catalogos.php}"
+# Banderas que deben estar DESACTIVADAS al aplicar o revertir (claves de configuración separadas por espacios).
+: "${CAT_BANDERAS_APAGADAS:=anfeca_catalogos.posgrados.activo}"
+: "${CAT_VERIFICAR:=verificar_catalogo_posgrados.sh}"
+: "${CAT_AUTORIZACION:=catalogo_posgrados}"
+: "${CAT_CHECKS:=fas_titulo_especifico_coherente_ck}"
+: "${CAT_MENSAJE_FINAL:=La bandera ANFECA_CATALOGO_POSGRADOS sigue DESACTIVADA; su activación requiere autorización aparte.}"
+CAT_IDENTIFICADORES=$(tr -d "'" <<< "$CAT_COLUMNAS")
+CAT_NUM_COLUMNAS=$(awk -F, '{print NF}' <<< "$CAT_COLUMNAS")
 detener() { echo "DETENIDO: $*" >&2; exit 1; }
 valor() { grep -E "^$1=" .env | tail -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
 espacio() { df -Pm / | awk 'NR==2 {print $4}'; }
@@ -19,11 +29,12 @@ cat_precondiciones() {
     # shellcheck disable=SC2086
     git diff --quiet HEAD -- $CAT_ARCHIVOS || detener "los archivos del catálogo difieren de HEAD"
     [ ! -f bootstrap/cache/config.php ] || detener "configuración en caché"
-    BASE="$base" php -r 'require "vendor/autoload.php"; $a = require "bootstrap/app.php"; $a->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+    BASE="$base" BANDERAS="$CAT_BANDERAS_APAGADAS" php -r 'require "vendor/autoload.php"; $a = require "bootstrap/app.php"; $a->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+      $apagadas = array_reduce(array_filter(explode(" ", (string) getenv("BANDERAS"))), fn ($ok, $k) => $ok && config($k) === false, true);
       exit((config("anfeca_pdm.modo") === "apagado" && config("anfeca_coordinacion.revision_documental") === false
-            && config("anfeca_catalogos.posgrados.activo") === false
+            && $apagadas
             && config("database.connections.".config("database.default").".database") === getenv("BASE")) ? 0 : 1);' \
-      || detener "PDM no apagado, revisión documental o catálogo activos, o conexión efectiva distinta"
+      || detener "PDM no apagado, revisión documental activa, alguna bandera ($CAT_BANDERAS_APAGADAS) activa o conexión efectiva distinta"
     grep -q "RESULTADO: respaldo restaurable y equivalente" "$respaldo/RESULTADO.txt" || detener "el respaldo indicado no está verificado"
     grep -q "base=$base " "$respaldo/RESULTADO.txt" || detener "el respaldo no corresponde a la base $base"
     grep -q "commit=${commit:0:7}" "$respaldo/RESULTADO.txt" || detener "el respaldo no corresponde al commit $commit"

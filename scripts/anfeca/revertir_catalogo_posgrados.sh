@@ -16,11 +16,11 @@ source "$(dirname "$0")/huellas_bd.inc.sh"
 source "$(dirname "$0")/pg_herramientas.inc.sh"
 source "$(dirname "$0")/catalogo_posgrados_comun.inc.sh"
 
-[ "${ANFECA_AUTORIZO_REVERSION:-}" = catalogo_posgrados ] || detener "falta ANFECA_AUTORIZO_REVERSION=catalogo_posgrados"
+[ "${ANFECA_AUTORIZO_REVERSION:-}" = "$CAT_AUTORIZACION" ] || detener "falta ANFECA_AUTORIZO_REVERSION=$CAT_AUTORIZACION"
 cat_precondiciones "$BASE" "$COMMIT" "$RESPALDO"
-[ "$(cat_columnas_presentes)" = 4 ] || detener "las columnas no existen: nada que revertir"
-CON_DATOS=$(psql -Atc "select count(*) from public.formaciones_academicas_solicitud where coalesce(titulo_ultimo_grado_especifico, origen_titulo_ultimo_grado, clave_posgrado_catalogo, version_catalogo_posgrados) is not null")
-[ "$CON_DATOS" = 0 ] || detener "$CON_DATOS formaciones tienen títulos específicos: la reversión estructural se niega (use la bandera)"
+[ "$(cat_columnas_presentes)" = "$CAT_NUM_COLUMNAS" ] || detener "las columnas no existen: nada que revertir"
+CON_DATOS=$(psql -Atc "select count(*) from public.formaciones_academicas_solicitud where num_nonnulls($CAT_IDENTIFICADORES) > 0")
+[ "$CON_DATOS" = 0 ] || detener "$CON_DATOS formaciones tienen datos en las columnas aditivas: la reversión estructural se niega (use la bandera)"
 
 SALIDA="$RESPALDO/reversion_catalogo_posgrados_$(date +%Y%m%d_%H%M%S)"; mkdir -p "$SALIDA"; chmod 700 "$SALIDA"
 huellas_bd > "$SALIDA/huellas_antes.txt"; cat_huella_formaciones > "$SALIDA/formaciones_antes.txt"
@@ -38,7 +38,9 @@ RUTA="$CAT_RUTA" MIG="$CAT_MIG" php -r 'require "vendor/autoload.php"; $a = requ
 huellas_bd > "$SALIDA/huellas_despues.txt"; cat_huella_formaciones > "$SALIDA/formaciones_despues.txt"
 cat_migraciones > "$SALIDA/migraciones_despues.txt"; cat_documentos "$SALIDA/documentos_despues.json"
 [ "$(cat_columnas_presentes)" = 0 ] || detener "las columnas siguen existiendo"
-[ "$(psql -Atc "select count(*) from pg_constraint where conname='fas_titulo_especifico_coherente_ck'")" = 0 ] || detener "el CHECK sigue existiendo"
+for ck in $CAT_CHECKS; do
+    [ "$(psql -Atc "select count(*) from pg_constraint where conname='$ck'")" = 0 ] || detener "el CHECK $ck sigue existiendo"
+done
 [ "$(diff "$SALIDA/migraciones_antes.txt" "$SALIDA/migraciones_despues.txt" | grep -E '^[<>]')" = "< $CAT_MIG" ] \
     || detener "ALERTA: la lista de migraciones cambió de forma inesperada"
 cat_comparar "$SALIDA"

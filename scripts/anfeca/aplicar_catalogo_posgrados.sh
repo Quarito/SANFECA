@@ -20,7 +20,7 @@ source "$(dirname "$0")/huellas_bd.inc.sh"
 source "$(dirname "$0")/pg_herramientas.inc.sh"
 source "$(dirname "$0")/catalogo_posgrados_comun.inc.sh"
 
-[ "${ANFECA_AUTORIZO_MIGRACION:-}" = catalogo_posgrados ] || detener "falta ANFECA_AUTORIZO_MIGRACION=catalogo_posgrados"
+[ "${ANFECA_AUTORIZO_MIGRACION:-}" = "$CAT_AUTORIZACION" ] || detener "falta ANFECA_AUTORIZO_MIGRACION=$CAT_AUTORIZACION"
 echo "Espacio libre antes: $(espacio) MB"
 cat_precondiciones "$BASE" "$COMMIT" "$RESPALDO"
 [ "$(cat_columnas_presentes)" = 0 ] || detener "las columnas ya existen"
@@ -41,6 +41,6 @@ cat_migraciones > "$SALIDA/migraciones_despues.txt"; cat_documentos "$SALIDA/doc
 [ "$(diff "$SALIDA/migraciones_antes.txt" "$SALIDA/migraciones_despues.txt" | grep -E '^[<>]')" = "> $CAT_MIG" ] \
     || detener "ALERTA: la lista de migraciones cambió de forma inesperada"
 cat_comparar "$SALIDA"
-bash "$(dirname "$0")/verificar_catalogo_posgrados.sh" | tee "$SALIDA/verificacion.txt"
+bash "$(dirname "$0")/$CAT_VERIFICAR" | tee "$SALIDA/verificacion.txt"
 echo "Espacio libre después: $(espacio) MB · evidencia: $SALIDA"
-echo "La bandera ANFECA_CATALOGO_POSGRADOS sigue DESACTIVADA; su activación requiere autorización aparte."
+echo "$CAT_MENSAJE_FINAL"
