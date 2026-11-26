@@ -82,6 +82,7 @@ class IndicadoresController extends Controller
                 'nota' => 'Pendiente de implementación (fase 6.4)',
             ])->values(),
             'convocatoria' => ['implementado' => false, 'nota' => 'Asociación con convocatorias pendiente de validación'],
+            'seguimiento' => $this->seguimiento($usuario),
             'distribucion' => [
                 'zona' => $this->distribucionZona($base()),
                 'institucion' => $this->distribucion($base(), 'i.nombre', 'Sin institución registrada'),
@@ -110,6 +111,41 @@ class IndicadoresController extends Controller
                         ->timezone('America/Mexico_City')->format('d/m/Y H:i')),
                 ]),
         ]);
+    }
+
+    /**
+     * Indicadores del seguimiento (bloque D). PERSONAS: cada cuenta de solicitante se cuenta una vez
+     * según su trámite actual. TRÁMITES: cada solicitud cuenta una vez. Ambos dentro del alcance.
+     */
+    private function seguimiento($usuario): array
+    {
+        $i = app(\App\Services\Coordinacion\SeguimientoRegistros::class)->indicadores($usuario);
+        $url = route('coordinacion.seguimiento');
+
+        return [
+            'personas' => [
+                ['clave' => 'registradas', 'etiqueta' => 'Solicitantes registrados', 'valor' => $i['personas']['registradas'], 'enlace' => $url,
+                    'criterio' => 'Personas (cuentas de solicitante) en su alcance; cada una se cuenta una vez'],
+                ['clave' => 'sin_iniciar', 'etiqueta' => 'Sin iniciar trámite', 'valor' => $i['personas']['sin_iniciar'], 'enlace' => $url.'?estado=sin_iniciar',
+                    'criterio' => 'Cuenta creada sin datos personales ni solicitud'],
+                ['clave' => 'en_proceso', 'etiqueta' => 'En proceso sin solicitud', 'valor' => $i['personas']['en_proceso_sin_solicitud'], 'enlace' => $url.'?estado=en_proceso_sin_solicitud',
+                    'criterio' => 'Con datos personales, sin selección de certificación (aún sin folio)'],
+                ['clave' => 'listas', 'etiqueta' => 'Listas para envío', 'valor' => $i['personas']['listas_para_envio'], 'enlace' => $url.'?estado=listo_para_envio',
+                    'criterio' => 'Borrador con todas las etapas de captura completas, aún no enviado'],
+            ],
+            'tramites' => [
+                ['clave' => 'borradores', 'etiqueta' => 'Solicitudes en borrador', 'valor' => $i['tramites']['borradores'], 'enlace' => $url.'?estado=borrador',
+                    'criterio' => 'Solicitudes (folios) en estado borrador'],
+                ['clave' => 'enviadas', 'etiqueta' => 'Solicitudes enviadas', 'valor' => $i['tramites']['enviadas'], 'enlace' => route('coordinacion.solicitudes'),
+                    'criterio' => 'Solicitudes con envío confirmado por el solicitante'],
+                ['clave' => 'primera_vez', 'etiqueta' => 'Primera vez', 'valor' => $i['tramites']['primera_vez'], 'enlace' => $url.'?tipo_tramite=inicial',
+                    'criterio' => 'Solicitudes de certificación inicial (borrador y enviadas)'],
+                ['clave' => 'refrendos', 'etiqueta' => 'Refrendos', 'valor' => $i['tramites']['refrendos'], 'enlace' => $url.'?tipo_tramite=refrendo',
+                    'criterio' => 'Solicitudes de refrendo, incluido artículo 13/14 (borrador y enviadas)'],
+            ],
+            'por_etapa' => $i['por_etapa'],
+            'por_zona' => $i['por_zona'],
+        ];
     }
 
     /** Agrupa por la columna (expresión idéntica en SELECT y GROUP BY) y rotula los vacíos en PHP. */

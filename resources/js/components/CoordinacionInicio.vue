@@ -77,6 +77,33 @@ onMounted(cargar);
                 </div>
             </div>
 
+            <h2 class="coord-subtitulo">Seguimiento de registros</h2>
+            <div class="coord-seguimiento-grupos">
+                <section v-for="g in [['Personas', datos.seguimiento.personas], ['Trámites', datos.seguimiento.tramites]]" :key="g[0]" :aria-label="g[0]">
+                    <h3 class="coord-seguimiento-grupo">{{ g[0] }}</h3>
+                    <div class="coord-tarjetas coord-tarjetas-4">
+                        <a v-for="t in g[1]" :key="t.clave" :href="t.enlace" class="coord-tarjeta coord-tarjeta-enlace" :data-indicador="t.clave">
+                            <div class="coord-tarjeta-etiqueta">{{ t.etiqueta }}</div>
+                            <div class="coord-tarjeta-valor">{{ t.valor }}</div>
+                            <div class="coord-tarjeta-nota">{{ t.criterio }}</div>
+                        </a>
+                    </div>
+                </section>
+            </div>
+            <div class="coord-paneles coord-paneles-2">
+                <section v-for="d in [{ clave: 'etapa', titulo: 'Personas por etapa actual', filas: datos.seguimiento.por_etapa }, { clave: 'zona-personas', titulo: 'Personas por zona', filas: datos.seguimiento.por_zona }]" :key="d.clave" class="coord-panel">
+                    <h2>{{ d.titulo }}</h2>
+                    <p v-if="!d.filas.length" class="coord-cargando">Sin registros pendientes de envío.</p>
+                    <ul v-else class="coord-barras">
+                        <li v-for="f in d.filas" :key="f.clave" class="coord-barra-fila">
+                            <span class="coord-barra-etiqueta" :title="f.etiqueta">{{ f.etiqueta }}</span>
+                            <span class="coord-barra-valor">{{ f.valor }}</span>
+                            <span class="coord-barra-pista" aria-hidden="true"><span class="coord-barra-relleno" :style="{ width: (f.valor / maximo(d.filas) * 100) + '%' }"></span></span>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+
             <h2 class="coord-subtitulo">Evaluación</h2>
             <div class="coord-tarjetas">
                 <div v-for="e in datos.evaluacion" :key="e.clave" class="coord-tarjeta pendiente">
