@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import SelectorBuscable from './SelectorBuscable.vue';
 
 const archivosSeleccionados = ref({});
 
@@ -24,6 +25,8 @@ const props = defineProps({
 	    type: Boolean,
 	    default: false
 	},
+    // Catálogo de posgrados (bandera ANFECA_CATALOGO_POSGRADOS): { estado, url, version }.
+    catalogo: { type: Object, default: () => ({ estado: 'desactivado' }) },
 });
 
 const titulosOrigen = [
@@ -141,6 +144,124 @@ const tituloUltimoGradoOtro = ref(
 const mostrarTituloUltimoGradoOtro = computed(() =>
     tituloUltimoGrado.value === 'Otro'
 );
+
+/*
+ * Catálogo de posgrados (solo con estado «activo»: bandera, archivo íntegro y migración aplicada).
+ * Licenciatura conserva su comportamiento; con la bandera desactivada se usa el formulario anterior.
+ * El nombre del título lo determina el SERVIDOR a partir de la clave; el navegador solo envía la clave
+ * (modo «catalogo») o el texto capturado (modo «manual», disponible en todas las áreas).
+ */
+const catalogoActivo = computed(() =>
+    props.catalogo?.estado === 'activo' && Boolean(props.catalogo?.url)
+);
+const catalogoConError = computed(() => props.catalogo?.estado === 'error');
+const esPosgrado = computed(() =>
+    Boolean(nivelUltimoGrado.value) && nivelUltimoGrado.value !== 'Licenciatura'
+);
+const usaSelectorTitulo = computed(() => catalogoActivo.value && esPosgrado.value);
+
+const f = props.formacion ?? {};
+const origenGuardado = f.origen_titulo_ultimo_grado ?? null;
+const historicoOtro = !origenGuardado && f.titulo_ultimo_grado === 'Otro' && Boolean(f.titulo_ultimo_grado_otro);
+const modoTitulo = ref(
+    f.modo_titulo_ultimo_grado
+    || (origenGuardado === 'manual' || historicoOtro ? 'manual' : 'catalogo')
+);
+const claveTitulo = ref(
+    f.clave_posgrado_catalogo_old ?? f.clave_posgrado_catalogo ?? ''
+);
+const tituloManual = ref(
+    f.titulo_ultimo_grado_manual
+    ?? (origenGuardado === 'manual' ? f.titulo_ultimo_grado_especifico : (historicoOtro ? f.titulo_ultimo_grado_otro : ''))
+    ?? ''
+);
+const opcionesTitulo = ref([]);
+const cargandoTitulos = ref(false);
+const errorTitulos = ref('');
+const cacheTitulos = new Map();
+const campoClave = ref(null);
+const campoModo = ref(null);
+const campoManual = ref(null);
+
+const textoTituloGuardado = computed(() =>
+    claveTitulo.value && claveTitulo.value === f.clave_posgrado_catalogo
+        ? (f.titulo_ultimo_grado_especifico ?? '') : ''
+);
+const placeholderTitulo = computed(() => {
+    if (!nivelUltimoGrado.value || !tituloUltimoGrado.value) return 'Seleccione primero el nivel y el área';
+    return 'Seleccione o busque su título';
+});
+
+function notificarCambio(elemento) {
+    // La protección de cambios pendientes de la vista escucha «input» en el formulario.
+    nextTick(() => elemento.value?.dispatchEvent(new Event('input', { bubbles: true })));
+}
+
+async function cargarTitulos() {
+    errorTitulos.value = '';
+    if (!usaSelectorTitulo.value || !tituloUltimoGrado.value) {
+        opcionesTitulo.value = [];
+        return;
+    }
+    const llave = `${nivelUltimoGrado.value}|${tituloUltimoGrado.value}`;
+    if (cacheTitulos.has(llave)) {
+        opcionesTitulo.value = cacheTitulos.get(llave);
+        return;
+    }
+    cargandoTitulos.value = true;
+    try {
+        const parametros = new URLSearchParams({ nivel: nivelUltimoGrado.value, area: tituloUltimoGrado.value });
+        const respuesta = await fetch(`${props.catalogo.url}?${parametros}`, {
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+        });
+        if (!respuesta.ok) throw new Error(String(respuesta.status));
+        const datos = await respuesta.json();
+        if (!Array.isArray(datos?.titulos)) throw new Error('formato');
+        cacheTitulos.set(llave, datos.titulos);
+        if (llave === `${nivelUltimoGrado.value}|${tituloUltimoGrado.value}`) {
+            opcionesTitulo.value = datos.titulos;
+            // Una clave que no pertenece al nivel y al área vigentes se descarta (el servidor también la rechaza).
+            if (claveTitulo.value && !datos.titulos.some(t => t.clave === claveTitulo.value)) {
+                claveTitulo.value = '';
+                notificarCambio(campoClave);
+            }
+        }
+    } catch (e) {
+        opcionesTitulo.value = [];
+        errorTitulos.value = 'No fue posible cargar el catálogo de títulos. Puede elegir «No encuentro mi título» y escribirlo.';
+    } finally {
+        cargandoTitulos.value = false;
+    }
+}
+
+function seleccionarTitulo(clave) {
+    claveTitulo.value = clave;
+    modoTitulo.value = 'catalogo';
+    notificarCambio(campoClave);
+}
+
+function capturarTituloManual() {
+    modoTitulo.value = 'manual';
+    notificarCambio(campoModo);
+    nextTick(() => campoManual.value?.focus());
+}
+
+function volverAlCatalogo() {
+    // El texto capturado se conserva (sin guardar) por si el solicitante regresa a la captura manual.
+    modoTitulo.value = 'catalogo';
+    notificarCambio(campoModo);
+}
+
+watch([nivelUltimoGrado, tituloUltimoGrado], () => {
+    // Cambiar nivel o área invalida la selección del catálogo (no el texto manual).
+    if (claveTitulo.value) {
+        claveTitulo.value = '';
+        notificarCambio(campoClave);
+    }
+    cargarTitulos();
+});
+onMounted(cargarTitulos);
 const institucionId = ref(
     String(props.formacion?.institucion_afiliada_id ?? '')
 );
@@ -367,6 +488,76 @@ const institucionSeleccionada = computed(() => {
             <!-- ÚLTIMO GRADO DE ESTUDIOS -->
             <section class="seccion mejora-columnas-97153">
                 <h2>Último Grado de Estudios</h2>
+                <p v-if="catalogoConError" class="aviso-catalogo-posgrados" role="status">
+                    El catálogo de títulos de posgrado no está disponible por el momento; capture su información como de costumbre.
+                </p>
+
+                <!-- Con el catálogo de posgrados activo: fila 1 Nivel | Área (50/50); fila 2 Nombre del título (100 %). -->
+                <div v-if="catalogoActivo" class="ug-catalogo">
+                    <div class="ug-fila-nivel-area">
+                        <div class="ug-campo">
+                            <label for="nivel_ultimo_grado">Nivel</label>
+                            <select id="nivel_ultimo_grado" name="nivel_ultimo_grado" v-model="nivelUltimoGrado"
+                                    :disabled="formacionBloqueada" required>
+                                <option value="">Seleccione</option>
+                                <option v-for="nivel in niveles" :key="nivel" :value="nivel">{{ nivel }}</option>
+                            </select>
+                        </div>
+                        <div class="ug-campo">
+                            <label for="titulo_ultimo_grado">Área</label>
+                            <select id="titulo_ultimo_grado" name="titulo_ultimo_grado" v-model="tituloUltimoGrado"
+                                    :disabled="formacionBloqueada" required>
+                                <option value="">Seleccione</option>
+                                <option v-for="titulo in titulosUltimoGrado" :key="titulo" :value="titulo">{{ titulo }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Posgrado: selector del catálogo o captura manual en el mismo espacio. -->
+                    <div v-if="usaSelectorTitulo" class="ug-fila-titulo">
+                        <input ref="campoModo" type="hidden" name="modo_titulo_ultimo_grado" :value="modoTitulo">
+                        <input ref="campoClave" type="hidden" name="clave_posgrado_catalogo"
+                               :value="modoTitulo === 'catalogo' ? claveTitulo : ''">
+                        <div class="ug-encabezado-titulo">
+                            <label :for="modoTitulo === 'manual' ? 'titulo_ultimo_grado_manual' : 'clave_posgrado_selector'">
+                                Nombre del título <span class="campo-obligatorio">*</span>
+                            </label>
+                            <button v-if="modoTitulo === 'manual' && !formacionBloqueada" type="button" class="ug-enlace"
+                                    @click="volverAlCatalogo">Volver al catálogo</button>
+                        </div>
+                        <SelectorBuscable
+                            v-if="modoTitulo === 'catalogo'"
+                            id="clave_posgrado_selector"
+                            :model-value="claveTitulo"
+                            :opciones="opcionesTitulo"
+                            :texto-seleccionado="textoTituloGuardado"
+                            :placeholder="placeholderTitulo"
+                            :deshabilitado="formacionBloqueada || !tituloUltimoGrado"
+                            :cargando="cargandoTitulos"
+                            opcion-manual="No encuentro mi título"
+                            @update:model-value="seleccionarTitulo"
+                            @manual="capturarTituloManual"
+                        />
+                        <input v-else id="titulo_ultimo_grado_manual" ref="campoManual" type="text"
+                               name="titulo_ultimo_grado_manual" class="ug-manual" v-model="tituloManual"
+                               minlength="5" maxlength="200" :required="!formacionBloqueada" :disabled="formacionBloqueada"
+                               placeholder="Escriba el nombre completo de su título, como aparece en el documento">
+                        <small v-if="errorTitulos" class="ug-error" role="alert">{{ errorTitulos }}</small>
+                    </div>
+
+                    <!-- Licenciatura: comportamiento actual (título libre solo con el área «Otro»). -->
+                    <div v-else-if="nivelUltimoGrado === 'Licenciatura' && mostrarTituloUltimoGradoOtro" class="ug-fila-titulo">
+                        <div class="ug-encabezado-titulo">
+                            <label for="titulo_ultimo_grado_otro">Especifique el último grado <span class="campo-obligatorio">*</span></label>
+                        </div>
+                        <input id="titulo_ultimo_grado_otro" type="text" name="titulo_ultimo_grado_otro" class="ug-manual"
+                               v-model.trim="tituloUltimoGradoOtro" maxlength="200"
+                               :required="!formacionBloqueada" :disabled="formacionBloqueada"
+                               placeholder="Ejemplo: Licenciatura en Economía">
+                    </div>
+                </div>
+
+                <template v-else>
 		<div class="campo">
 		    <label for="nivel_ultimo_grado">
 		        Nivel
@@ -440,6 +631,7 @@ const institucionSeleccionada = computed(() => {
         >
     </div>
 </div>
+                </template>
                 <!-- DOCUMENTOS DEL ÚLTIMO GRADO -->
 		<div class="documentos-vue documentos-anfeca">
 		    <div class="campo campo-documento">
@@ -755,4 +947,29 @@ const institucionSeleccionada = computed(() => {
     }
 }
 
+</style>
+
+<style>
+/* Último grado con catálogo de posgrados (estándar de catálogos extensos). Sin efecto con la bandera desactivada. */
+#vue-formacion-academica .aviso-catalogo-posgrados { margin: -10px 0 12px; padding: 6px 10px; font-size: 12px; text-align: center;
+    color: #7a4b00; background: #fff8e6; border: 1px solid #f0d9a8; border-radius: 6px; }
+#vue-formacion-academica .ug-catalogo { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+#vue-formacion-academica .ug-fila-nivel-area { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: end; }
+#vue-formacion-academica .ug-campo, #vue-formacion-academica .ug-fila-titulo { min-width: 0; margin: 0; padding: 0; }
+#vue-formacion-academica .ug-campo label { display: block; margin: 0 0 4px; text-align: center; line-height: 1.25; }
+#vue-formacion-academica .ug-catalogo select { width: 100%; max-width: none; height: 34px; min-height: 32px; margin: 0; padding: 0 10px;
+    border: 1px solid #888; border-radius: 4px; background: #fff; box-sizing: border-box; }
+#vue-formacion-academica .ug-catalogo select:disabled { background: #eee; }
+#vue-formacion-academica .ug-encabezado-titulo { position: relative; display: flex; justify-content: center; align-items: flex-end; margin: 0 0 4px; min-height: 17px; }
+#vue-formacion-academica .ug-encabezado-titulo label { margin: 0; text-align: center; line-height: 1.25; }
+#vue-formacion-academica .ug-enlace { position: absolute; right: 0; bottom: 0; padding: 0; border: 0; background: none;
+    color: #bd2434; font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+#vue-formacion-academica .ug-manual { display: block; width: 100%; height: 46px; padding: 4px 10px; box-sizing: border-box;
+    border: 1px solid #777; border-radius: 6px; background: #fff; color: #202020; }
+#vue-formacion-academica .ug-manual:focus { outline: 2px solid #2563eb; outline-offset: 1px; border-color: #2563eb; }
+#vue-formacion-academica .ug-manual:disabled { background: #f1f1f1; cursor: not-allowed; }
+#vue-formacion-academica .ug-error { display: block; margin-top: 4px; color: #c62828; font-size: 12px; }
+@media (max-width: 480px) {
+    #vue-formacion-academica .ug-fila-nivel-area { grid-template-columns: 1fr; gap: 8px; }
+}
 </style>
