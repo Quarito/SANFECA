@@ -15,7 +15,15 @@ set -euo pipefail
 ACCION="${1:?desplegar|restaurar}"; DEST=public/build
 detener() { echo "DETENIDO: $*" >&2; exit 1; }
 recursos() { python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); print("\n".join(sorted({f for v in m.values() for f in [v["file"]]+v.get("css",[])+v.get("assets",[])})))' "$1"; }
-verificar() { local m=$1 base=$2 f falta=0; for f in $(recursos "$m"); do [ -s "$base/$f" ] || { echo "FALTA $f" >&2; falta=1; }; done; [ $falta = 0 ]; }
+verificar() {
+    local m=$1 base=$2 f falta=0 lista
+    [ -s "$m" ] || { echo "No existe o está vacío: $m" >&2; return 1; }
+    lista=$(recursos "$m") || { echo "Manifiesto ilegible: $m" >&2; return 1; }
+    [ -n "$lista" ] || { echo "Manifiesto sin recursos: $m" >&2; return 1; }
+    for f in $lista; do [ -s "$base/$f" ] || { echo "FALTA $f" >&2; falta=1; }; done
+    [ $falta = 0 ]
+}
+sustituir() { cp "$1" "$2.tmp" || detener "no se pudo copiar $1"; mv "$2.tmp" "$2" || detener "no se pudo sustituir $2"; }
 [ -f artisan ] && [ -d "$DEST/assets" ] || detener "ejecute desde la raíz de la aplicación"
 
 case "$ACCION" in
@@ -28,17 +36,17 @@ desplegar)
     [ -f "$DEST/fonts-manifest.json" ] && cp "$DEST/fonts-manifest.json" "$RESP/fonts-manifest_anterior.json"
     for f in "$NUEVO"/assets/*; do b=$(basename "$f")
         if [ -e "$DEST/assets/$b" ]; then cmp -s "$f" "$DEST/assets/$b" || detener "conflicto: $b existe con otro contenido"
-        else cp "$f" "$DEST/assets/$b.tmp" && mv "$DEST/assets/$b.tmp" "$DEST/assets/$b" && echo "agregado $b"; fi
+        else sustituir "$f" "$DEST/assets/$b"; echo "agregado $b"; fi
     done
     verificar "$NUEVO/manifest.json" "$DEST" || detener "faltan recursos en $DEST; el manifiesto NO se cambió"
     if [ -f "$NUEVO/fonts-manifest.json" ] && ! cmp -s "$NUEVO/fonts-manifest.json" "$DEST/fonts-manifest.json"; then
-        cp "$NUEVO/fonts-manifest.json" "$DEST/fonts-manifest.json.tmp" && mv "$DEST/fonts-manifest.json.tmp" "$DEST/fonts-manifest.json"; fi
-    cp "$NUEVO/manifest.json" "$DEST/manifest.json.tmp" && mv "$DEST/manifest.json.tmp" "$DEST/manifest.json"
+        sustituir "$NUEVO/fonts-manifest.json" "$DEST/fonts-manifest.json"; fi
+    sustituir "$NUEVO/manifest.json" "$DEST/manifest.json"
     echo "Desplegado: $(grep -o 'assets/app-[^"]*\.js' "$DEST/manifest.json" | head -1) · anterior en $RESP/manifest_anterior.json" ;;
 restaurar)
     ANT="${2:?manifest.json anterior}"
     verificar "$ANT" "$DEST" || detener "faltan recursos de la compilación anterior: restaure primero public_build_antes.tar.gz"
-    cp "$ANT" "$DEST/manifest.json.tmp" && mv "$DEST/manifest.json.tmp" "$DEST/manifest.json"
+    sustituir "$ANT" "$DEST/manifest.json"
     echo "Restaurada: $(grep -o 'assets/app-[^"]*\.js' "$DEST/manifest.json" | head -1)" ;;
 *) detener "acción desconocida: $ACCION" ;;
 esac
