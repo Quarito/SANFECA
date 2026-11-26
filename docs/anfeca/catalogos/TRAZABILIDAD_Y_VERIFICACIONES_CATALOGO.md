@@ -2,11 +2,14 @@
 
 **Fecha:** 2026-11-26. **Commit de referencia:** `9b21c42` (rama `desarrollo/modulo-coordinacion`).
 
-**Estado en 8086:**
-- bandera **desactivada**;
-- migración **no aplicada**;
-- JSON **no instalado**;
-- compilación servida `app-JYtMCHvV.js` (anterior al catálogo).
+**Estado en 8086 (actualizado el 2026-11-26, tras la activación autorizada):**
+- bandera **activa** para aceptación;
+- migración **aplicada**;
+- JSON **instalado** con su huella;
+- compilación servida `app-CYBBpN_p.js` (la anterior, `app-JYtMCHvV.js`, se conserva y es restaurable);
+- clasificación **provisional, no aprobada**.
+
+Validación en vivo no destructiva: 25/25 (detalle en `PROPUESTA_CATALOGO_POSGRADOS.md` §0).
 
 Las pruebas se ejecutaron solo en árboles aislados, en SQLite y en PostgreSQL desechables, y en la demostración de `127.0.0.1:8099`.
 

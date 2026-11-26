@@ -1,10 +1,50 @@
 # Catálogo de posgrados en «Último grado de estudios»
 
-**Fecha:** 2026-11-25 (actualizado el 2026-11-26). **Estado: IMPLEMENTADO DETRÁS DE LA BANDERA `ANFECA_CATALOGO_POSGRADOS=false`.**
+**Fecha:** 2026-11-25 (actualizado el 2026-11-26). **Estado: ACTIVADO EN EL ENSAYO 8086 PARA ACEPTACIÓN (2026-11-26).**
 
-- La migración aditiva **no** está aplicada en 8086.
-- El catálogo **no** está activado.
-- Las 572 clasificaciones marcadas **no** están aprobadas.
+| Aspecto | Estado |
+|---|---|
+| Implementado | Sí |
+| Probado | Sí: aislado, SQLite y PostgreSQL desechables |
+| Desplegado en 8086 | Sí: migración aplicada, JSON instalado, compilación `app-CYBBpN_p.js` servida |
+| Activado en ensayo | Sí: `ANFECA_CATALOGO_POSGRADOS=true` |
+| Pendiente de aceptación visual y funcional | **Sí**, la realiza el responsable en 8086 |
+| Pendiente de aprobación de la clasificación | **Sí**: las 572 marcadas **no** están aprobadas. Los 1794 títulos se usan de forma **provisional y solo para pruebas en ensayo**; no son un criterio de elegibilidad |
+
+## 0. Activación en el ensayo 8086 (2026-11-26)
+
+| Paso | Resultado |
+|---|---|
+| Punto de recuperación | `~/ANFECA_RESPALDOS/catalogo_posgrados_activacion_20261126_133535/`: commit, estado de Git, cambios ajenos, `.env` anterior (600), compilación servida (`app-JYtMCHvV.js`, tar y manifiestos), fuentes de Formación, migraciones, huellas de 75 tablas, solicitudes y 20 huellas documentales |
+| Respaldo verificado | `respaldo_verificado_bd_anfeca_ensayo_pruebas_pg_20261126_133548`, SHA-256 `53fc87e6a55c5e1ae735bb11c26cd3f3e7770775fcac89107f907757fd67ed8b`. Restauración real en PostgreSQL 18.6: inventario de 1508 elementos idéntico, 75 tablas y 179 filas idénticas, `migrate:status` 35/1 |
+| Migración | Solo `2026_11_27_000000_…` con `aplicar_catalogo_posgrados.sh`: 4 columnas nulas, CHECK validado y verificación sin fallas. Datos de las 3 formaciones idénticos; columnas nuevas nulas en los registros históricos; 20 documentos idénticos; `escuela_facultad` **sin aplicar** |
+| Catálogo | `storage/app/private/catalogos/posgrados_anuies_2025.json`: SHA-256 `ed15f4f2…` igual al manifiesto; 0640, `servidorweb:apache`; directorio 2750; SELinux `httpd_sys_rw_content_t` (según la política); 404 por URL pública; fuera de Git |
+| Compilación | Generada en árbol aislado del HEAD `8d9e5df`. Recursos **agregados** junto a los anteriores; manifiesto sustituido de forma atómica (`scripts/anfeca/desplegar_compilacion.sh`). La anterior sigue disponible y restaurable |
+| Bandera | `.env`: `ANFECA_CATALOGO_POSGRADOS=true`, `…_SHA256=ed15f4f2…`, `…_VERSION=ANUIES-2025`; el resto sin cambios; sin caché de configuración. Estado efectivo: `activo`; PDM apagado; revisión documental desactivada |
+| Usuario de aceptación | `aceptacion.catalogo@example.test` (ficticio, folio 7 en borrador, sin formación); contraseña en `~/ANFECA_CREDENCIALES/aceptacion_catalogo_8086.txt` (600) |
+| Validación en vivo (sin escrituras) | 25/25 comprobaciones; sin errores de JavaScript ni líneas nuevas en el log de Laravel |
+| Borrador folio 6 | Cuenta de prueba `pru…@example.test` creada el 25-nov por el flujo web; certificación elegida el 26-nov; sin formación ni documentos; origen no determinable sin los registros de Apache. Incluido en la línea base y **sin cambios** |
+
+**Desactivación inmediata (mecanismo principal de recuperación):**
+
+```sh
+cd /var/www/ANFECA_ENSAYO && sed -i 's/^ANFECA_CATALOGO_POSGRADOS=true$/ANFECA_CATALOGO_POSGRADOS=false/' .env
+php -r 'require "vendor/autoload.php"; $a=require "bootstrap/app.php"; $a->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo app(App\Services\Catalogos\CatalogoPosgrados::class)->estado()["estado"], PHP_EOL;'   # → desactivado
+```
+
+- Sin caché de configuración, el cambio es inmediato. Si existiera `bootstrap/cache/config.php`: `php artisan config:clear`.
+- Columnas, títulos, claves y versiones se conservan.
+- La compilación nueva funciona con la bandera desactivada (muestra el formulario anterior).
+
+**Recuperar la compilación anterior** (solo si la nueva falla):
+
+```sh
+cd /var/www/ANFECA_ENSAYO && bash scripts/anfeca/desplegar_compilacion.sh restaurar ~/ANFECA_RESPALDOS/catalogo_posgrados_activacion_20261126_133535/manifest_anterior.json
+```
+
+Si faltaran recursos, primero extraer `compilacion_servida_public_build.tar.gz` del mismo punto de recuperación.
+
+**No** se ejecuta `down()` ni se restaura PostgreSQL sin autorización expresa.
 
 Alternativa de persistencia aprobada: **A (columnas aditivas)**.
 
