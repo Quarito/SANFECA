@@ -111,7 +111,8 @@ class RevisionesDocumentalesEsquemaTest extends TestCase
         $archivos = array_keys(app(Migrator::class)->getMigrationFiles([database_path('migrations')]));
         $this->assertContains('2026_11_26_000000_create_revisiones_documentales_table', $archivos);
         $this->assertSame('2026_11_26_000000_create_revisiones_documentales_table', end($archivos), 'Es la última migración: --path la aplica sola.');
-        $this->assertDirectoryDoesNotExist(base_path('database/migrations_propuestas'));
+        // Ya no queda copia propuesta de esta migración (el directorio aloja otras propuestas no autorizadas).
+        $this->assertSame([], glob(base_path('database/migrations_propuestas/*revisiones_documentales*')) ?: []);
         $this->assertTrue(DB::table('migrations')->where('migration', '2026_11_26_000000_create_revisiones_documentales_table')->exists());
         $this->assertSame(1, collect($archivos)->filter(fn ($m) => str_contains($m, 'revisiones_documentales'))->count());
     }

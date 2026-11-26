@@ -1,0 +1,17 @@
+{
+  "version": "FICTICIO-1",
+  "reglas": "reglas-prueba",
+  "aviso": "Catálogo FICTICIO para pruebas automatizadas. No contiene datos del catálogo ANUIES.",
+  "niveles": ["Especialidad", "Maestría", "Doctorado"],
+  "areas": ["Administración", "Contaduría", "Informática", "Negocios Internacionales", "Otro"],
+  "titulos": [
+    {"clave": "ESP-00000000000A", "nivel": "Especialidad", "area": "Administración", "titulo": "Especialidad Ficticia en Gestión Organizacional"},
+    {"clave": "MAE-00000000000A", "nivel": "Maestría", "area": "Administración", "titulo": "Maestría Ficticia en Dirección de Empresas"},
+    {"clave": "MAE-00000000000B", "nivel": "Maestría", "area": "Administración", "titulo": "Maestría Ficticia en Administración Pública Comparada"},
+    {"clave": "MAE-00000000000C", "nivel": "Maestría", "area": "Contaduría", "titulo": "Maestría Ficticia en Auditoría y Tributación"},
+    {"clave": "MAE-00000000000D", "nivel": "Maestría", "area": "Informática", "titulo": "Maestría Ficticia en Ciencias Computacionales"},
+    {"clave": "MAE-00000000000E", "nivel": "Maestría", "area": "Negocios Internacionales", "titulo": "Maestría Ficticia en Comercio Exterior"},
+    {"clave": "MAE-00000000000F", "nivel": "Maestría", "area": "Otro", "titulo": "Maestría Ficticia en Economía Aplicada y Políticas Públicas con Enfoque Regional para el Desarrollo Sostenible de Comunidades"},
+    {"clave": "DOC-00000000000A", "nivel": "Doctorado", "area": "Administración", "titulo": "Doctorado Ficticio en Administración Estratégica"}
+  ]
+}
