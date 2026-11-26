@@ -25,6 +25,7 @@ return [
     'menu' => [
         ['clave' => 'inicio', 'etiqueta' => 'Inicio', 'ruta' => 'coordinacion.inicio', 'icono' => '⌂'],
         ['clave' => 'solicitudes', 'etiqueta' => 'Solicitudes', 'ruta' => 'coordinacion.solicitudes', 'icono' => '☰'],
+        ['clave' => 'seguimiento', 'etiqueta' => 'Seguimiento de registros', 'ruta' => 'coordinacion.seguimiento', 'icono' => '◔'],
         ['clave' => 'expedientes', 'etiqueta' => 'Expedientes', 'ruta' => null, 'icono' => '▤', 'fase' => '6.3',
             'nota' => 'Consulta básica disponible desde Solicitudes'],
         ['clave' => 'evaluaciones', 'etiqueta' => 'Evaluaciones', 'ruta' => null, 'icono' => '✎', 'fase' => '6.4'],

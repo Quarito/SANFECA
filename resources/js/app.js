@@ -259,3 +259,17 @@ if (contenedorExpedienteDocumentos) {
         revisionActiva: contenedorExpedienteDocumentos.dataset.revisionActiva === '1'
     }).mount(contenedorExpedienteDocumentos);
 }
+
+// Seguimiento de registros y borradores (bloque D): solo lectura.
+import SeguimientoRegistros from './components/SeguimientoRegistros.vue';
+
+const contenedorSeguimiento = document.getElementById('vue-coordinacion-seguimiento');
+
+if (contenedorSeguimiento) {
+    createApp(SeguimientoRegistros, {
+        urlApi: contenedorSeguimiento.dataset.urlApi,
+        urlDetalle: contenedorSeguimiento.dataset.urlDetalle,
+        opciones: JSON.parse(contenedorSeguimiento.dataset.opciones || '{}'),
+        filtrosIniciales: JSON.parse(contenedorSeguimiento.dataset.filtros || '{}')
+    }).mount(contenedorSeguimiento);
+}

@@ -352,3 +352,29 @@ a.coord-menu-item:hover { background: var(--coord-rosa); border-color: #dbaeb3; 
 
 /* ===== Visor documental modal (bloque C) ===== */
 html.visor-abierto, html.visor-abierto body { overflow: hidden; }   /* la posición del expediente se conserva */
+
+/* ===== Seguimiento de registros (bloque D) ===== */
+.coord-insignia.seg-sin_iniciar { background: #f4f4f4; border-color: #d9d9d9; color: #4a4a4a; }
+.coord-insignia.seg-en_proceso_sin_solicitud { background: #fffaf0; border-color: #ecd9a8; color: #5c4400; }
+.coord-insignia.seg-borrador { background: #fff4e0; border-color: #e8c27a; color: #6b4a00; }
+.coord-insignia.seg-listo_para_envio { background: #eef4fb; border-color: #a9c4e4; color: #1f4b7a; }
+.coord-insignia.seg-enviada { background: #e8f5ea; border-color: #9fd0a8; color: #1e5a26; }
+.seg-progreso { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px; }
+.seg-paso { display: flex; gap: 6px; align-items: flex-start; padding: 6px 8px; border: 1px solid var(--coord-borde); border-radius: var(--coord-radio); font-size: 12px; background: #fff; }
+.seg-paso small { display: block; color: var(--coord-texto-suave); font-size: 11px; }
+.seg-marca { flex: 0 0 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; background: #f4f4f4; color: #555; }
+.seg-paso.seg-completada .seg-marca { background: #256029; color: #fff; }
+.seg-paso.seg-en_proceso .seg-marca { background: #e8c27a; color: #4a3300; }
+.seg-paso.seg-no_aplica { opacity: .6; border-style: dashed; }
+.seg-paso.actual { border-color: var(--coord-rojo); box-shadow: inset 0 0 0 1px var(--coord-rojo); }
+.seg-avance { display: flex; align-items: center; gap: 6px; min-width: 110px; }
+.seg-barra { flex: 1; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+.seg-barra > span { display: block; height: 100%; background: var(--coord-rojo); }
+.coord-seguimiento-grupos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.coord-seguimiento-grupo { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--coord-texto-suave); }
+.coord-tarjetas.coord-tarjetas-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.coord-tarjeta-enlace { text-decoration: none; color: inherit; }
+.coord-tarjeta-enlace:hover, .coord-tarjeta-enlace:focus-visible { border-color: var(--coord-rojo); outline: none; }
+.coord-paneles.coord-paneles-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 12px; }
+@container contenido (max-width: 760px) { .coord-seguimiento-grupos, .coord-paneles.coord-paneles-2 { grid-template-columns: 1fr; } }
+@container contenido (max-width: 420px) { .coord-tarjetas.coord-tarjetas-4 { grid-template-columns: 1fr; } }

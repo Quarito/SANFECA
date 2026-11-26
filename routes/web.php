@@ -374,6 +374,12 @@ Route::middleware(['auth', 'coordinacion'])
         Route::get('/prototipos/revision-documental', [\App\Http\Controllers\Coordinacion\PrototipoRevisionController::class, 'index'])
             ->name('prototipos.revision-documental');
 
+        // Seguimiento de registros y borradores (bloque D): SOLO LECTURA; sin rutas de escritura.
+        Route::get('/seguimiento', [\App\Http\Controllers\Coordinacion\SeguimientoController::class, 'index'])->name('seguimiento');
+        Route::get('/api/seguimiento', [\App\Http\Controllers\Coordinacion\SeguimientoController::class, 'api'])->name('api.seguimiento');
+        Route::get('/seguimiento/{usuario}', [\App\Http\Controllers\Coordinacion\SeguimientoController::class, 'show'])
+            ->whereNumber('usuario')->name('seguimiento.ver');
+
         // Consulta básica del expediente y documentos (Policy + alcance por zona; 404 fuera de alcance).
         Route::get('/solicitudes/{solicitud}', [\App\Http\Controllers\Coordinacion\ExpedienteController::class, 'show'])
             ->whereNumber('solicitud')->name('solicitudes.ver');
