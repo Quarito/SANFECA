@@ -307,7 +307,7 @@ Ambiente: 8086, base `bd_anfeca_ensayo_pruebas_pg`. **No se ejecuta** hasta reci
 | Respaldo verificado inmediatamente antes | ✔ SHA-256 `5c981f12…`; restauración real idéntica (1429 elementos de catálogo, 74 tablas, 174 filas); Laravel sobre la restauración: 34 ejecutadas, 2 pendientes (esta y la ajena) |
 | Ensayo en seco (`--pretend`) en 8086 | ✔ Solo la migración autorizada; sin `escuela_facultad` |
 | **Ensayo completo sobre la restauración del respaldo** (clon del commit `66d40dc`, PostgreSQL 18.6 desechable) | ✔ `aplicar_revisiones_documentales.sh`: solo cambian `migrations` (38 → 39) y la tabla nueva vacía; `verificar_revisiones_documentales.sh`: 0 fallas; con datos reales restaurados: reintento idéntico reconocido, 409 por clave con otro contenido, UPDATE, DELETE, TRUNCATE y borrado de solicitud rechazados |
-| **Aplicación en 8086** | ⏸ **No ejecutada.** El control de permisos de la herramienta bloqueó la orden. Queda lista para ejecutarse con los scripts (abajo) |
+| **Aplicación en 8086** | ✔ Aplicada manualmente por el responsable del proyecto el 2026-11-25 a las 17:20 (169.87 ms): tabla y vista creadas, tabla vacía, 17 columnas, 3 llaves foráneas RESTRICT, 15 CHECK, 6 índices, 3 disparadores, 0 fallas, datos originales sin cambios. Respaldo: `respaldo_verificado_bd_anfeca_ensayo_pruebas_pg_20261125_171900` (SHA-256 `ce09dbcbdb3fa1c0…`). Verificación posterior en §13.1 |
 
 Orden de aplicación en 8086 (el respaldo debe regenerarse en el commit vigente y tener menos de 2 horas):
 
@@ -433,3 +433,36 @@ Archivos de prueba:
 | Policy | `SolicitudCertificacionPolicy::revisarDocumentoComoCoordinacion` |
 | Rutas (solo GET y POST) | `coordinacion.solicitudes.revision`, `.revisiones`, `.revisiones.registrar` (throttle 30/min) |
 | Interfaz | `partials/documento.blade.php`, `expediente.blade.php`, `RevisionDocumentalDialogo.vue`, `coordinacion.css` v10 |
+
+## 13. Activación y desactivación de la revisión documental (8086)
+
+**Estado actual: DESACTIVADA** (`ANFECA_COORDINACION_REVISION` ausente en `.env`; la configuración efectiva es `false`). El visor «Ver» funciona con la bandera desactivada.
+
+**Activación** (solo con autorización expresa):
+1. Comprobar las condiciones: tabla vacía y verificada (`bash scripts/anfeca/verificar_revisiones_documentales.sh` = 0 fallas), PDM `apagado`, configuración sin caché.
+2. Editar **solo** el `.env` local de `/var/www/ANFECA_ENSAYO` (nunca se publica) y agregar `ANFECA_COORDINACION_REVISION=true`.
+3. Ejecutar `php artisan config:clear`. Si el entorno usa caché de configuración: `php artisan config:cache`.
+4. Verificar, con una sesión de coordinación nacional:
+   - `GET /coordinacion/solicitudes/3/revision` → 200 en JSON;
+   - el expediente muestra la línea de indicadores y los botones «Revisar»;
+   - el diálogo abre el visor al 70 % y el panel al 30 %.
+5. No se registran revisiones de ejemplo sobre los folios 3, 4 y 5. La aceptación la hace el responsable desde el navegador.
+
+**Desactivación** (inmediata y sin pérdida de datos):
+1. Quitar la línea o cambiarla a `ANFECA_COORDINACION_REVISION=false`.
+2. Ejecutar `php artisan config:clear`.
+3. Las rutas de revisión vuelven a responder 404 y el expediente vuelve a la vista de solo carga.
+4. Las revisiones registradas **se conservan** (historial de solo inserción).
+
+El prototipo demostrativo sigue desactivado (`ANFECA_COORDINACION_PROTOTIPOS=false`). Solo se usa en la demostración desechable de `scripts/anfeca/demo_prototipo/`.
+
+### 13.1 Verificación posterior a la migración (2026-11-25)
+
+| Comprobación | Resultado |
+|---|---|
+| `verificar_revisiones_documentales.sh` | 0 fallas (tabla vacía, vista, PK, 3 FK RESTRICT, 15 CHECK, índices, 3 disparadores, TRUNCATE rechazado, PUBLIC sin privilegios, migración ajena sin aplicar) |
+| 20 documentos originales de los folios 3, 4 y 5 | SHA-256 y tamaño **idénticos** a la línea base previa; HTTP 200 por la ruta protegida |
+| Tablero, bandeja y expedientes 3, 4 y 5 | HTTP 200; sin errores de JavaScript |
+| Páginas de solicitantes (`/login`, `/registro/datos-personales`, `/recuperar`) | 200 |
+| `laravel.log` | Sin errores nuevos desde el incidente documentado del 2026-11-25 (18:32 UTC) |
+| PDM / bandera / prototipo | `apagado` / `false` / `false` |

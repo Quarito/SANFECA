@@ -9,6 +9,10 @@
 | [REVISION_DOCUMENTAL_FASE_6_3_0.md](REVISION_DOCUMENTAL_FASE_6_3_0.md) | Fase 6.3.0: estados y transiciones, análisis de `ESTADO_SOLICITUD_DOCUMENTO`, alternativas de persistencia, rutas propuestas, prototipo aislado y matriz de pruebas |
 | [PERSISTENCIA_REVISION_DOCUMENTAL_FASE_6_3_1.md](PERSISTENCIA_REVISION_DOCUMENTAL_FASE_6_3_1.md) | Fase 6.3.1 (propuesta): definición exacta de `revisiones_documentales`, restricciones, concurrencia 409, respaldo y recuperación, visualización del prototipo y matriz de 27 casos |
 | [../MANTENIMIENTO_E_INCIDENTES_20261125.md](../MANTENIMIENTO_E_INCIDENTES_20261125.md) | Almacenamiento antes y después, ampliación VMware (procedimiento), incidente de pruebas y rotación de credenciales |
+| [ZONAS_DIAGNOSTICO_Y_NORMALIZACION.md](ZONAS_DIAGNOSTICO_Y_NORMALIZACION.md) | Causa de «Pendiente de clasificación», resolución centralizada de zonas y propuesta de normalización (SQL, riesgos y reversión) |
+| [../normativa/INVENTARIO_DOCUMENTAL.md](../normativa/INVENTARIO_DOCUMENTAL.md) | Convocatorias, reglamento, instrumentos, instructivos y formatos oficiales con su SHA-256 |
+| [../normativa/MATRIZ_TRAZABILIDAD_REQUERIMIENTOS.md](../normativa/MATRIZ_TRAZABILIDAD_REQUERIMIENTOS.md) | Trazabilidad normativa por requerimiento y matriz de aceptación |
+| [../normativa/ANALISIS_BRECHAS_Y_DECISIONES.md](../normativa/ANALISIS_BRECHAS_Y_DECISIONES.md) | Brechas, discrepancias, propuestas y plan de fases |
 | [../ESTANDARES_UI_UX.md](../ESTANDARES_UI_UX.md) | Estándares obligatorios de interfaz para todos los módulos: layout, fichas, numeración «Núm.», filtros, estados y exportaciones |
 
 ## Estado
@@ -20,6 +24,7 @@
 - **Numeración consecutiva (2026-11-25):** primera columna «Núm.» en la bandeja y en «Solicitudes recientes». Es continua entre páginas, se recalcula con filtros y orden, y la calcula el servidor (`ESTANDARES_UI_UX.md` §5).
 - **6.3.0 Revisión documental:** análisis y prototipo aislado. Sin persistencia; la implementación funcional está pendiente de autorización.
 - **6.3.1 Revisión documental:** implementada y probada en entornos aislados, incluida la concurrencia real en PostgreSQL desechable. Está **desactivada** (`ANFECA_COORDINACION_REVISION=false`). La migración sigue en `database/migrations_propuestas/` y **no está aplicada en 8086**: requiere autorización definitiva.
+- **6.3.2 (2026-11-25):** zonas resueltas con la lista oficial (sin escrituras), visor PDF modal reutilizable, revisión 70/30, seguimiento de registros y borradores (solo lectura) e indicadores de personas y trámites. La migración de revisiones está **aplicada** y la revisión sigue **desactivada**.
 - **Pendientes de datos:** el catálogo oficial de zonas, la asignación de `zona_id` a las instituciones y la asignación de zonas a los coordinadores.
 - **Fases 6.3 a 6.8:** no implementadas. Las opciones del menú aparecen como «Pendiente».
 

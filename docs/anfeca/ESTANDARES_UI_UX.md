@@ -136,6 +136,50 @@ Las exportaciones, cuando se implementen en la fase 6.6 de reportes, **DEBEN**:
 - en PDF, usar el encabezado y pie institucionales y repetir el encabezado de la tabla en cada página;
 - no incluir datos personales que la pantalla de origen no muestre.
 
+## 7 bis. Componentes reutilizables y presentación de datos (2026-11-25)
+
+### 7 bis.1 Visor documental
+- Todo documento del expediente se muestra en `resources/js/components/VisorDocumento.vue`: ventana modal de ≈ 94 % × 90 % con encabezado institucional. **No** se descarga automáticamente ni abre pestañas nuevas.
+- Usa PDF.js local (compilación «legacy», cargada solo al abrir un documento) e imágenes JPG/PNG. Sin CDN ni servicios externos.
+- Controles: página anterior y siguiente, página actual y total, zoom, ajuste al ancho, pantalla completa, descarga opcional (solo si la ruta lo permite), cierre con botón y Escape.
+- Accesibilidad: foco atrapado y devuelto al origen; teclado (flechas, RePag/AvPag, + y −).
+- Conserva la posición de desplazamiento de la página de origen.
+- Errores claros: sin permiso (403), no disponible (404), versión cambiada (409), PDF dañado, archivo inexistente con su motivo.
+- Con panel lateral: documento al 70 % y panel al 30 % en escritorio; en móvil, primero el documento y después el panel. Advierte si hay cambios sin guardar.
+- El enlace original se conserva en el HTML como alternativa sin JavaScript.
+
+### 7 bis.2 Usuarios frente a trámites
+- Los indicadores **DEBEN** indicar si cuentan **personas** o **trámites** y su criterio (denominador).
+- Una persona con varios trámites se cuenta una vez como persona y una vez por cada trámite.
+- Cada tarjeta de indicador **DEBERÍA** enlazar a la bandeja o al seguimiento filtrados cuando sea viable.
+
+### 7 bis.3 Seguimiento de etapas y avance
+- Las etapas reproducen el flujo real del solicitante, con cuatro estados con texto y color: **Completada**, **En proceso**, **Pendiente**, **No aplica**.
+- La etapa actual es el **siguiente requisito pendiente**, no la última pantalla abierta.
+- **Avance de captura** = etapas aplicables completadas ÷ etapas aplicables, **sin contar el envío**. 100 % significa «listo para envío», no «enviada».
+- «Último avance registrado» = fecha de la última captura guardada. Nunca es un inicio de sesión ni implica abandono.
+- «Sin folio» cuando aún no existe una solicitud. **Nunca** se muestra el id interno del usuario.
+
+### 7 bis.4 Zonas
+- Toda pantalla **DEBE** obtener la zona de `App\Services\Zonas\ZonasAnfeca` y mostrar la denominación oficial («Zona 6 - Sur»).
+- Cuando la zona no puede identificarse se muestra «Sin clasificar». Ya no se usa «Pendiente de clasificación».
+- Las contradicciones se muestran con una advertencia.
+- La clasificación visual **no** concede acceso; la autorización es independiente.
+
+### 7 bis.5 Estados por dominio (no mezclar)
+| Dominio | Ejemplos | Insignia |
+|---|---|---|
+| Administrativo (trámite) | Sin iniciar, En proceso sin solicitud, Borrador, Listo para envío, Enviada | `seg-*` |
+| Documental: carga | Cargado, No cargado, Registrado sin archivo | `cargado`, `no-cargado`, `no-localizado` |
+| Documental: revisión | Por revisar, Validado, Con observaciones, No válido, No aplica | `rev-*` |
+| Evaluación (fase 6.4) | Se definirán con el instrumento oficial | — |
+
+### 7 bis.6 Protección de información sensible
+- Los documentos se sirven solo por rutas protegidas, con `Content-Disposition: inline`, `Cache-Control: private, no-store` y sin exponer rutas físicas.
+- Nunca se mueven a `public/` ni se envían a terceros.
+- No se consultan documentos de solicitudes no enviadas.
+- Las tablas muestran solo los datos administrativos necesarios. CURP y domicilio aparecen únicamente en la ficha del expediente.
+
 ## 8. Accesibilidad mínima
 - Etiquetas `<label>` en todos los campos, `role="search"` en la barra de filtros y `aria-live="polite"` en resúmenes que cambian.
 - Las acciones deshabilitadas usan `aria-disabled`. Los enlaces que abren pestaña nueva usan `rel="noopener"`.
@@ -159,3 +203,7 @@ Las exportaciones, cuando se implementen en la fase 6.6 de reportes, **DEBEN**:
 | Búsqueda, filtros y paginación en el servidor | Aplicado; se añadió «Mostrando x–y de N» |
 | Estados con texto y color | Aplicado (insignias de carga y de solicitud) |
 | Exportaciones | No existen aún (fase 6.6); esta norma aplica cuando se implementen |
+| Visor documental modal | Aplicado (bloque C) |
+| Seguimiento de etapas y avance; personas frente a trámites | Aplicado (bloque D) |
+| Zonas homogéneas («Sin clasificar») | Aplicado (bloque B) |
+| «Núm.» en bandeja de seguimiento, historial de revisiones y otros trámites | Aplicado |
