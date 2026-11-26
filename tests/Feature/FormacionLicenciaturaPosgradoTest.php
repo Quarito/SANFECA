@@ -365,6 +365,11 @@ class FormacionLicenciaturaPosgradoTest extends TestCase
         foreach (['titulo_origen_especifico', 'origen_titulo_origen', 'clave_licenciatura_catalogo', 'version_catalogo_licenciaturas', 'cuenta_con_posgrado'] as $c) {
             $this->assertEquals($antes1[$c], $despues1[$c], $c);
         }
+        // Interfaz anterior (reversión de código) que no envía la casilla: rige la declaración guardada.
+        $this->guardar($u1, ['titulo_origen' => 'Informática'])->assertSessionHasNoErrors();
+        $this->assertFalse((bool) $this->fila($s1)->cuenta_con_posgrado);
+        $this->guardar($u1, ['titulo_origen' => 'Informática', 'nivel_ultimo_grado' => 'Maestría', 'titulo_ultimo_grado' => 'Informática'])
+            ->assertSessionHasErrors('nivel_ultimo_grado');
         $this->actingAs($u1)->post('/registro/formacion-academica/autorizar', ['confirmacion_formacion' => '1'])->assertRedirect(route('registro.documentos'));
         $this->assertSame(2, $this->archivosFisicos($s1), 'Sin documentos duplicados tras volver al formulario anterior.');
 

@@ -162,7 +162,11 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 
             // Casilla «Cuento con estudios de posgrado concluidos»: escenario 1 (solo licenciatura) o 2 (con posgrado).
             $declaracion = \App\Services\Formacion\RequisitosFormacion::declaracionActiva($formacion);
-            $sinPosgrado = $declaracion && $request->input('cuenta_con_posgrado') === '0';
+            // Si el formulario no envía la casilla (p. ej., interfaz anterior tras una reversión de código), rige la
+            // declaración ya guardada: nunca se reinterpreta ni se pierde.
+            $declarada = \App\Services\Formacion\RequisitosFormacion::declaracion($formacion);
+            $valorDeclaracion = $request->input('cuenta_con_posgrado', $declarada === null ? null : ($declarada ? '1' : '0'));
+            $sinPosgrado = $declaracion && $valorDeclaracion === '0';
 
 	    // Documentos académicos aplicables (centralizado): en el escenario 1 solo los de licenciatura; nunca se
 	    // piden de nuevo ni se copian los mismos archivos como «último grado».
@@ -281,7 +285,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
             $tituloUltimoGrado = app(\App\Services\Catalogos\TituloUltimoGrado::class);
             $tituloOrigen = app(\App\Services\Catalogos\TituloOrigen::class);
             if ($declaracion) {
-                $reglas['cuenta_con_posgrado'] = ['required', Rule::in(['0', '1'])];
+                $reglas['cuenta_con_posgrado'] = [$declarada === null ? 'required' : 'nullable', Rule::in(['0', '1'])];
                 if ($sinPosgrado) {
                     // Escenario 1: no se recibe ningún dato ni archivo de posgrado (los guardados antes se conservan).
                     foreach (['nivel_ultimo_grado', 'titulo_ultimo_grado', 'titulo_ultimo_grado_otro', 'modo_titulo_ultimo_grado',
