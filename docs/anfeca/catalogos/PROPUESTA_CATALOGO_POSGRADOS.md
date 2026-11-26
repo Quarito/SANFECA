@@ -1,6 +1,6 @@
 # Catálogo de posgrados en «Último grado de estudios»
 
-**Fecha:** 2026-11-25. **Estado: IMPLEMENTADO DETRÁS DE LA BANDERA `ANFECA_CATALOGO_POSGRADOS=false`.**
+**Fecha:** 2026-11-25 (actualizado el 2026-11-26). **Estado: IMPLEMENTADO DETRÁS DE LA BANDERA `ANFECA_CATALOGO_POSGRADOS=false`.**
 
 - La migración aditiva **no** está aplicada en 8086.
 - El catálogo **no** está activado.
@@ -164,10 +164,44 @@ COMMIT;
 - Las filas existentes no se modifican: las columnas nuevas quedan en NULL.
 - `down()` **se niega** si alguna fila tiene datos en las columnas nuevas. Solo elimina columnas vacías.
 
-**Aplicación futura en 8086 (NO autorizada todavía):**
-1. Respaldo verificado: `bash scripts/anfeca/respaldo_verificado.sh bd_anfeca_ensayo_pruebas_pg desarrollo/modulo-coordinacion <commit>`.
-2. Aplicar solo esta migración: `php artisan migrate --force --path=database/migrations_propuestas/2026_11_27_000000_…php`. **Nunca** un `migrate` general ni la migración de `escuela_facultad`.
-3. Verificar: 4 columnas, CHECK presente y conteo de filas sin cambios.
+**Aplicación futura en 8086 (NO autorizada todavía).** Scripts probados en PostgreSQL desechable:
+
+```sh
+cd /var/www/ANFECA_ENSAYO
+bash scripts/anfeca/respaldo_verificado.sh bd_anfeca_ensayo_pruebas_pg desarrollo/modulo-coordinacion <commit>
+ANFECA_AUTORIZO_MIGRACION=catalogo_posgrados ANFECA_URL_DOCUMENTOS=http://192.168.7.130:8086 \
+  bash scripts/anfeca/aplicar_catalogo_posgrados.sh bd_anfeca_ensayo_pruebas_pg <commit> <directorio_respaldo_verificado>
+bash scripts/anfeca/verificar_catalogo_posgrados.sh      # solo lectura; repetible en cualquier momento
+```
+
+`aplicar_catalogo_posgrados.sh` se detiene si falta cualquiera de estas condiciones:
+- autorización expresa (`ANFECA_AUTORIZO_MIGRACION=catalogo_posgrados`);
+- al menos 5 GB libres;
+- base, rama y commit esperados;
+- archivos del catálogo **idénticos a HEAD**;
+- configuración sin caché;
+- PDM apagado y revisión documental y catálogo **desactivados**;
+- respaldo verificado por restauración, de esa base y ese commit, con menos de 2 horas y SHA-256 correcto;
+- migración pendiente, sin columnas existentes y con un ensayo en seco sin operaciones ajenas.
+
+Aplica solo `--path` de esta migración y compara antes y después:
+- huellas de todas las tablas: solo pueden cambiar `migrations` (+1) y la estructura de formaciones;
+- huella de los datos **anteriores** de formaciones: idéntica;
+- huellas SHA-256 de los documentos por HTTP: idénticas.
+
+**La bandera no se activa en este paso.**
+
+`verificar_catalogo_posgrados.sh` comprueba las 4 columnas, el CHECK validado y con `coalesce`, y el registro único de la migración. Además prueba 11 combinaciones (3 válidas y 8 incoherentes) en una **tabla temporal** dentro de `BEGIN … ROLLBACK`, sin tocar filas reales.
+
+`huellas_documentos.sh` (GET como coordinación nacional, sin imprimir contraseñas) obtuvo el 26-nov las 20 huellas de 8086, **idénticas** al punto de recuperación.
+
+**Prueba integral** (`scripts/anfeca/pruebas/probar_migracion_catalogo.sh`): PostgreSQL 18.6 desechable, clon `--shared` y respaldo verificado real. **15/15 escenarios correctos:**
+- se detiene sin autorización, con otra base, con otro commit, con código distinto de HEAD y con la bandera activa;
+- aplica, verifica y rechaza la reaplicación;
+- rechaza la reversión sin autorización y con títulos registrados, y el título se conserva;
+- tras revertir solo los commits de interfaz y bandera, el cambio de área se rechaza y el título exacto sigue visible;
+- revierte con columnas vacías y los datos quedan idénticos al estado inicial;
+- vuelve a aplicar.
 
 ## 6. Validaciones del servidor (`App\Services\Catalogos\TituloUltimoGrado`)
 
@@ -228,10 +262,16 @@ Las demás pantallas (seguimiento, `RegistroCompletado`) solo verifican la compl
    - Con el formulario anterior, un registro con título específico **no** puede cambiar de nivel o área: se rechaza con un mensaje explícito y no cambia nada.
    - Un título de catálogo del área «Otro» no se edita desde el formulario anterior. Un título manual del área «Otro» se mantiene sincronizado.
    - Al reactivar la bandera, todo reaparece.
-2. **Código.** `git revert --no-edit` de los commits del catálogo, en orden inverso y sin `reset --hard`; push sin forzar; recompilar.
-   - Las columnas, si existen, conservan sus datos.
-   - El código anterior no las toca, porque `updateOrCreate` solo usa las claves validadas.
-3. **Base de datos.** Solo con autorización expresa y nunca de forma automática.
+2. **Código.** `git revert --no-edit` en orden inverso y sin `reset --hard`; push sin forzar; recompilar.
+   - **Sin la migración aplicada:** pueden revertirse todos los commits del catálogo.
+   - **Con la migración aplicada:** revertir **solo** la interfaz y la bandera (`4e89d36`, `85952ea`) y **conservar** `bb18852` y `df9d4b3`. Así se mantienen la protección de nivel y área, la sincronización del área «Otro» y la presentación del título exacto. Probado en la prueba integral.
+   - Revertir también `df9d4b3` con títulos registrados dejaría el formulario anterior sin esa protección. Las columnas y sus datos no se pierden (el código anterior no las toca), pero un cambio de área posterior podría dejar un título incoherente con el área. Requiere decisión expresa.
+3. **Base de datos (estructural).** `ANFECA_AUTORIZO_REVERSION=catalogo_posgrados bash scripts/anfeca/revertir_catalogo_posgrados.sh <base> <commit> <respaldo>`:
+   - exige respaldo verificado reciente;
+   - **se niega si alguna formación tiene datos** en las columnas aditivas;
+   - ejecuta `down()` y retira el registro de la migración en una sola transacción (no usa `migrate:rollback`, que actúa por lotes);
+   - compara huellas de tablas, datos anteriores y documentos.
+4. **Restauración de la base.** Solo con autorización expresa y nunca de forma automática.
    - Se restaura el respaldo verificado en una base nueva, se compara y se hace un cambio controlado.
    - **Nunca** se eliminan columnas con datos: `down()` lo impide.
 
@@ -283,3 +323,69 @@ La lista abierta no altera la altura del documento.
 2. Autorizar la migración aditiva en 8086.
 3. Autorizar la instalación del JSON y la activación de la bandera.
 4. Definir si los registros históricos de posgrado se completan (solo por acción del solicitante o por decisión expresa; nunca de forma masiva).
+
+## 13. Demostración aislada (aceptación visual)
+
+```sh
+cd /var/www/ANFECA_ENSAYO && bash scripts/anfeca/demo_catalogo/iniciar.sh     # iniciar
+cd /var/www/ANFECA_ENSAYO && bash scripts/anfeca/demo_catalogo/detener.sh     # detener y liberar
+```
+
+**Características:**
+- `git archive` del commit actual en `~/ANFECA_DEMO_CATALOGO`, fuera de `/var/www`;
+- compilación frontend **propia**: no toca `public/build` de 8086;
+- SQLite desechable con 3 solicitantes ficticios;
+- migración propuesta aplicada **solo** ahí;
+- `ANFECA_CATALOGO_POSGRADOS=true` **solo** dentro del contenedor;
+- catálogo provisional completo (1794), verificado por SHA-256;
+- escucha únicamente en `127.0.0.1:8099`;
+- contraseña de un solo uso en `~/ANFECA_DEMO_CATALOGO/CLAVE_DEMO.txt` (600);
+- PDM y revisión documental apagados.
+
+**Acceso desde Windows** (PowerShell): `ssh -N -L 8099:127.0.0.1:8099 servidorweb@192.168.7.130`; después, `http://127.0.0.1:8099/login` en el navegador.
+
+**Usuarios:**
+
+| Usuario | Estado inicial |
+|---|---|
+| `demo.formacion@example.test` | Formación vacía (para probar) |
+| `demo.guardado@example.test` | Título guardado desde el catálogo |
+| `demo.historico@example.test` | Registro anterior: Maestría · Otro · «Economía» |
+
+Para **guardar** se deben adjuntar los 4 documentos (PDF, JPG o PNG, ≤ 5 MB); cualquier archivo de prueba sirve.
+
+## 14. Resumen agrupado de los 572 títulos por revisar
+
+`scripts/anfeca/catalogos/resumir_revision.py <matriz> <salida.xlsx>` genera `~/ANFECA_FUENTES/resumen_revision_posgrados.xlsx` (600, **fuera del repositorio**). Solo **lee** la matriz: su SHA-256 `ef1fedec…` no cambia.
+
+**Agrupación:** familia académica (columna A), carrera genérica (B) y carrera específica (C). Cada grupo se divide en **subgrupos por área propuesta**, de modo que cada fila puede decidirse en bloque.
+
+**Hojas:**
+
+| Hoja | Contenido |
+|---|---|
+| Instrucciones | Cómo registrar la decisión |
+| Familias | Resumen por familia |
+| Grupos | 107 subgrupos, con columnas de decisión vacías |
+| Por tema | Temas de revisión × área propuesta |
+| Detalle | Los 572 títulos con su subgrupo |
+
+| Indicador | Valor |
+|---|---|
+| Títulos por revisar | 572 |
+| Grupos (A + B + C) | 68 |
+| Subgrupos homogéneos por área | 107 |
+| Subgrupos de 5 o más títulos | 30, que cubren **444** títulos (78 %) |
+| Familias | 2 («Ciencias Sociales y Administrativas», 569; sin dato, 3). La columna A del Excel es muy general; la decisión práctica se toma por carrera genérica y específica |
+
+| Tema de revisión | Títulos | Área propuesta predominante |
+|---|---:|---|
+| Sin tema (confianza baja o señales en conflicto) | 345 | Administración 179 · Otro 90 |
+| Finanzas | 120 | Contaduría 77 · Administración 29 |
+| Economía | 54 | Otro 48 |
+| Logística | 32 | Negocios Internacionales 21 |
+| Administración educativa | 14 | Otro 10 |
+| Derecho fiscal | 7 | Contaduría 7 |
+| Administración de servicios especializados / Analítica de negocios / Lavado de dinero | 3 / 3 / 2 | — |
+
+**Nada se aprueba automáticamente.** La columna «Clasificación autorizada» de la matriz original sigue vacía.
