@@ -4,6 +4,13 @@ ANFECA · Catálogo PRELIMINAR de denominaciones de licenciatura (Anuario Estad�
 ADMINISTRATIVA propuesta en las 5 áreas del sistema.
 
     python3 -I scripts/anfeca/catalogos/clasificar_licenciaturas.py <dir_fuentes_licenciaturas> <ciclo>
+    python3 -I scripts/anfeca/catalogos/clasificar_licenciaturas.py <dir_fuentes_licenciaturas> <ciclo> --consolidar <dir_historico>
+
+Modo --consolidar: une el ciclo actual con los ciclos históricos agrupados (2000-2001 a 2024-2025) del directorio
+indicado. Conserva las claves (mismo nombre normalizado → misma clave), registra los ciclos de aparición y clasifica
+con el campo detallado del ciclo MÁS RECIENTE en que aparece la denominación (taxonomías antiguas como contexto débil).
+Salidas adicionales: licenciaturas_anuies_consolidado.json · matriz_clasificacion_licenciaturas_consolidada.xlsx ·
+manifiesto_licenciaturas_consolidado.json (las salidas del ciclo actual no se modifican).
 
 Entradas (sin modificar; obtenidas del servicio público de exportación del Anuario, ver manifiesto):
   anuies_exportReportRows_<ciclo>_programa_nivel_campos.json              (NDJSON; agrupado por nivel, campos y carrera)
@@ -96,7 +103,10 @@ CAMPO = {'Contabilidad y fiscalización': CON, 'Administración de empresas': AD
          'Planes multidisciplinarios o generales del campo de innovación en tecnologías de la información y la comunicación': INF,
          'Planes multidisciplinarios o generales del campo de implementación de las tecnologías  de la información y la comunicación': INF,
          'Planes multidisciplinarios o generales del campo de administración y gestión': ADM,
-         'Planes multidisciplinarios o generales del campo de negocios y contabilidad': ADM}
+         'Planes multidisciplinarios o generales del campo de negocios y contabilidad': ADM,
+         # Taxonomía anterior (ciclos 2009-2010 a 2015-2016 aprox.): contexto débil.
+         'Administración y gestión de empresas': ADM, 'Negocios y administración, programas multidisciplinarios o generales': ADM,
+         'Ciencias de la computación': INF, 'Tecnología de la información y la comunicación': INF}
 
 
 def clasificar(nombre, campos):
@@ -330,7 +340,116 @@ def escribir_matriz(ruta, registros, filas_inst, ciclo, agr, ins):
     wb.save(ruta)
 
 
+def consolidar(directorio, ciclo, dir_historico):
+    d, h = Path(directorio), Path(dir_historico)
+    actual = d / f'anuies_exportReportRows_{ciclo}_programa_nivel_campos.json'
+    archivos = sorted(h.glob('anuies_exportReportRows_*_programa_nivel_campos.json')) + [actual]
+    porn = defaultdict(lambda: {'formas': Counter(), 'ciclos': set(), 'filas': [], 'niveles': set()})
+    huellas = {}
+    for f in archivos:
+        cic = f.name.split('_')[2]
+        _, filas = leer(f)
+        huellas[f.name] = {'sha256': hashlib.sha256(f.read_bytes()).hexdigest(), 'filas': len(filas), 'ciclo': cic}
+        for r in filas:
+            k = normal(r['CARRERA'])
+            if not k:
+                continue
+            g = porn[k]
+            g['formas'][r['CARRERA'].strip()] += 1
+            g['ciclos'].add(cic)
+            g['niveles'].add(r['NIVEL'])
+            g['filas'].append((cic, r))
+    registros = []
+    for k, g in porn.items():
+        ciclos = sorted(g['ciclos'])
+        # Campos del ciclo más reciente con campo detallado informado.
+        con_campo = sorted([(c, r) for c, r in g['filas'] if r.get('CAMPO_DETALLADO')], key=lambda x: x[0])
+        reciente = con_campo[-1][0] if con_campo else None
+        campos = [{x: r[x] for x in ('CAMPO_AMPLIO', 'CAMPO_ESPECIFICO', 'CAMPO_DETALLADO')} for c, r in con_campo if c == reciente]
+        original = g['formas'].most_common(1)[0][0]
+        area, conf, crit, alt, revisar, temas = clasificar(original, campos)
+        obs = []
+        combos = sorted({(c['CAMPO_AMPLIO'], c['CAMPO_ESPECIFICO'], c['CAMPO_DETALLADO']) for c in campos})
+        if len({c[0] for c in combos}) > 1:
+            revisar = True
+            obs.append(f'conflicto de campos ANUIES ({len(combos)} combinaciones)')
+        if not campos:
+            obs.append('sin campo de formación en la fuente (solo nombre)')
+            if area != OTR or alt:
+                revisar = True
+        if ciclo not in ciclos:
+            obs.append(f'histórica: no aparece en {ciclo}')
+        if len(g['formas']) > 1:
+            obs.append('variantes de escritura: ' + ' | '.join(sorted(g['formas'])[:6]) + (' …' if len(g['formas']) > 6 else ''))
+        if temas:
+            obs.append('tema de revisión: ' + ', '.join(temas))
+        if revisar and conf == 'alta':
+            conf = 'media'
+        registros.append({'clave': clave(k), 'titulo': original, 'normalizado': k, 'niveles': sorted(g['niveles']),
+                          'campos': [list(c) for c in combos], 'campo_ciclo': reciente, 'ciclos': ciclos,
+                          'primer_ciclo': ciclos[0], 'ultimo_ciclo': ciclos[-1], 'vigente': ciclo in ciclos,
+                          'area': area, 'area_alternativa': alt if alt != area else None, 'confianza': conf,
+                          'requiere_revision': bool(revisar or conf == 'baja'), 'criterio': crit, 'observaciones': '; '.join(obs) or None})
+    if any(v > 1 for v in Counter(r['clave'] for r in registros).values()):
+        sys.exit('DETENIDO: colisión de claves estables')
+    previo = json.loads((d / f'licenciaturas_anuies_{ciclo}.json').read_text(encoding='utf-8'))
+    claves_previas = {t['clave'] for t in previo['titulos']}
+    nuevas = {r['clave'] for r in registros}
+    if not claves_previas <= nuevas:
+        sys.exit('DETENIDO: el consolidado perdería claves del catálogo del ciclo actual')
+    registros.sort(key=lambda r: r['normalizado'])
+    version = f'ANUIES-2000-{ciclo[-4:]}-LIC-PRELIMINAR'
+    catalogo = {'version': version, 'reglas': VERSION_REGLAS, 'ciclos': sorted({v['ciclo'] for v in huellas.values()}), 'areas': AREAS,
+                'aviso': 'Catálogo PRELIMINAR consolidado de denominaciones (Anuario Estadístico ANUIES, 2000-2001 a ' + ciclo + '). '
+                         'Clasificación administrativa propuesta: no es equivalencia normativa ni criterio de elegibilidad.',
+                'titulos': [{x: r[x] for x in ('clave', 'titulo', 'niveles', 'area', 'confianza', 'requiere_revision', 'campos', 'primer_ciclo', 'ultimo_ciclo')}
+                            for r in registros]}
+    js = d / 'licenciaturas_anuies_consolidado.json'
+    js.write_text(json.dumps(catalogo, ensure_ascii=False, indent=1), encoding='utf-8')
+    xl = d / 'matriz_clasificacion_licenciaturas_consolidada.xlsx'
+    wb = openpyxl.Workbook(); res = wb.active; res.title = 'Resumen'
+    res.append([f'Catálogo PRELIMINAR consolidado · ANUIES 2000-2001 a {ciclo} · {len(registros)} denominaciones'])
+    res.append(['Clasificación administrativa propuesta; «Clasificación autorizada» vacía; requiere aprobación.'])
+    res.append([]); res.append(['Área', 'Denominaciones', 'Vigentes en ' + ciclo, 'Solo históricas', 'Requieren revisión'])
+    for a in AREAS:
+        l = [r for r in registros if r['area'] == a]
+        res.append([a, len(l), sum(r['vigente'] for r in l), sum(not r['vigente'] for r in l), sum(r['requiere_revision'] for r in l)])
+    cols = ['Núm.', 'Nombre original de la licenciatura', 'Nombre normalizado para búsqueda', 'Nivel académico', 'Campo amplio ANUIES',
+            'Campo específico ANUIES', 'Campo detallado ANUIES', 'Ciclo del campo', 'Ciclos de origen', 'Primer ciclo', 'Último ciclo',
+            'Área ANFECA propuesta', 'Área alternativa', 'Equivalencia actualmente configurada', 'Fundamento normativo', 'Confianza',
+            'Requiere revisión', 'Clasificación autorizada', 'Observaciones', 'Clave estable', 'Criterio']
+    for nombre, filtro in [('Matriz completa', lambda r: True)] + [(a, (lambda a: lambda r: r['area'] == a)(a)) for a in AREAS] + \
+            [('Casos ambiguos', lambda r: r['requiere_revision']), ('Solo históricas', lambda r: not r['vigente'])]:
+        ws = wb.create_sheet(nombre[:31]); ws.append(cols)
+        for i, r in enumerate([r for r in registros if filtro(r)], 1):
+            una = lambda j: ' || '.join(sorted({c[j] or '' for c in r['campos']})) if r['campos'] else ''
+            ws.append([i, r['titulo'], r['normalizado'], ' / '.join(r['niveles']), una(0), una(1), una(2), r['campo_ciclo'], ', '.join(r['ciclos']),
+                       r['primer_ciclo'], r['ultimo_ciclo'], r['area'], r['area_alternativa'], f"«{r['area']}» → certificación {EQUIVALENCIA_ACTUAL[r['area']]}",
+                       FUNDAMENTO, r['confianza'], 'Sí' if r['requiere_revision'] else 'No', None, r['observaciones'], r['clave'], r['criterio']])
+        estilo(ws, [7, 55, 45, 30, 24, 28, 32, 11, 40, 11, 11, 20, 20, 40, 50, 9, 9, 16, 50, 18, 45])
+    fu = wb.create_sheet('Fuentes'); fu.append(['Archivo', 'Ciclo', 'Filas', 'SHA-256'])
+    for nombre, v in sorted(huellas.items(), key=lambda x: x[1]['ciclo']):
+        fu.append([nombre, v['ciclo'], v['filas'], v['sha256']])
+    estilo(fu, [70, 12, 10, 70])
+    wb.save(xl)
+    man = {'version': version, 'reglas': VERSION_REGLAS, 'generado': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'fuentes': huellas,
+           'denominaciones': len(registros), 'vigentes': sum(r['vigente'] for r in registros), 'solo_historicas': sum(not r['vigente'] for r in registros),
+           'por_area': dict(Counter(r['area'] for r in registros)), 'requieren_revision': sum(r['requiere_revision'] for r in registros),
+           'confianza': dict(Counter(r['confianza'] for r in registros)), 'sin_campo': sum(1 for r in registros if not r['campos']),
+           'claves_del_ciclo_actual_conservadas': len(claves_previas),
+           'salidas': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (js, xl)}}
+    mf = d / 'manifiesto_licenciaturas_consolidado.json'
+    mf.write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding='utf-8')
+    for p in (js, xl, mf):
+        p.chmod(0o600)
+    print(json.dumps({k: man[k] for k in ('denominaciones', 'vigentes', 'solo_historicas', 'por_area', 'requieren_revision', 'confianza', 'sin_campo',
+                                            'claves_del_ciclo_actual_conservadas')}, ensure_ascii=False))
+
+
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
+    if len(sys.argv) == 5 and sys.argv[3] == '--consolidar':
+        consolidar(sys.argv[1], sys.argv[2], sys.argv[4])
+    elif len(sys.argv) == 3:
+        main(sys.argv[1], sys.argv[2])
+    else:
         sys.exit(__doc__)
-    main(sys.argv[1], sys.argv[2])
