@@ -91,7 +91,10 @@ caso "revertir con títulos registrados" detenido env ANFECA_AUTORIZO_REVERSION=
     && RESULTADOS+=("✔ el título registrado se conserva tras la reversión rechazada") || { RESULTADOS+=("✘ se perdió el título registrado"); FALLAS=$((FALLAS+1)); }
 
 # Nivel 1 y 2 con la migración aplicada: bandera desactivada y reversión SOLO de interfaz y bandera (se conserva df9d4b3).
-git -c user.name=prueba -c user.email=prueba@example.test revert --no-edit 4e89d36 85952ea >/dev/null
+# Se revierten TODOS los commits de interfaz desde el selector de posgrados (85952ea), del más reciente al más antiguo
+# (orden de git log): revertir solo 4e89d36/85952ea entra en conflicto cuando hay commits de interfaz posteriores.
+INTERFAZ=$(git log --format=%h 85952ea^..HEAD -- resources/js resources/views/registro/formacion-academica.blade.php)
+git -c user.name=prueba -c user.email=prueba@example.test revert --no-edit $INTERFAZ >/dev/null
 PROTECCION=$(ID=$ID php -r 'require "vendor/autoload.php"; $a = require "bootstrap/app.php"; $a->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
   config(["anfeca_catalogos.posgrados.activo" => false]);
   $f = App\Models\FormacionAcademicaSolicitud::find((int) getenv("ID"));
