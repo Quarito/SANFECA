@@ -180,6 +180,19 @@ Las exportaciones, cuando se implementen en la fase 6.6 de reportes, **DEBEN**:
 - No se consultan documentos de solicitudes no enviadas.
 - Las tablas muestran solo los datos administrativos necesarios. CURP y domicilio aparecen únicamente en la ficha del expediente.
 
+### 7 bis.7 Catálogos extensos (selector con búsqueda integrada) — 2026-11-25
+Aplica a toda lista de más de ≈ 30 opciones (primer uso: títulos de posgrado del «Último grado de estudios»).
+- **Componente único:** `resources/js/components/SelectorBuscable.vue`. No se usa un `<select>` nativo con cientos de opciones ni se incrustan catálogos completos en la página.
+- **Datos:** el navegador recibe **solo** las opciones del filtro vigente (p. ej., nivel + área) desde un endpoint autenticado, limitado y con datos mínimos (`clave`, `título`). El servidor es la fuente única: valida la clave y determina el texto que se guarda.
+- **Disparador:** ancho completo de su fila, 44–48 px, **máximo 2 líneas** visibles con «…»; el título completo en `title` y en la lista. No se limita por el ancho máximo de los `select` generales (80 % / 360 px).
+- **Lista flotante:** `position: fixed` (no altera la altura del documento ni desplaza el formulario), ≈ 200 px con desplazamiento interno, se abre **hacia arriba** si no hay espacio abajo, nunca sale de la pantalla en móvil.
+- **Búsqueda:** parcial, por palabras, sin acentos ni mayúsculas; orden alfabético por palabras (se ignora la puntuación).
+- **Teclado y accesibilidad:** `role="combobox"`/`listbox`/`option`, `aria-expanded`, `aria-activedescendant`; ↑/↓, Inicio/Fin, RePág/AvPág, Intro, Escape; cierre al seleccionar, con Escape o con clic fuera; el foco vuelve al disparador.
+- **Opción de escape:** cuando el catálogo puede no contener la respuesta, la última opción («No encuentro mi título») cambia **en el mismo espacio** a captura manual, con «Volver al catálogo» sin perder el texto no guardado. Una opción «Otro» o la captura manual **no** implican inelegibilidad.
+- **Protección de cambios:** el componente escribe en campos con `name` y emite `input`, para que la advertencia de cambios pendientes funcione.
+- **Bandera y degradación:** si el catálogo no está disponible (bandera, archivo, huella o migración), se muestra el formulario anterior con un aviso; nunca una lista vacía en silencio.
+- **Verificación:** altura del documento con la lista abierta y cerrada, título más largo, apertura hacia arriba, móvil sin desplazamiento horizontal, sin errores de consola.
+
 ## 8. Accesibilidad mínima
 - Etiquetas `<label>` en todos los campos, `role="search"` en la barra de filtros y `aria-live="polite"` en resúmenes que cambian.
 - Las acciones deshabilitadas usan `aria-disabled`. Los enlaces que abren pestaña nueva usan `rel="noopener"`.
@@ -207,3 +220,4 @@ Las exportaciones, cuando se implementen en la fase 6.6 de reportes, **DEBEN**:
 | Seguimiento de etapas y avance; personas frente a trámites | Aplicado (bloque D) |
 | Zonas homogéneas («Sin clasificar») | Aplicado (bloque B) |
 | «Núm.» en bandeja de seguimiento, historial de revisiones y otros trámites | Aplicado |
+| Catálogos extensos con `SelectorBuscable` | Aplicado en «Último grado de estudios» (módulo de solicitantes, detrás de la bandera `ANFECA_CATALOGO_POSGRADOS`, desactivada) |
