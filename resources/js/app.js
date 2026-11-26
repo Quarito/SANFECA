@@ -71,6 +71,9 @@ const esRefrendo =
     contenedorFormacion.dataset.esRefrendo === 'true';
 const formacionBloqueada =
     contenedorFormacion.dataset.formacionBloqueada === 'true';
+const catalogo = JSON.parse(
+    contenedorFormacion.dataset.catalogoPosgrados || '{"estado":"desactivado"}'
+);
 
      createApp(FormacionAcademica, {
         instituciones,
@@ -78,7 +81,8 @@ const formacionBloqueada =
         areaCertificacion,
         titulosPermitidos,
         esRefrendo,
-        formacionBloqueada
+        formacionBloqueada,
+        catalogo
     }).mount(contenedorFormacion);
 }
 // PANTALLA 5: DOCUMENTOS PROBATORIOS

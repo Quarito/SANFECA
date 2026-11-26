@@ -372,6 +372,11 @@
     data-area-certificacion="{{ $areaCertificacion }}"
     data-titulos-permitidos="{{ json_encode($titulosPermitidos) }}"
     data-instituciones="{{ $instituciones->toJson() }}"
+    data-catalogo-posgrados="{{ json_encode([
+        'estado' => $catalogoPosgrados['estado'] ?? 'desactivado',
+        'url' => ($catalogoPosgrados['estado'] ?? null) === 'activo' ? route('registro.catalogos.posgrados') : null,
+        'version' => $catalogoPosgrados['version'] ?? null,
+    ]) }}"
 	    
 	data-formacion="{{ json_encode([
 	    'titulo_origen' => old('titulo_origen', $formacion?->titulo_origen),
@@ -379,6 +384,12 @@
 	    'nivel_ultimo_grado' => old('nivel_ultimo_grado', $formacion?->nivel_ultimo_grado),
 	    'titulo_ultimo_grado' => old('titulo_ultimo_grado', $formacion?->titulo_ultimo_grado),
         'titulo_ultimo_grado_otro' => old('titulo_ultimo_grado_otro', $formacion?->titulo_ultimo_grado_otro),
+        'titulo_ultimo_grado_especifico' => $formacion?->titulo_ultimo_grado_especifico,
+        'origen_titulo_ultimo_grado' => $formacion?->origen_titulo_ultimo_grado,
+        'clave_posgrado_catalogo' => $formacion?->clave_posgrado_catalogo,
+        'modo_titulo_ultimo_grado' => old('modo_titulo_ultimo_grado'),
+        'clave_posgrado_catalogo_old' => old('clave_posgrado_catalogo'),
+        'titulo_ultimo_grado_manual' => old('titulo_ultimo_grado_manual'),
 	    'institucion_afiliada_id' => old('institucion_afiliada_id', $formacion?->institucion_afiliada_id),
 	    'titulo_origen_archivo' => !empty($formacion?->titulo_origen_archivo),
 	    'cedula_origen_archivo' => !empty($formacion?->cedula_origen_archivo),
