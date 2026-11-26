@@ -28,7 +28,7 @@ DISPONIBLE=$(df -Pm "$HOME" | awk 'NR==2 {print $4}')
 export PGHOST="$(valor DB_HOST)" PGPORT="$(valor DB_PORT)" PGUSER="$(valor DB_USERNAME)" PGPASSWORD="$(valor DB_PASSWORD)" PGDATABASE="$BASE_ESPERADA"
 anfeca_pg_preparar                     # herramientas cliente de la misma versión mayor que el servidor
 IMAGEN_PG=$(anfeca_pg_imagen)          # restauración desechable con la misma versión exacta
-DESTINO="$HOME/ANFECA_RESPALDOS/respaldo_verificado_${BASE_ESPERADA}_$(date +%Y%m%d_%H%M%S)"
+DESTINO="${ANFECA_RESPALDOS_DIR:-$HOME/ANFECA_RESPALDOS}/respaldo_verificado_${BASE_ESPERADA}_$(date +%Y%m%d_%H%M%S)"
 umask 077; mkdir -p "$DESTINO"
 INFORME="$DESTINO/RESULTADO.txt"
 registrar() { echo "$*" | tee -a "$INFORME"; }
