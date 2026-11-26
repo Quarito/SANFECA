@@ -123,6 +123,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
             'catalogoPosgrados' => $catalogoPosgrados,
             'catalogoLicenciaturas' => $catalogoLicenciaturas,
             'declaracionPosgrado' => \App\Services\Formacion\RequisitosFormacion::declaracionActiva($formacion),
+            'posgradoObligatorio' => \App\Services\Formacion\RequisitosFormacion::exigePosgrado($solicitud->area_certificacion),
             'formacionBloqueada' => $formacionBloqueada,
             'solicitud' => $solicitud,
             'areaCertificacion' => $solicitud->area_certificacion,
@@ -285,7 +286,10 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
             $tituloUltimoGrado = app(\App\Services\Catalogos\TituloUltimoGrado::class);
             $tituloOrigen = app(\App\Services\Catalogos\TituloOrigen::class);
             if ($declaracion) {
-                $reglas['cuenta_con_posgrado'] = [$declarada === null ? 'required' : 'nullable', Rule::in(['0', '1'])];
+                // Las áreas que exigen posgrado (Disciplinas vinculadas: Reglamento arts. 1 y 13; Instrumento 1.1) no
+                // admiten el escenario «solo licenciatura».
+                $exigePosgrado = \App\Services\Formacion\RequisitosFormacion::exigePosgrado($solicitud->area_certificacion);
+                $reglas['cuenta_con_posgrado'] = [$declarada === null ? 'required' : 'nullable', Rule::in($exigePosgrado ? ['1'] : ['0', '1'])];
                 if ($sinPosgrado) {
                     // Escenario 1: no se recibe ningún dato ni archivo de posgrado (los guardados antes se conservan).
                     foreach (['nivel_ultimo_grado', 'titulo_ultimo_grado', 'titulo_ultimo_grado_otro', 'modo_titulo_ultimo_grado',
@@ -303,6 +307,9 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
             $reglas = array_merge($reglas, $tituloOrigen->reglas($solicitud, $formacion));
             $datos = $request->validate($reglas, array_merge($tituloUltimoGrado->mensajes(), $tituloOrigen->mensajes(), [
                 'cuenta_con_posgrado.required' => 'Indique si cuenta con estudios de posgrado concluidos.',
+                'cuenta_con_posgrado.in' => 'Para la certificación en '.$solicitud->area_certificacion.' es requisito contar con estudios de posgrado '
+                    .'(Reglamento para la Certificación Académica, arts. 1 y 13; Instrumento de evaluación, factor 1.1). '
+                    .'Marque «Cuento con estudios de posgrado concluidos» y registre su último grado.',
                 'nivel_ultimo_grado.in' => 'El último grado debe ser Especialidad, Maestría o Doctorado. Si solo cuenta con licenciatura, desmarque la casilla «Cuento con estudios de posgrado concluidos».',
                 'nivel_ultimo_grado.prohibited' => 'No se reciben datos de posgrado si indicó que solo cuenta con licenciatura.',
                 'titulo_ultimo_grado_archivo.prohibited' => 'No se reciben documentos de posgrado si indicó que solo cuenta con licenciatura.',

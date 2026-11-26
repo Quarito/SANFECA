@@ -47,5 +47,10 @@ return [
      */
     'declaracion_posgrado' => [
         'activo' => (bool) env('ANFECA_DECLARACION_POSGRADO', false),
+        // Áreas de certificación que EXIGEN posgrado (no admiten el escenario «solo licenciatura»). Fundamento:
+        // Reglamento para la Certificación Académica vigente, arts. 1 y 13 («Disciplinas vinculadas … con estudios de
+        // posgrado»); Instrumentos de evaluación 2026, factor 1.1 («es requisito contar con algún posgrado en áreas
+        // afines»). La convocatoria 2026 (base I.4) pide el posgrado «en caso de poseerlo» para las demás áreas.
+        'areas_que_exigen_posgrado' => ['Disciplinas vinculadas al ámbito económico-administrativo'],
     ],
 ];

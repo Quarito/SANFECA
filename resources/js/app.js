@@ -79,6 +79,8 @@ const catalogoLicenciaturas = JSON.parse(
 );
 const declaracionPosgrado =
     contenedorFormacion.dataset.declaracionPosgrado === 'true';
+const posgradoObligatorio =
+    contenedorFormacion.dataset.posgradoObligatorio === 'true';
 
      createApp(FormacionAcademica, {
         instituciones,
@@ -89,7 +91,8 @@ const declaracionPosgrado =
         formacionBloqueada,
         catalogo,
         catalogoLicenciaturas,
-        declaracionPosgrado
+        declaracionPosgrado,
+        posgradoObligatorio
     }).mount(contenedorFormacion);
 }
 // PANTALLA 5: DOCUMENTOS PROBATORIOS

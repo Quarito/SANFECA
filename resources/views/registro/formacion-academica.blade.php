@@ -385,6 +385,7 @@
         'minimo' => (int) config('anfeca_catalogos.licenciaturas.busqueda_minima', 3),
     ]) }}"
     data-declaracion-posgrado="{{ ($declaracionPosgrado ?? false) ? 'true' : 'false' }}"
+    data-posgrado-obligatorio="{{ ($posgradoObligatorio ?? false) ? 'true' : 'false' }}"
 	data-formacion="{{ json_encode([
 	    'titulo_origen' => old('titulo_origen', $formacion?->titulo_origen),
 	    'titulo_origen_otro' => old('titulo_origen_otro', $formacion?->titulo_origen_otro),

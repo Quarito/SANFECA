@@ -5,7 +5,9 @@ ANFECA · Resumen AGRUPADO de los títulos de posgrado que requieren revisión (
     python3 -I scripts/anfeca/catalogos/resumir_revision.py <matriz_clasificacion_posgrados.xlsx> <salida.xlsx>
 
 - Solo LEE la matriz (se verifica su SHA-256 antes y después); nunca la modifica.
-- Agrupa por familia académica (área de estudio original, columna A), carrera genérica (B) y carrera específica (C);
+- Acepta la matriz de POSGRADOS o la de LICENCIATURAS (se detecta por sus hojas).
+- Agrupa por familia académica (posgrados: área de estudio, carrera genérica y específica; licenciaturas: campo amplio,
+  específico y detallado ANUIES);
   cada grupo se divide en SUBGRUPOS por área propuesta, de modo que cada fila de «Grupos» es homogénea y puede
   decidirse en conjunto. La hoja «Por tema» cruza los temas interdisciplinarios con el área propuesta.
 - NO aprueba nada: las columnas «Decisión conjunta» y «Área autorizada» se entregan vacías.
@@ -40,21 +42,35 @@ def temas(l):
     return ', '.join(sorted({x.strip() for p in l for x in p['tema'].split(',') if x.strip()}))
 
 
+# Columnas por tipo de matriz: posgrados (familia = área de estudio; grupos = carrera genérica y específica) o
+# licenciaturas (familia = campo amplio ANUIES; grupos = campo específico y detallado ANUIES).
+COLUMNAS = {
+    'posgrados': {'hoja': 'Matriz', 'familia': 'Área de estudio original', 'generica': 'Carrera genérica', 'especifica': 'Carrera específica',
+                  'titulo': 'Nombre original del posgrado', 'area': 'Área ANFECA propuesta', 'criterio': 'Criterio de clasificación',
+                  'clave': 'Clave estable del catálogo'},
+    'licenciaturas': {'hoja': 'Matriz completa', 'familia': 'Campo amplio ANUIES', 'generica': 'Campo específico ANUIES',
+                      'especifica': 'Campo detallado ANUIES', 'titulo': 'Nombre original de la licenciatura', 'area': 'Área ANFECA propuesta',
+                      'criterio': 'Criterio', 'clave': 'Clave estable'},
+}
+
+
 def leer(matriz):
-    ws = openpyxl.load_workbook(matriz, read_only=True)['Matriz']
-    filas = ws.iter_rows(values_only=True)
+    wb = openpyxl.load_workbook(matriz, read_only=True)
+    tipo = 'posgrados' if 'Matriz' in wb.sheetnames else 'licenciaturas'
+    c = COLUMNAS[tipo]
+    filas = wb[c['hoja']].iter_rows(values_only=True)
     enc = list(next(filas))
     i = {k: enc.index(k) for k in enc if k}
     pend = []
     for f in filas:
         if f[i['Requiere revisión']] != 'Sí':
             continue
+        txt = lambda k: (str(f[i[c[k]]]).strip() if f[i[c[k]]] else SIN)
         pend.append({
-            'familia': (f[i['Área de estudio original']] or SIN).strip(), 'generica': (f[i['Carrera genérica']] or SIN).strip(),
-            'especifica': (f[i['Carrera específica']] or SIN).strip(), 'titulo': f[i['Nombre original del posgrado']],
-            'nivel': f[i['Nivel académico']], 'area': f[i['Área ANFECA propuesta']], 'alt': f[i['Área alternativa']] or '',
-            'confianza': f[i['Confianza']], 'criterio': f[i['Criterio de clasificación']], 'tema': tema(f[i['Observaciones']]),
-            'clave': f[i['Clave estable del catálogo']],
+            'familia': txt('familia'), 'generica': txt('generica'), 'especifica': txt('especifica'), 'titulo': f[i[c['titulo']]],
+            'nivel': f[i['Nivel académico']], 'area': f[i[c['area']]], 'alt': f[i['Área alternativa']] or '',
+            'confianza': f[i['Confianza']], 'criterio': f[i[c['criterio']]], 'tema': tema(f[i['Observaciones']]),
+            'clave': f[i[c['clave']]],
         })
     return pend
 

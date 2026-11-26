@@ -31,6 +31,8 @@ const props = defineProps({
     catalogoLicenciaturas: { type: Object, default: () => ({ estado: 'desactivado' }) },
     // Casilla «Cuento con estudios de posgrado concluidos» (bandera ANFECA_DECLARACION_POSGRADO o declaración guardada).
     declaracionPosgrado: { type: Boolean, default: false },
+    // El área de certificación exige posgrado (Disciplinas vinculadas: Reglamento arts. 1 y 13; Instrumento 1.1).
+    posgradoObligatorio: { type: Boolean, default: false },
 });
 
 const titulosOrigen = [
@@ -627,7 +629,11 @@ const institucionSeleccionada = computed(() => {
                                :disabled="formacionBloqueada" @change="cambiarCasillaPosgrado">
                         Cuento con estudios de posgrado concluidos
                     </label>
-                    <div v-if="!cuentaConPosgrado" class="ug-solo-licenciatura" role="status">
+                    <div v-if="!cuentaConPosgrado && posgradoObligatorio" class="ug-solo-licenciatura ug-requisito" role="alert">
+                        <p>Para la certificación en {{ areaCertificacion }} es requisito contar con estudios de posgrado.</p>
+                        <p>Marque la casilla y registre su último grado.</p>
+                    </div>
+                    <div v-else-if="!cuentaConPosgrado" class="ug-solo-licenciatura" role="status">
                         <p>Su formación académica de origen corresponde a su último grado de estudios.</p>
                         <p>No es necesario registrar nuevamente el título ni la cédula profesional.</p>
                     </div>
@@ -1130,6 +1136,7 @@ const institucionSeleccionada = computed(() => {
 #vue-formacion-academica .ug-solo-licenciatura { margin-top: 8px; padding: 8px 10px; border: 1px solid #d8e6dc; border-radius: 6px;
     background: #f4faf6; color: #326b48; font-size: 12.5px; line-height: 1.35; text-align: center; }
 #vue-formacion-academica .ug-solo-licenciatura p { margin: 0; }
+#vue-formacion-academica .ug-solo-licenciatura.ug-requisito { border-color: #f0d9a8; background: #fff8e6; color: #7a4b00; }
 #vue-formacion-academica .fila-titulos-origen .selector-buscable { width: 100%; }
 </style>
 

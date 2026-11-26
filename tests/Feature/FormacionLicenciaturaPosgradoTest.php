@@ -75,7 +75,7 @@ class FormacionLicenciaturaPosgradoTest extends TestCase
         config(['anfeca_catalogos.licenciaturas' => ['activo' => $licenciaturas, 'ruta' => base_path("tests/fixtures/catalogos/{$rutaLic}"),
             'sha256' => null, 'version' => 'FICTICIO-LIC-1', 'maximo_resultados' => 60, 'busqueda_minima' => 3,
             'titulo_manual_maximo' => 200, 'titulo_manual_minimo' => 5]]);
-        config(['anfeca_catalogos.declaracion_posgrado' => ['activo' => $declaracion]]);
+        config(['anfeca_catalogos.declaracion_posgrado.activo' => $declaracion]);
     }
 
     private function pdf(string $n): UploadedFile
@@ -142,6 +142,7 @@ class FormacionLicenciaturaPosgradoTest extends TestCase
         };
 
         return ['licenciaturas' => json_decode($leer('catalogo-licenciaturas'), true), 'declaracion' => $leer('declaracion-posgrado'),
+            'posgrado_obligatorio' => $leer('posgrado-obligatorio'),
             'formacion' => json_decode($leer('formacion'), true)];
     }
 
@@ -203,7 +204,13 @@ class FormacionLicenciaturaPosgradoTest extends TestCase
     public function test_escenario_1_otro_derecho_y_captura_manual(): void
     {
         [$u, $s] = $this->solicitante('Disciplinas vinculadas al ámbito económico-administrativo');
-        $this->guardar($u, $this->catLic('LIC-00000000000E') + ['cuenta_con_posgrado' => '0'], self::DOCS_ORIGEN)->assertSessionHasNoErrors();
+        // Disciplinas vinculadas exige posgrado (Reglamento arts. 1 y 13; Instrumento 1.1): «solo licenciatura» se rechaza con explicación.
+        $this->guardar($u, $this->catLic('LIC-00000000000E') + ['cuenta_con_posgrado' => '0'], self::DOCS_ORIGEN)->assertSessionHasErrors('cuenta_con_posgrado');
+        $this->assertStringContainsString('es requisito contar con estudios de posgrado', session('errors')->first('cuenta_con_posgrado'));
+        $this->assertNull($this->fila($s));
+        $this->assertSame('true', $this->pantalla($u)['posgrado_obligatorio']);
+        $this->guardar($u, $this->catLic('LIC-00000000000E') + $this->posgrado('Maestría', 'Otro', 'MAE-00000000000F'),
+            [...self::DOCS_ORIGEN, ...self::DOCS_ULTIMO])->assertSessionHasNoErrors();
         $f = $this->fila($s);
         $this->assertSame(['Otro', 'Licenciatura Ficticia en Derecho', 'Licenciatura Ficticia en Derecho'], [$f->titulo_origen, $f->titulo_origen_otro, $f->titulo_origen_especifico]);
 

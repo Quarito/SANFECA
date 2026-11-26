@@ -44,6 +44,12 @@ class RequisitosFormacion
             && (config('anfeca_catalogos.declaracion_posgrado.activo') === true || self::declaracion($formacion) !== null);
     }
 
+    /** ¿El área de certificación exige posgrado? (normativa citada en config/anfeca_catalogos.php). */
+    public static function exigePosgrado(?string $areaCertificacion): bool
+    {
+        return in_array($areaCertificacion, (array) config('anfeca_catalogos.declaracion_posgrado.areas_que_exigen_posgrado', []), true);
+    }
+
     /** Valor normalizado de la declaración: true, false o null (no declarada / histórico). */
     public static function declaracion(mixed $formacion): ?bool
     {
