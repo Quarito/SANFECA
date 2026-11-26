@@ -75,7 +75,9 @@ class ConsultaSolicitudes
                 'f.nivel_ultimo_grado', 'f.titulo_ultimo_grado', 'f.titulo_ultimo_grado_otro',
                 'f.formacion_completada_at', 'i.campus', 'i.zona_anfeca',
                 's.compromiso_aceptado_en',
-            ]))
+            ], \App\Services\Catalogos\CatalogoPosgrados::persistenciaDisponible()
+                // Título exacto del catálogo de posgrados (columnas aditivas; solo si la migración está aplicada).
+                ? ['f.titulo_ultimo_grado_especifico', 'f.origen_titulo_ultimo_grado'] : []))
             ->first();
     }
 

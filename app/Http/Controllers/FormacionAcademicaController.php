@@ -113,7 +113,10 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
         
         $formacionBloqueada = $this->formacionEstaCompletada($formacion);
 
+        $catalogoPosgrados = app(\App\Services\Catalogos\CatalogoPosgrados::class)->estado();
+
         return view('registro.formacion-academica', [
+            'catalogoPosgrados' => $catalogoPosgrados,
             'formacionBloqueada' => $formacionBloqueada,
             'solicitud' => $solicitud,
             'areaCertificacion' => $solicitud->area_certificacion,
@@ -267,7 +270,10 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 		    ];
 		}
 
-            $datos = $request->validate($reglas);
+            // Catálogo de posgrados (bandera ANFECA_CATALOGO_POSGRADOS): reglas adicionales del último grado.
+            $tituloUltimoGrado = app(\App\Services\Catalogos\TituloUltimoGrado::class);
+            $reglas = array_merge($reglas, $tituloUltimoGrado->reglas($request));
+            $datos = $request->validate($reglas, $tituloUltimoGrado->mensajes());
 
             if ($esRefrendo && !empty($formacion?->titulo_origen)) {
                 // Conservar ambos valores históricos del título.
@@ -287,6 +293,10 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
             if (($datos['titulo_ultimo_grado'] ?? null) !== 'Otro') {
                 $datos['titulo_ultimo_grado_otro'] = null;
             }
+
+            // Título específico del último grado: desde el catálogo del servidor o captura manual; con la
+            // bandera desactivada protege los títulos ya registrados (sin pérdida silenciosa).
+            $datos = $tituloUltimoGrado->aplicar($request, $datos, $formacion);
 
 	    // Las rutas se generan en el servidor,
 	    // no se aceptan directamente del formulario.

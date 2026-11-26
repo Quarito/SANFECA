@@ -437,7 +437,11 @@ body {
     <div class="etiqueta">
         Último grado · {{ $formacion?->nivel_ultimo_grado ?? 'No registrado' }}
     </div>
-    @if(
+    @if(filled($formacion?->titulo_ultimo_grado_especifico))
+        {{-- Título exacto (catálogo de posgrados o captura manual) y su área académica. --}}
+        <div class="valor">{{ $formacion->titulo_ultimo_grado_especifico }}</div>
+        <div class="etiqueta">Área: {{ $formacion->titulo_ultimo_grado }}</div>
+    @elseif(
         $formacion?->titulo_ultimo_grado === 'Otro'
         && filled($formacion?->titulo_ultimo_grado_otro)
     )

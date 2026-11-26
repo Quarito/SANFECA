@@ -23,6 +23,11 @@ class FormacionAcademicaSolicitud extends Model
         'titulo_ultimo_grado_archivo',
         'cedula_ultimo_grado_archivo',
         'formacion_completada_at',
+        // Columnas aditivas del catálogo de posgrados (solo se asignan si la migración está aplicada).
+        'titulo_ultimo_grado_especifico',
+        'origen_titulo_ultimo_grado',
+        'clave_posgrado_catalogo',
+        'version_catalogo_posgrados',
     ];
 
     public function solicitud(): BelongsTo
