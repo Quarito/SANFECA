@@ -25,16 +25,26 @@ systemctl reload httpd; sleep 2
 [ -s "$ORIGINAL/env" ] && ! cmp -s "$ORIGINAL/env" "$APP/.env" && echo "AVISO: $APP/.env difiere del guardado antes de la conmutación; se conserva el actual." >&2
 
 echo "== 2. Escrituras posteriores en certificacion_anfeca"
-if [ -s "$R/huellas_al_conmutar.txt" ]; then
-    export PGHOST=127.0.0.1 PGPORT=5433 PGUSER=cert8086_propietario PGDATABASE=certificacion_anfeca
-    export PGPASSWORD=$(awk -F'\t' '$1=="cert8086_propietario"{print $2}' /home/servidorweb/ANFECA_CREDENCIALES/pg8086_certificacion_anfeca.txt)
-    PATH=/usr/pgsql-18/bin:$PATH huellas_bd_instantanea psql > "$R/huellas_al_revertir.txt"; unset PGPASSWORD
-    if ! cmp -s "$R/huellas_al_conmutar.txt" "$R/huellas_al_revertir.txt"; then
-        diff "$R/huellas_al_conmutar.txt" "$R/huellas_al_revertir.txt" | grep '^>' | cut -d'|' -f1-2 | tee "$R/tablas_con_escrituras_nuevas.txt"
-        echo "ATENCIÓN: hay escrituras nuevas en certificacion_anfeca. 8086 queda en MANTENIMIENTO con el VirtualHost original." >&2
-        echo "Conciliarlas hacia bd_anfeca_ensayo_pruebas_pg y después: sudo php $APP/artisan up" >&2
-        exit 2
-    fi
+[ -s "$R/huellas_al_conmutar.txt" ] || fallo "faltan las huellas de conmutación (8086 sigue en mantenimiento)"
+if [ "${ANFECA_SIMULACION:-0}" = 1 ]; then
+    huellas_bd_instantanea psql > "$R/huellas_al_revertir.txt"
+else
+    PGPASSWORD=$(awk -F'\t' '$1=="cert8086_propietario"{print $2}' /home/servidorweb/ANFECA_CREDENCIALES/pg8086_certificacion_anfeca.txt)
+    [ -n "$PGPASSWORD" ] || fallo "faltan las credenciales para verificar huellas"
+    PGHOST=127.0.0.1 PGPORT=5433 PGUSER=cert8086_propietario PGDATABASE=certificacion_anfeca \
+        PGPASSWORD="$PGPASSWORD" PATH=/usr/pgsql-18/bin:$PATH huellas_bd_instantanea psql > "$R/huellas_al_revertir.txt"
+    unset PGPASSWORD
+fi
+[ -s "$R/huellas_al_revertir.txt" ] || fallo "no se obtuvieron huellas (8086 sigue en mantenimiento)"
+if ! cmp -s "$R/huellas_al_conmutar.txt" "$R/huellas_al_revertir.txt"; then
+    awk -F'|' 'NR == FNR { anterior[$1] = $0; next }
+        $0 != anterior[$1] { print $1 }
+        { delete anterior[$1] }
+        END { for (tabla in anterior) print tabla }
+    ' "$R/huellas_al_conmutar.txt" "$R/huellas_al_revertir.txt" | LC_ALL=C sort | tee "$R/tablas_con_escrituras_nuevas.txt"
+    echo "ATENCIÓN: las huellas cambiaron. 8086 queda en MANTENIMIENTO con el VirtualHost original." >&2
+    echo "Conciliar los cambios hacia bd_anfeca_ensayo_pruebas_pg antes de reabrir 8086." >&2
+    exit 2
 fi
 php "$APP/artisan" up >/dev/null
 echo "✔ 8086 revertido: /login → $(curl -s -o /dev/null -w '%{http_code}' http://192.168.7.130:8086/login) con el pool www (PHP 8.4.27) y la base de origen."

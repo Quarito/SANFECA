@@ -24,6 +24,9 @@ SW() {
 }
 fallo() { echo "DETENIDO: $*" >&2; exit 1; }
 vhost_conmutado() { grep -q 'ANFECA_8086' "$VH"; }
+socket_fpm_disponible() {
+    if [ "${ANFECA_SIMULACION:-0}" = 1 ]; then [ -f "$SOCK" ]; else [ -S "$SOCK" ]; fi
+}
 protegidos() {   # huella de los ambientes protegidos (no debe cambiar)
     for u in 8084 8085; do echo "$u $(curl -s -o /dev/null -w '%{http_code}' --max-time 10 http://127.0.0.1:$u/)"; done
     echo "8008 $({ ss -ltn 2>/dev/null || true; } | { grep -c ':8008 ' || true; })"
