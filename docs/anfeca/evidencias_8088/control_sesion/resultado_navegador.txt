@@ -1,14 +1,15 @@
-APROBADA Usuario activo: no recibe aviso y su actividad real renueva la sesión vigente — {"vigente":true,"autenticado":true,"restante":54}
-APROBADA Usuario inactivo: recibe el aviso antes del vencimiento
-APROBADA Aviso de 15 segundos con cuenta regresiva correcta — 15,14,13,12
+APROBADA La actividad local (teclear) no renueva: el aviso aparece ~20 s antes del límite — 38.7 s
+APROBADA Cuenta regresiva de 15 segundos correcta — 15,14,13,12
 APROBADA El aviso no elimina datos capturados sin guardar
-APROBADA Continuar sesión: permanece conectado, en la misma pantalla y con sus datos — {"vigente":true,"autenticado":true,"restante":60}
-APROBADA Sin respuesta al aviso: la sesión se cierra y se muestra un mensaje amigable
+APROBADA Continuar sesión (clic): misma pantalla, datos intactos y sesión renovada — {"vigente":true,"autenticado":true,"restante":60}
+APROBADA Sin respuesta: la sesión termina al cumplirse los 60 s del límite (no antes) y se informa — cierre a 61.1 s
 APROBADA Sesión vencida: no se reactiva (pide iniciar sesión)
-APROBADA Tras el cierre por inactividad no queda sesión autenticada — {"vigente":true,"autenticado":false,"restante":60}
-código AJAX 401
-APROBADA Solicitud AJAX con sesión terminada (401/419): respuesta controlada y aviso sin borrar la captura
-APROBADA Con la sesión dada por terminada se impide el envío del formulario
-APROBADA El temporizador del acuse conserva su comportamiento y no se mezcla con el aviso de inactividad — acuse=11
+APROBADA Una petición normal al servidor cuenta como actividad: no aparece el aviso en ese ciclo
+APROBADA Respuesta de error sin marca de sesión (403 de Coordinación): sin aviso de sesión vencida — código 403
+APROBADA No hay bloqueo global de envíos: reintentos y formularios gestionados por la página funcionan — 3/3
+APROBADA AJAX con sesión terminada: respuesta original (401) y aviso claro sin borrar la captura — 401 · finalizada · Unauthenticated.
+APROBADA Solo con la sesión confirmada como terminada se impide el envío
+APROBADA Visitante: aviso «El formulario está por expirar», continúa en la misma pantalla y conserva lo capturado
+APROBADA El temporizador del acuse funciona igual y es independiente del aviso de inactividad — acuse=12
 
-Resultado: 11/11 verificaciones aprobadas.
+Resultado: 13/13 verificaciones aprobadas.

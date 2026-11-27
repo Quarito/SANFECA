@@ -17,30 +17,45 @@ infraestructura ni reglas de negocio. **No desplegada.**
 | Temporizador del acuse | `registro/completado.blade.php`: `#aviso-cierre-acuse`, 15 s, envía `POST /logout`; se cancela con clic o tecla. Independiente. |
 | Requisitos | La solución cabe en la sesión existente (archivos): no requiere tablas, colas, Redis ni servicios. |
 
-## 2. Solución
+## 2. Solución (versión revisada)
 
-1. **`App\Http\Middleware\ControlInactividad`** (grupo `web`): guarda en la sesión el momento de la última petición del usuario.
-   `GET /sesion/estado` **no** cuenta como actividad, así que consultar nunca prolonga la sesión. Si pasan más de
-   `session.lifetime` (120 min) sin actividad: cierra la autenticación, invalida la sesión y regenera el token; no reactiva nada.
-   Responde 401 JSON con `X-Anfeca-Sesion: finalizada` a las peticiones AJAX y redirige a `/sesion-finalizada` en las demás.
-   Un visitante que solo consulta una página continúa con una sesión nueva (sin bucles).
-2. **`App\Http\Controllers\SesionController`**: `GET /sesion/estado` (lectura), `POST /sesion/continuar` (CSRF; solo llega
-   una sesión vigente porque el middleware ya rechazó las vencidas), `POST /sesion/cerrar` (fin de la cuenta regresiva) y
-   `GET /sesion-finalizada` (mensaje). `throttle:30,1` en estado y continuar.
-3. **Aviso** `resources/views/partials/control-sesion.blade.php` (CSS y JS en línea, sin dependencias ni compilación):
-   - El servidor entrega **segundos restantes**, no horas absolutas (inmune a relojes desincronizados).
-   - **Sin consultas periódicas**: una sola consulta de estado poco antes del vencimiento (`120 min − 15 s − 45 s de margen`).
-   - Si hubo actividad **real** en la pantalla (teclado, captura, clic) desde la última sincronización, se renueva una vez sin
-     interrumpir; si no, aparece el aviso con cuenta regresiva de **15 s** y **Continuar sesión**.
-   - La cuenta regresiva termina 45 s antes del vencimiento real, para que la renovación llegue a tiempo.
-   - Sin respuesta: `POST /sesion/cerrar` → «Su sesión finalizó».
-   - Con la sesión terminada se bloquea el envío de formularios; se evita el doble envío del mismo formulario.
-   - Las respuestas 401/419 de los `fetch` existentes llegan intactas a sus componentes; además se muestra el aviso.
-   - No guarda datos en `localStorage`/`sessionStorage` y nunca borra lo capturado.
-4. **419**: `resources/views/errors/419.blade.php` (página amigable con el diseño de recuperación de contraseña, código 419
-   conservado) y respuesta JSON controlada en `bootstrap/app.php`. El middleware CSRF no se toca ni se excluyen rutas.
+1. **`App\Http\Middleware\ControlInactividad`** (grupo `web`, declarado en la lista de prioridad **antes** de `Authenticate`):
+   toda petición normal (navegación, envíos, AJAX) es actividad, como en Laravel; `GET /sesion/estado` **no** lo es.
+   Cierra la sesión solo cuando la inactividad supera `session.lifetime`. Marca como «sesión perdida» la petición que trae la
+   cookie de sesión cuando el servidor ya no tiene esa sesión.
+2. **`App\Http\Controllers\SesionController`**: `GET /sesion/estado` (lectura) · `POST /sesion/continuar` (CSRF; renovación
+   explícita) · `GET /sesion-finalizada`. Se **eliminó** `POST /sesion/cerrar`: el navegador ya no cierra sesiones.
+3. **Aviso** `resources/views/partials/control-sesion.blade.php`: una consulta de estado poco antes del vencimiento, cuenta
+   regresiva de 15 s y botón «Continuar sesión». La actividad local (teclear, mover el ratón) **no** renueva.
+4. **Respuestas 401/419** (`bootstrap/app.php`, `respond`): el código y el cuerpo originales de Laravel **no** se modifican; solo se
+   agrega `X-Anfeca-Sesion` cuando la causa es verificable: `expirada` (419 sin sesión autenticada), `token` (419 con sesión
+   vigente: la página expiró), `finalizada` (401 de una sesión que existía y ya no está, o vencida por inactividad). Sin marca, el
+   aviso no interviene. La página HTML del 419 es `resources/views/errors/419.blade.php`.
 5. Configuración `config/anfeca_sesion.php`: `ANFECA_SESION_CONTROL` (true), `ANFECA_SESION_AVISO_SEGUNDOS` (15),
-   `ANFECA_SESION_MARGEN_SEGUNDOS` (45). La duración sigue siendo `SESSION_LIFETIME` (120).
+   `ANFECA_SESION_MARGEN_SEGUNDOS` (**5**, margen de red). La duración sigue siendo `SESSION_LIFETIME` (120).
+
+### 2.1 Momento exacto del cierre (120 min, aviso 15 s, margen 5 s)
+
+| Momento (inactividad) | Evento |
+|---|---|
+| 119:39 | El navegador consulta `/sesion/estado` (no renueva). Si hubo actividad en otra pestaña o por AJAX, solo reprograma. |
+| 119:39–119:40 | Aparece el aviso con la cuenta regresiva de 15 s. |
+| 119:55 | Termina la cuenta regresiva. **No se cierra nada**: «Continuar sesión» sigue disponible 5 s más (margen de red). |
+| **120:00** | **Cierre real**, en el servidor, en la primera petición posterior: logout, invalidación y nuevo token. |
+| 120:02 | El navegador verifica el estado y muestra «Su sesión finalizó». |
+
+Antes de la revisión, la cuenta regresiva terminaba 45 s antes y el navegador cerraba la sesión a los 119:15. Medido en
+laboratorio (límite de 60 s): sesión vigente a los 57 s; cierre informado a los 61.1 s después de la última actividad.
+
+### 2.2 Decisiones de la revisión de seguridad
+
+| Punto | Antes | Ahora | Justificación |
+|---|---|---|---|
+| 1. Renovación | La actividad local en el navegador renovaba automáticamente | Solo el clic en «Continuar sesión» o una petición real al servidor | Una pestaña abandonada con actividad local previa no debe prolongarse sin una acción explícita. |
+| 2. Vencimiento anticipado | Cierre por el navegador 45 s antes | Cierre solo en el servidor a los 120:00 | Sin justificación funcional para cerrar antes; el margen solo protege la renovación de último segundo. |
+| 3. Formularios | Bloqueo global de doble envío y bloqueo por reloj local | Sin bloqueo global; solo se impide enviar cuando el servidor **confirmó** el fin de la sesión | El bloqueo global podía afectar reintentos tras validación, formularios Vue y envíos que no navegan; el reloj local no ve la actividad AJAX. |
+| 4. 401/419 | Cualquier 401/419 se mostraba como «sesión finalizada»; el JSON 419 se reescribía | Respuestas originales intactas; aviso solo con marca verificable; 419 con sesión vigente → «La página expiró» | Evita mensajes incorrectos (p. ej. 401/403 de permisos) y no altera lo que reciben los componentes. |
+| Orden | `Authenticate` se ejecutaba antes del control | `prependToPriorityList(AuthenticatesRequests, ControlInactividad)` | Sin esto, una sesión perdida recibía el 401 genérico sin identificar la causa. |
 
 ## 3. Archivos
 
@@ -50,45 +65,45 @@ Creados: `app/Http/Middleware/ControlInactividad.php`, `app/Http/Controllers/Ses
 `scripts/anfeca_8088/pruebas/prueba_control_sesion.py`, `scripts/anfeca_8088/pruebas/prueba_control_sesion_navegador.cjs`,
 este documento y `docs/anfeca/evidencias_8088/control_sesion/`.
 
-Modificados (solo inserciones): `bootstrap/app.php` (registro del middleware y del 419), `routes/web.php` (4 rutas),
+Modificados (solo inserciones): `bootstrap/app.php` (middleware, prioridad y marca de 401/419), `routes/web.php` (3 rutas),
 `resources/views/components/barra-usuario-certificacion.blade.php`, `resources/views/solicitante/mis-datos.blade.php`,
 `resources/views/panel.blade.php`, `resources/views/registro/datos-personales.blade.php` (una línea `@include` cada una).
 
 Sin cambios: controladores y reglas de negocio, Vue, `config/session.php`, `config/auth.php`, base de datos, dependencias,
 `.env.example`, Coordinación (solo recibe el manejo amigable del 419) y el temporizador del acuse.
 
-## 4. Pruebas (copia aislada en el entorno de trabajo, puerto 8188, sin tocar 8088/8086/8008)
+## 4. Pruebas (entorno aislado; sin tocar 8088/8086/8008 ni ninguna base existente)
 
-Duración reducida **solo en la copia**: `SESSION_LIFETIME=1`, margen 20 s, aviso 15 s. Sin reiniciar ni alterar la base.
+Entorno: instancia PostgreSQL 18.6 **desechable y nueva** (`/var/lib/anfeca-pruebas-sesion`, puerto 55499, identificador
+de sistema propio) con la base nueva `certificacion_anfeca_r3` creada desde el SQL oficial, datos ficticios
+(`anfeca:laboratorio`, `anfeca:coordinador-alta`) y una copia de la rama servida en `127.0.0.1:8189`. Ninguna base existente se
+borró ni se recreó. Duración reducida (`SESSION_LIFETIME=1`) solo en esa copia para las pruebas de tiempo.
 
 | Prueba | Resultado |
 |---|---|
-| Usuario activo | Aprobada: su actividad renueva la sesión vigente; no ve aviso |
-| Usuario inactivo | Aprobada: aviso antes del vencimiento |
-| Aviso de 15 s | Aprobada: 15, 14, 13, 12… |
-| Continuar sesión | Aprobada: misma pantalla, datos intactos, 60 s renovados |
-| Sesión vencida | Aprobada: «continuar» responde 401; no hay acceso autenticado |
-| Estado no renueva | Aprobada: restante 44 → 29 → 14 |
-| Token CSRF vencido | Aprobada: 419 amigable (HTML y JSON), sin trazas |
-| Formulario con datos sin guardar | Aprobada: el aviso no los borra; con la sesión terminada se impide el envío |
-| Envío con sesión vencida | Aprobada: redirección a «sesión finalizada», sin 419 ni bucles |
-| Cierre manual / inicio de sesión | Aprobada |
-| AJAX con 401/419 | Aprobada: el componente recibe su respuesta; aviso visible |
-| Acuse PDF y su temporizador | Aprobada: descarga y cuenta regresiva propias sin interferencia |
-| Navegación entre etapas | Aprobada: 5 etapas con 200 |
+| Regresión completa `e2e_8088.py` (120 min, base limpia), **incluidas las 4 de refrendo** | **28/28** |
+| Regresión con catálogos de 8086 (`e2e_catalogos_8088.py`) | **4/4** |
+| Servidor (`prueba_control_sesion.py`) | **22/22** |
+| Navegador (`prueba_control_sesion_navegador.cjs`) | **13/13** |
 
-Totales: servidor **16/16**, navegador **11/11**; regresión de catálogos **4/4**; regresión completa `e2e_8088.py` (120 min)
-**24/28**: las 4 restantes dependen de dar de alta la persona ficticia del refrendo, que ya existía porque la base del laboratorio
-no se reinició (por indicación de no ejecutar operaciones destructivas). En la rama base esas 4 pasaron sobre base limpia y esta mejora
-no modifica sus controladores. Esquema verificado después: 36/36 tablas, sin diferencias.
+Verificaciones destacadas: teclear no renueva (aviso a los 38.7 s del límite de 60); cuenta regresiva 15‑14‑13‑12;
+«Continuar» conserva pantalla y datos; sesión vigente a los 57 s y cierre informado a los 61.1 s; una petición normal sí cuenta como
+actividad; 403 de permisos y 401 sin sesión previa **sin** aviso; 401 de sesión perdida con aviso y respuesta original; 419 con
+sesión vigente marcado como «token» y cuerpo original; reintentos de formularios gestionados por la página (3/3); visitante del
+registro inicial con aviso «El formulario está por expirar» y formulario vencido sin crear cuenta; temporizador del acuse intacto;
+cierre manual e inicio de sesión sin cambios.
+
+Nota de prueba: el limitador existente de inicio de sesión (5/min por IP, 15/h por correo) se respetó. La prueba espera ante
+un 429, y la caché del limitador se limpió solo en la copia aislada (`cache:clear`) tras corridas repetidas con la misma cuenta ficticia.
 
 ## 5. Riesgos y limitaciones
 
 - No se recuperan datos no guardados si la sesión termina: no se almacenan en el navegador por seguridad.
-- La renovación por actividad real requiere interacción del usuario; leer sin tocar la pantalla durante 2 h mostrará el aviso.
-- Si el equipo se suspende, el aviso se revisa al volver a la pestaña; si la sesión ya venció, se informa y se pide iniciar sesión.
-- Coordinación no muestra el aviso preventivo (fuera de alcance); sí recibe el 419 amigable y el cierre por inactividad del servidor.
-- `throttle:login` (15/h por correo) se mantiene; afecta pruebas repetidas, no el uso normal.
+- Quien capture durante 2 h sin enviar nada verá el aviso y deberá pulsar «Continuar sesión» (decisión de la revisión).
+- Laravel 13 acepta formularios del mismo origen aunque el token haya cambiado (`PreventRequestForgery`); por eso los envíos
+  con sesión vencida se detectan por inactividad y no por 419.
+- Coordinación no muestra el aviso preventivo (fuera de alcance); sí recibe el cierre por inactividad y el 419 amigable.
+- Tras suspender el equipo, el estado se verifica al volver a la pestaña.
 
 ## 6. Integración y reversión
 

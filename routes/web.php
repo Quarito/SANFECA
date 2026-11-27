@@ -202,8 +202,6 @@ Route::get('/sesion/estado', [\App\Http\Controllers\SesionController::class, 'es
     ->middleware('throttle:30,1')->name('sesion.estado');
 Route::post('/sesion/continuar', [\App\Http\Controllers\SesionController::class, 'continuar'])
     ->middleware('throttle:30,1')->name('sesion.continuar');
-Route::post('/sesion/cerrar', [\App\Http\Controllers\SesionController::class, 'cerrar'])
-    ->name('sesion.cerrar');
 Route::get('/sesion-finalizada', [\App\Http\Controllers\SesionController::class, 'finalizada'])
     ->name('sesion.finalizada');
 

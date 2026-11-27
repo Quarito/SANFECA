@@ -20,21 +20,28 @@ return Application::configure(basePath: dirname(__DIR__))
     ]);
         // Control de inactividad (usa la sesión existente; sin tablas ni servicios).
         $middleware->appendToGroup('web', \App\Http\Middleware\ControlInactividad::class);
+        // Debe ejecutarse antes de la autenticación: así identifica la sesión vencida o perdida antes de que auth responda.
+        $middleware->prependToPriorityList(
+            \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            \App\Http\Middleware\ControlInactividad::class,
+        );
 })
         ->withExceptions(function (Exceptions $exceptions): void {
-        // HTTP 419 (token CSRF vencido): respuesta comprensible, sin detalles técnicos. Conserva el código 419;
-        // la vista amigable es resources/views/errors/419.blade.php. La validación CSRF no se modifica.
-        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, Request $request) {
-            if ($e->getStatusCode() !== 419 || !$request->expectsJson()) {
-                return null;
+        // Respuestas de sesión: el cuerpo y el código originales de Laravel NO se modifican; solo se agrega la cabecera
+        // X-Anfeca-Sesion cuando la causa es verificable, para que el aviso distinga cada caso:
+        //   419 sin sesión autenticada → «expirada» · 419 con sesión vigente → «token» (la página expiró)
+        //   401 de una sesión que existía y ya no está en el servidor → «finalizada» (ver ControlInactividad).
+        // La página HTML del 419 es resources/views/errors/419.blade.php. La validación CSRF no se toca.
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $respuesta, \Throwable $e, Request $request) {
+            $encabezado = \App\Http\Middleware\ControlInactividad::ENCABEZADO;
+            if ($respuesta->getStatusCode() === 419 && !$respuesta->headers->has($encabezado)) {
+                $respuesta->headers->set($encabezado, \Illuminate\Support\Facades\Auth::check() ? 'token' : 'expirada');
+            } elseif ($e instanceof \Illuminate\Auth\AuthenticationException
+                && $request->attributes->get(\App\Http\Middleware\ControlInactividad::SESION_PERDIDA) === true) {
+                $respuesta->headers->set($encabezado, 'finalizada');
             }
 
-            return response()->json([
-                'message' => 'Su sesión terminó o la página expiró.',
-                'mensaje' => 'Su sesión terminó o la página expiró. Vuelva a cargar la página o inicie sesión nuevamente.',
-                'sesion' => 'expirada',
-                'redireccion' => route('sesion.finalizada'),
-            ], 419)->header(\App\Http\Middleware\ControlInactividad::ENCABEZADO, 'expirada');
+            return $respuesta;
         });
 
         $exceptions->shouldRenderJsonWhen(

@@ -1,31 +1,30 @@
-APROBADA [1] Registro desde cero crea PERSONA, USUARIO (rol solicitante) y DOMICILIO en una transacción — persona=37 usuario=[['37', 'ACTIVO', 'solicitante']] domicilio=[['Calle Ficticia', '12', '3', 'Ciudad de México']]
-APROBADA [1] Autenticación con USUARIO (hash bcrypt) y rechazo de contraseña incorrecta — http://127.0.0.1:8188/mis-datos
+APROBADA [1] Registro desde cero crea PERSONA, USUARIO (rol solicitante) y DOMICILIO en una transacción — persona=4 usuario=[['4', 'ACTIVO', 'solicitante']] domicilio=[['Calle Ficticia', '12', '3', 'Ciudad de México']]
+APROBADA [1] Autenticación con USUARIO (hash bcrypt) y rechazo de contraseña incorrecta — http://127.0.0.1:8189/mis-datos
 APROBADA [3] Datos personales, correo, teléfonos, colonia, municipio y CP persistidos y recuperados en pantalla — {"Código postal del domicilio": "04510", "Colonia del domicilio": "Colonia Ficticia", "Alcaldía o municipio del domicilio": "Coyoacán", "Correo electrónico": "ana.ficticia@example.test", "Teléfono particular": "5511112222"}
-APROBADA [4] Antes de autorizar solo cambian domicilio y teléfonos; identidad y correo bloqueados; se exige al menos un teléfono — domicilio=['Avenida Nueva', '99', '', 'Jalisco'] identidad=['FICT760117MDFCTA11', 'Ana Prueba']
+APROBADA [4] Antes de autorizar solo cambian domicilio y teléfonos; identidad y correo bloqueados; se exige al menos un teléfono — domicilio=['Avenida Nueva', '99', '', 'Jalisco'] identidad=['FICT721024MDFCTA32', 'Ana Prueba']
 APROBADA [5] Autorización registrada (USUA_ESTATUS = DATOS_AUTORIZADOS) y sin modificaciones posteriores — estatus=DATOS_AUTORIZADOS calle=Avenida Nueva
-APROBADA [6] Selección de certificación, tipo de personal y área (catálogos FK) — [['37', '37', 'Administración', 'Profesoras y profesores de Tiempo Completo', 'ANFECA', '']]
+APROBADA [6] Selección de certificación, tipo de personal y área (catálogos FK) — [['1', '1', 'Administración', 'Profesoras y profesores de Tiempo Completo', 'ANFECA', '']]
 APROBADA [7] Solicitud inicial persistida en SOLICITUD (folio = id, sin certificado) con evento «Borrador»
 APROBADA [9] Formación (licenciatura + maestría) en ESTUDIO_PROFESIONAL/PERSONA_ESTUDIO_PROFESIONAL, institución en PERSONA y autorización — [['Administración', 'Licenciatura', 'GAL', 't', 't'], ['Administración', 'Maestría', 'GAU', 't', 't']]
 APROBADA [9] La formación autorizada ya no admite cambios
-APROBADA [10] Carga de documentos: SOLICITUD_DOCUMENTO + estado «Cargado», PAGO y enlace de evidencias — 7 documentos, pago=anfeca/expedientes/37/45.png
+APROBADA [10] Carga de documentos: SOLICITUD_DOCUMENTO + estado «Cargado», PAGO y enlace de evidencias — 7 documentos, pago=anfeca/expedientes/1/6.png
 APROBADA [11] Consulta documental del propio expediente (PDF íntegro) y acceso denegado sin sesión
 APROBADA [10] Los documentos guardados quedan en solo consulta
 APROBADA [12] Casilla obligatoria validada en el servidor, texto definitivo y evento «Compromiso de entrega aceptado»
 APROBADA [13] Envío: evento «Enviada», mensaje «Su solicitud fue registrada correctamente.» y bloqueo posterior — eventos=[['BO'], ['CA'], ['DP'], ['EN'], ['FA']]
-APROBADA [14] Acuse PDF generado para la solicitud enviada (y 404 para solicitudes ajenas) — 1076389 bytes
+APROBADA [14] Acuse PDF generado para la solicitud enviada (y 404 para solicitudes ajenas) — 1076387 bytes
 APROBADA [15] Seguimiento: panel y finalización muestran el folio y el estado enviado
-APROBADA [2] Recuperación por CURP + correo: token en caché de archivos, nueva contraseña en USUARIO — /restablecer/a55950778882b3f08580d3ab1332cedc85f25007a26364b10ba2ad8c46e28c3a?email=ana.ficticia.817026%40example.test
-AVISO: la persona del refrendo ya existe; use una base limpia para repetir la prueba 8.
-FALLIDA  [8] Refrendo: consulta propia válida, certificado ajeno rechazado, vigencia de 3 años (1002), sin selección automática — {"message":"Unauthenticated."}
-FALLIDA  [8] Refrendo del certificado 1001: SOLI_NUMERO_CERTIFICADO, refrendo n.º 2 calculado, art. 14.1, formación y 4 documentos — art=[['t', 'f', '14.1']]
-FALLIDA  [8] Refrendo enviado conservando el antecedente histórico (sin modificar HISTORICO_CERTIFICADO) y acuse PDF
+APROBADA [2] Recuperación por CURP + correo: token en caché de archivos, nueva contraseña en USUARIO — /restablecer/162336122c1b780d8ba2d5fe846c5afcebeca19dc6164629b887f267cca98cfd?email=ana.ficticia.819156%40example.test
+APROBADA [8] Refrendo: consulta propia válida, certificado ajeno rechazado, vigencia de 3 años (1002), sin selección automática — {"encontrado":true,"mensaje":"Certificado verificado correctamente.","historial":{"certificacion":"ANFECA","primera_vez"
+APROBADA [8] Refrendo del certificado 1001: SOLI_NUMERO_CERTIFICADO, refrendo n.º 2 calculado, art. 14.1, formación y 4 documentos — art=[['t', 'f', '14.1']]
+APROBADA [8] Refrendo enviado conservando el antecedente histórico (sin modificar HISTORICO_CERTIFICADO) y acuse PDF
 APROBADA [8] Se impide un segundo refrendo del mismo certificado en el periodo vigente
-APROBADA [16] Coordinación nacional: bandeja con ambas solicitudes, expediente real y visor de documentos — folios=['37', '36', '35', '34', '5', '4', '3', '2', '1']
+APROBADA [16] Coordinación nacional: bandeja con ambas solicitudes, expediente real y visor de documentos — folios=['2', '1']
 APROBADA [16] Dashboard (indicadores) y seguimiento de registros responden con datos de las 36 tablas — indicadores=200 seguimiento=200
-APROBADA [17] Coordinación regional limitada a su zona (Z7 ve solo la de CDMX; Z6 solo la del Sur) y 404 fuera de alcance — z7=['37', '1'] z6=['2']
+APROBADA [17] Coordinación regional limitada a su zona (Z7 ve solo la de CDMX; Z6 solo la del Sur) y 404 fuera de alcance — z7=['1'] z6=['2']
 APROBADA [17] Un solicitante no accede a Coordinación y la coordinación no usa el flujo de solicitantes
-FALLIDA  [19] Pantallas existentes responden con su contenido (15 rutas, sin errores del servidor) — /registro/formacion-academica:200, /registro/documentos-probatorios:200
+APROBADA [19] Pantallas existentes responden con su contenido (15 rutas, sin errores del servidor)
 APROBADA [18] Integridad: 35 FK validadas y sin registros huérfanos — fk=35 huerfanos=0
 APROBADA [20] Solo 36 tablas en el esquema public (sin sessions, cache, jobs, users, migrations ni esquemas extra) — tablas=36 esquemas=public
 
-Resultado: 24/28 verificaciones aprobadas.
+Resultado: 28/28 verificaciones aprobadas.

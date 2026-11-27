@@ -8,8 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Control de sesión: estado (solo lectura), continuar (renovación explícita de una sesión vigente),
- * cierre por inactividad y pantalla de sesión finalizada. El vencimiento lo aplica ControlInactividad.
+ * Control de sesión: estado (solo lectura), continuar (renovación explícita de una sesión vigente) y pantalla de
+ * sesión finalizada. El cierre por inactividad lo aplica únicamente ControlInactividad al cumplirse session.lifetime:
+ * el navegador nunca cierra la sesión antes de tiempo.
  */
 class SesionController extends Controller
 {
@@ -26,19 +27,6 @@ class SesionController extends Controller
     public function continuar(Request $request): JsonResponse
     {
         return $this->respuesta($request);
-    }
-
-    /** Fin de la cuenta regresiva sin respuesta del usuario (POST con CSRF). */
-    public function cerrar(Request $request)
-    {
-        $autenticado = Auth::check();
-        if ($autenticado) {
-            Auth::guard('web')->logout();
-        }
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->route('sesion.finalizada')->with('sesion_motivo', $autenticado ? 'inactividad' : 'formulario');
     }
 
     public function finalizada(Request $request)

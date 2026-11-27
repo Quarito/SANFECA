@@ -1,9 +1,12 @@
 // Pruebas en navegador (Playwright/Chromium) del aviso de inactividad. SOLO contra una copia aislada con
-// SESSION_LIFETIME=1, ANFECA_SESION_MARGEN_SEGUNDOS=20 y ANFECA_SESION_AVISO_SEGUNDOS=15 (el aviso aparece a los 25 s).
-// Uso: ANFECA_URL=http://127.0.0.1:8188 ANFECA_CORREO=... ANFECA_CLAVE=... ANFECA_CAPTURAS=<dir> node prueba_control_sesion_navegador.cjs
+// SESSION_LIFETIME=1, aviso 15 s y margen 5 s (el aviso aparece 20 s antes del límite: a los 40 s).
+// Uso: ANFECA_URL=... ANFECA_CORREO=... ANFECA_CLAVE=... ANFECA_SESIONES=<sessions de la copia> ANFECA_CAPTURAS=<dir>
+//      node prueba_control_sesion_navegador.cjs
+const fs = require('fs');
+const path = require('path');
 const { chromium } = require('playwright');
 
-const URL = process.env.ANFECA_URL || 'http://127.0.0.1:8188';
+const URL = process.env.ANFECA_URL || 'http://127.0.0.1:8189';
 const CAPTURAS = process.env.ANFECA_CAPTURAS || '.';
 const resultados = [];
 const prueba = (nombre, ok, detalle = '') => {
@@ -20,84 +23,113 @@ async function entrar(contexto) {
     await Promise.all([p.waitForNavigation(), p.click('button[type=submit]')]);
     return p;
 }
-
 const estado = (p) => p.evaluate(async () => (await fetch('/sesion/estado', { headers: { Accept: 'application/json' } })).json());
 const visible = (p) => p.locator('#anfeca-sesion-aviso').isVisible();
+const campoDe = (p) => p.locator('input[type=text]:visible, input:not([type]):visible').first();
 
 (async () => {
     const navegador = await chromium.launch();
+
+    // 1) Teclear sin peticiones NO renueva: el aviso aparece igual.
     const ctx = await navegador.newContext({ viewport: { width: 1366, height: 768 } });
     const p = await entrar(ctx);
     await p.goto(URL + '/registro/certificacion', { waitUntil: 'networkidle' });
-    const campo = p.locator('input[type=text]:visible, input:not([type]):visible').first();
+    const t0 = Date.now();
+    const campo = campoDe(p);
     await campo.click();
-    await campo.type('1001');                                   // usuario activo (captura sin guardar)
-
-    await esperar(30000);                                       // pasó el primer punto de aviso (25 s)
-    const e1 = await estado(p);
-    prueba('Usuario activo: no recibe aviso y su actividad real renueva la sesión vigente', !(await visible(p)) && e1.autenticado && e1.restante >= 50,
-        JSON.stringify(e1));
-
-    await p.locator('#anfeca-sesion-aviso').waitFor({ state: 'visible', timeout: 40000 });
+    await campo.type('1001');
+    await p.locator('#anfeca-sesion-aviso').waitFor({ state: 'visible', timeout: 50000 });
+    const tAviso = (Date.now() - t0) / 1000;
+    prueba('La actividad local (teclear) no renueva: el aviso aparece ~20 s antes del límite', tAviso >= 37 && tAviso <= 45, `${tAviso.toFixed(1)} s`);
     const valores = [];
     for (let i = 0; i < 4; i++) { valores.push(Number(await p.locator('#anfeca-sesion-segundos').textContent())); await esperar(1000); }
     await p.screenshot({ path: `${CAPTURAS}/sesion_01_aviso.png` });
-    prueba('Usuario inactivo: recibe el aviso antes del vencimiento', true);
-    prueba('Aviso de 15 segundos con cuenta regresiva correcta', valores[0] <= 15 && valores[0] >= 13
-        && valores.every((v, i) => i === 0 || v === valores[i - 1] - 1), valores.join(','));
+    prueba('Cuenta regresiva de 15 segundos correcta', valores[0] <= 15 && valores[0] >= 13 && valores.every((v, i) => i === 0 || v === valores[i - 1] - 1), valores.join(','));
     prueba('El aviso no elimina datos capturados sin guardar', (await campo.inputValue()) === '1001');
 
+    // 2) Continuar sesión: acción explícita.
     const antes = p.url();
     await p.click('#anfeca-sesion-continuar');
     await p.locator('#anfeca-sesion-aviso').waitFor({ state: 'hidden', timeout: 5000 });
+    const tContinuar = Date.now();
     const e2 = await estado(p);
-    prueba('Continuar sesión: permanece conectado, en la misma pantalla y con sus datos', p.url() === antes && e2.autenticado
+    prueba('Continuar sesión (clic): misma pantalla, datos intactos y sesión renovada', p.url() === antes && e2.autenticado
         && e2.restante >= 55 && (await campo.inputValue()) === '1001', JSON.stringify(e2));
 
-    await p.locator('#anfeca-sesion-aviso').waitFor({ state: 'visible', timeout: 40000 });
-    await p.waitForURL('**/sesion-finalizada', { timeout: 25000 });
+    // 3) Sin respuesta: el cierre ocurre al cumplirse el límite en el servidor, nunca antes.
+    await p.locator('#anfeca-sesion-aviso').waitFor({ state: 'visible', timeout: 50000 });
+    await p.waitForURL('**/sesion-finalizada', { timeout: 40000 });
+    const tCierre = (Date.now() - tContinuar) / 1000;
     const texto = await p.textContent('body');
     await p.screenshot({ path: `${CAPTURAS}/sesion_02_finalizada.png` });
-    prueba('Sin respuesta al aviso: la sesión se cierra y se muestra un mensaje amigable', texto.includes('Su sesión finalizó')
-        && !/Exception|Page Expired|Stack trace/.test(texto));
+    prueba('Sin respuesta: la sesión termina al cumplirse los 60 s del límite (no antes) y se informa', tCierre >= 60 && tCierre <= 66
+        && texto.includes('Su sesión finalizó') && !/Exception|Page Expired|Stack trace/.test(texto), `cierre a ${tCierre.toFixed(1)} s`);
     await p.goto(URL + '/mis-datos');
     prueba('Sesión vencida: no se reactiva (pide iniciar sesión)', p.url().endsWith('/login'));
-    await p.goto(URL + '/login');
-    const e3 = await estado(p);
-    prueba('Tras el cierre por inactividad no queda sesión autenticada', e3.autenticado === false, JSON.stringify(e3));
 
-    // Petición AJAX con la sesión ya inexistente en el servidor (se borra la cookie): Laravel 13 acepta las peticiones del
-    // mismo origen por Sec-Fetch-Site (PreventRequestForgery), así que el navegador recibe 401 en lugar de 419.
-    // El 419 sin Sec-Fetch-Site se comprueba en prueba_control_sesion.py.
+    // 4) Actividad válida de Laravel (petición al servidor) renueva sin interrumpir.
     const ctx2 = await navegador.newContext({ viewport: { width: 1366, height: 768 } });
     const q = await entrar(ctx2);
     await q.goto(URL + '/registro/certificacion', { waitUntil: 'networkidle' });
-    const campo2 = q.locator('input[type=text]:visible, input:not([type]):visible').first();
-    await campo2.fill('77');
-    await ctx2.clearCookies();
-    const codigo = await q.evaluate(async () => (await fetch('/registro/certificacion/consultar', { method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': 'vencido' },
-        body: JSON.stringify({ numero_certificado: '1' }) })).status);
-    console.log('código AJAX', codigo);
-    await q.locator('#anfeca-sesion-aviso').waitFor({ state: 'visible', timeout: 3000 });
-    await q.screenshot({ path: `${CAPTURAS}/sesion_03_ajax_419.png` });
-    prueba('Solicitud AJAX con sesión terminada (401/419): respuesta controlada y aviso sin borrar la captura', [401, 419].includes(codigo)
-        && (await q.locator('#anfeca-sesion-ir').isVisible()) && (await campo2.inputValue()) === '77');
-    const envio = await q.evaluate(() => { const f = document.querySelector('form[action$="/registro/certificacion"]');
-        const ev = new Event('submit', { cancelable: true, bubbles: true }); f.dispatchEvent(ev); return ev.defaultPrevented; });
-    prueba('Con la sesión dada por terminada se impide el envío del formulario', envio === true);
+    await esperar(15000);
+    await q.evaluate(() => fetch('/registro/certificacion', { headers: { Accept: 'text/html' } }));   // petición normal (actividad)
+    await esperar(32000);                                                                            // pasó el punto de aviso original (40 s)
+    prueba('Una petición normal al servidor cuenta como actividad: no aparece el aviso en ese ciclo', !(await visible(q)));
 
-    // Acuse: su temporizador sigue funcionando y es independiente del aviso de inactividad.
-    const ctx3 = await navegador.newContext();
-    const r = await entrar(ctx3);
+    // 5) 401 de otro origen (sin marca) no se presenta como sesión vencida; la respuesta llega intacta.
+    const r401 = await q.evaluate(async () => { const r = await fetch('/coordinacion/api/solicitudes', { headers: { Accept: 'application/json' } });
+        return [r.status, (await r.text()).length > 0]; });
+    prueba('Respuesta de error sin marca de sesión (403 de Coordinación): sin aviso de sesión vencida', r401[0] === 403 && !(await visible(q)), `código ${r401[0]}`);
+
+    // 6) Formularios y Vue: sin bloqueo de reintentos; un formulario manejado por la página puede enviarse varias veces.
+    const reintentos = await q.evaluate(() => {
+        const f = document.createElement('form'); let enviados = 0;
+        f.addEventListener('submit', (e) => { e.preventDefault(); enviados++; });
+        document.body.appendChild(f);
+        for (let i = 0; i < 3; i++) { f.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true })); }
+        f.remove(); return enviados;
+    });
+    prueba('No hay bloqueo global de envíos: reintentos y formularios gestionados por la página funcionan', reintentos === 3, `${reintentos}/3`);
+
+    // 7) Sesión perdida en el servidor: el 401 marcado se informa sin alterar la respuesta del componente.
+    const campo2 = campoDe(q);
+    await campo2.fill('77');
+    if (process.env.ANFECA_SESIONES) {
+        for (const f of fs.readdirSync(process.env.ANFECA_SESIONES)) { if (f !== '.gitignore') fs.unlinkSync(path.join(process.env.ANFECA_SESIONES, f)); }
+    }
+    const ajax = await q.evaluate(async () => { const r = await fetch('/registro/catalogos/licenciaturas?q=adm', { headers: { Accept: 'application/json' } });
+        return [r.status, r.headers.get('X-Anfeca-Sesion'), (await r.json()).message]; });
+    await q.locator('#anfeca-sesion-aviso').waitFor({ state: 'visible', timeout: 3000 });
+    await q.screenshot({ path: `${CAPTURAS}/sesion_03_sesion_perdida.png` });
+    prueba('AJAX con sesión terminada: respuesta original (401) y aviso claro sin borrar la captura', ajax[0] === 401 && ajax[1] === 'finalizada'
+        && ajax[2] === 'Unauthenticated.' && (await q.locator('#anfeca-sesion-ir').isVisible()) && (await campo2.inputValue()) === '77', ajax.join(' · '));
+    const bloqueado = await q.evaluate(() => { const f = document.querySelector('form[action$="/registro/certificacion"]');
+        const ev = new Event('submit', { cancelable: true, bubbles: true }); f.dispatchEvent(ev); return ev.defaultPrevented; });
+    prueba('Solo con la sesión confirmada como terminada se impide el envío', bloqueado === true);
+
+    // 8) Visitante que captura su registro inicial.
+    const ctx3 = await navegador.newContext({ viewport: { width: 1366, height: 768 } });
+    const v = await ctx3.newPage();
+    await v.goto(URL + '/registro/datos-personales', { waitUntil: 'networkidle' });
+    await v.fill('input[name=nombres]', 'Visitante Ficticio');
+    await v.locator('#anfeca-sesion-aviso').waitFor({ state: 'visible', timeout: 50000 });
+    const tituloV = await v.textContent('#anfeca-sesion-titulo');
+    await v.screenshot({ path: `${CAPTURAS}/sesion_04_visitante.png` });
+    await v.click('#anfeca-sesion-continuar');
+    await v.locator('#anfeca-sesion-aviso').waitFor({ state: 'hidden', timeout: 5000 });
+    prueba('Visitante: aviso «El formulario está por expirar», continúa en la misma pantalla y conserva lo capturado',
+        tituloV.includes('El formulario está por expirar') && v.url().endsWith('/registro/datos-personales')
+        && (await v.inputValue('input[name=nombres]')) === 'Visitante Ficticio');
+
+    // 9) Acuse: su temporizador conserva el comportamiento y no se mezcla con el aviso.
+    const ctx4 = await navegador.newContext();
+    const r = await entrar(ctx4);
     await r.goto(URL + '/registro/completado', { waitUntil: 'domcontentloaded' });
-    const ambos = (await r.locator('#aviso-cierre-acuse').count()) === 1 && (await r.locator('#anfeca-sesion-aviso').count()) === 1;
     await r.click('.boton-descargar[href*="/acuse/"]');
     await esperar(1500);
-    const acuseVisible = await r.locator('#aviso-cierre-acuse').isVisible();
     const segundosAcuse = Number(await r.locator('#segundos-cierre').textContent());
-    prueba('El temporizador del acuse conserva su comportamiento y no se mezcla con el aviso de inactividad',
-        ambos && acuseVisible && segundosAcuse <= 14 && !(await visible(r)), `acuse=${segundosAcuse}`);
+    prueba('El temporizador del acuse funciona igual y es independiente del aviso de inactividad',
+        (await r.locator('#aviso-cierre-acuse').isVisible()) && segundosAcuse <= 14 && !(await visible(r)), `acuse=${segundosAcuse}`);
     await r.click('#cancelar-cierre-acuse');
 
     await navegador.close();
