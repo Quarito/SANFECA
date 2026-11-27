@@ -1,6 +1,25 @@
 # Despliegue de 8008 a partir de 8086 validado
 
-> **Estado: NO EJECUTABLE TODAVÍA.** Requisito previo: 8086 aprobado. Al 2026-11-27, 8086 **no** está aprobado: siguen abiertos los bloqueos B-1…B-4 de `VALIDACION_INSTITUCIONAL_8086_20261127.md`. 8008 no se modificó; todos los datos de 8008 citados aquí se obtuvieron en modo de solo lectura.
+> **Estado: NO EJECUTABLE TODAVÍA.** Requisito previo: 8086 conmutado y aprobado; ver `INTEGRACION_CERTIFICACION_ANFECA_8086.md` §10. 8008 no se modificó; todos los datos de 8008 citados aquí se obtuvieron en modo de solo lectura.
+
+## Patrón validado en 8086 que se replica (con valores propios de 8008)
+
+| Elemento | 8086 (validado) | 8008 (a crear; verificar que esté libre) |
+|---|---|---|
+| Clúster PostgreSQL 18 exclusivo | `/var/lib/pgsql/anfeca8086`, `127.0.0.1:5433`, unidad `anfeca-pg8086` | `/var/lib/pgsql/anfeca8008`, `127.0.0.1:<5434 u otro libre>`, unidad `anfeca-pg8008`, con su **propio `initdb`** (identificador distinto de 5432 y de 5433) |
+| Roles | `cert8086_propietario` y `cert8086_app` | `cert8008_propietario` y `cert8008_app`, con contraseñas propias en `~/ANFECA_CREDENCIALES/pg8008_certificacion_anfeca.txt` |
+| Base | `certificacion_anfeca` (en 5433) | `certificacion_anfeca` (en su propio clúster; el mismo nombre no colisiona) |
+| PHP-FPM 8.5.12 | `anfeca8086-fpm`, `127.0.0.1:19086`, usuario 48 | `anfeca8008-fpm`, `127.0.0.1:<19008 u otro libre>`, con el usuario dueño de su storage |
+| Release | `/var/www/ANFECA_8086/releases/<commit>` y storage enlazado | `/var/www/ANFECA_8008/releases/<commit>` y storage propio de 8008 |
+| Scripts | `scripts/anfeca/despliegue_8086/01…03` y `sincronizar_bd.sh` | Copias parametrizadas (`despliegue_8008/`): rutas, puertos, roles, identificadores esperados y base de origen `bd_anfeca` |
+
+Diferencia esencial: 8086 restauró su propia base porque ya tenía el esquema del artefacto. **8008 (`bd_anfeca`, 15 tablas, 6 migraciones) no lo tiene.** Sobre `certificacion_anfeca` nueva se instalan:
+1. las migraciones del artefacto;
+2. el PDM aprobado (variante decidida en §2 de la integración de 8086);
+3. las extensiones y los catálogos;
+4. **después**, el traslado de datos propio de 8008, probado primero en una restauración desechable (§5).
+
+No se copian usuarios, solicitudes, certificados ni documentos de 8086.
 
 ## 0. Estado real de 8008 (diagnóstico del 27-nov)
 
