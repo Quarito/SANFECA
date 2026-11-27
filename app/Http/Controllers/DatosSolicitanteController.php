@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Models\User;
 use App\Services\Pdm\Solicitantes\ConsultaPersonalPdm;
-use Illuminate\Validation\ValidationException;
+use App\Services\Pdm\Solicitantes\AltaSolicitantePdm;
 use App\Models\DatosSolicitante;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,9 +53,13 @@ class DatosSolicitanteController extends Controller
                 return redirect()->route('mis-datos.edit');
             }
 
-            throw ValidationException::withMessages([
-                'colonia' => 'El alta está temporalmente suspendida porque el domicilio no puede vincularse con la colonia y el municipio capturados. No se guardó la cuenta.',
-            ]);
+            $usuario = app(AltaSolicitantePdm::class)->registrar($request);
+            $guard = Auth::guard('pdm');
+            $guard->login($usuario);
+            $request->session()->regenerate();
+            $request->session()->put('password_hash_pdm', $guard->hashPasswordForCookie($usuario->getAuthPassword()));
+
+            return redirect()->route('mis-datos.edit');
         }
 
         // P5: evitar un segundo registro (error 500 por unicidad de user_id).

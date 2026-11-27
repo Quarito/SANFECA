@@ -2,7 +2,9 @@
 
 namespace Tests\Pdm;
 
+use App\Models\Pdm\AlcaldiaMunicipio;
 use App\Models\Pdm\AreaCertificacion;
+use App\Models\Pdm\Colonia;
 use App\Models\Pdm\Documento;
 use App\Models\Pdm\EntidadFederativa;
 use App\Models\Pdm\EstadoDocumento;
@@ -145,23 +147,7 @@ class AutenticacionModeloOficialTest extends PdmTestCase
     public function test_alta_desde_cero_rechaza_perdida_del_domicilio_sin_escrituras_ni_clave_en_sesion(): void
     {
         config(['auth.defaults.guard' => 'pdm']);
-        $datos = [
-            'curp' => 'AAAA010101MDFBBB09',
-            'rfc' => 'AAAA0101016A2',
-            'nombres' => 'Ana',
-            'apellido_paterno' => 'Prueba',
-            'genero' => 'Femenino',
-            'calle' => 'Calle ficticia',
-            'numero_exterior' => '7',
-            'codigo_postal' => '01000',
-            'entidad_federativa' => 'Ciudad de México',
-            'colonia' => 'Colonia ficticia',
-            'municipio' => 'Municipio ficticio',
-            'correo_electronico' => 'alta@example.test',
-            'telefono_celular' => '5555555555',
-            'password' => 'nueva-clave-ficticia',
-            'password_confirmation' => 'nueva-clave-ficticia',
-        ];
+        $datos = $this->datosAlta();
 
         $this->from('/registro/datos-personales')->post('/registro/datos-personales', $datos)
             ->assertRedirect('/registro/datos-personales')->assertSessionHasErrors('colonia')
@@ -293,6 +279,73 @@ class AutenticacionModeloOficialTest extends PdmTestCase
         $this->get('/coordinacion/solicitudes/'.$enviada->getKey().'/documentos/titulo_origen_archivo')->assertNotFound();
         $enviada->pagos()->update(['pago_url_comprobante' => 'anfeca/documentos/solicitudes/'.$borrador->getKey().'/otro.pdf']);
         $this->get('/coordinacion/solicitudes/'.$enviada->getKey().'/documentos/comprobante_pago_archivo')->assertNotFound();
+    }
+
+    public function test_alta_con_migracion_persiste_el_domicilio_sin_usar_tablas_legacy(): void
+    {
+        config(['auth.defaults.guard' => 'pdm']);
+        $this->withoutVite();
+        $migracion = require database_path('migrations_laboratorio_pdm/2026_11_27_000001_vincular_domicilio_colonia.php');
+        $migracion->up();
+        $migracion->down();
+        $migracion->up();
+
+        $entidad = EntidadFederativa::create(['enfe_nombre' => 'Ciudad de México']);
+        $municipio = AlcaldiaMunicipio::create(['almu_id_entidad_federativa' => $entidad->getKey(), 'almu_nombre' => 'Municipio ficticio']);
+        $colonia = Colonia::create(['colo_id_alcaldia' => $municipio->getKey(), 'colo_nombre' => 'Colonia ficticia', 'colo_codigo_postal' => '01000']);
+        Rol::create(['rol_nombre' => 'solicitante']);
+        TipoComunicacion::create(['tico_tipo_comunicacion' => config('anfeca_pdm.catalogos.tipos_comunicacion.CORREO'), 'tico_estado' => 'ACT']);
+
+        $datos = $this->datosAlta();
+        $this->postJson('/registro/datos-personales', array_replace($datos, ['codigo_postal' => '01001']))
+            ->assertUnprocessable()->assertJsonValidationErrors('colonia');
+        $this->assertDatabaseEmpty('anfeca_modelo.usuario');
+
+        // El teléfono falta en el catálogo: una escritura posterior al domicilio falla y revierte el alta.
+        $this->post('/registro/datos-personales', $datos)->assertServiceUnavailable();
+        foreach (['persona', 'usuario', 'comunicacion', 'domicilio'] as $tabla) {
+            $this->assertDatabaseEmpty("anfeca_modelo.{$tabla}");
+        }
+        TipoComunicacion::create(['tico_tipo_comunicacion' => config('anfeca_pdm.catalogos.tipos_comunicacion.TEL_CELULAR'), 'tico_estado' => 'ACT']);
+
+        $this->post('/registro/datos-personales', $datos + ['rol' => 'coordinador_nacional'])
+            ->assertRedirect('/mis-datos');
+        $usuario = Usuario::sole();
+        $this->assertSame('solicitante', $usuario->rol->rol_nombre);
+        $this->assertEquals($colonia->getKey(), $usuario->persona->domicilios()->sole()->domi_id_colonia);
+        $this->assertCount(2, $usuario->persona->comunicaciones);
+        $this->get('/mis-datos')->assertOk()->assertSee('Colonia ficticia')->assertSee('Municipio ficticio')->assertSee('01000');
+        $this->get('/registro/certificacion')->assertServiceUnavailable();
+
+        $this->post('/logout')->assertRedirect('/login');
+        $this->postJson('/registro/datos-personales', $datos)->assertUnprocessable()->assertJsonValidationErrors('curp');
+        $this->post('/login', ['email' => $datos['correo_electronico'], 'password' => $datos['password']])->assertRedirect('/mis-datos');
+        $this->assertSame(1, Usuario::count());
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Hay domicilios vinculados.');
+        $migracion->down();
+    }
+
+    private function datosAlta(): array
+    {
+        return [
+            'curp' => 'AAAA010101MDFBBB09',
+            'rfc' => 'AAAA0101016A2',
+            'nombres' => 'Ana',
+            'apellido_paterno' => 'Prueba',
+            'genero' => 'Femenino',
+            'calle' => 'Calle ficticia',
+            'numero_exterior' => '7',
+            'codigo_postal' => '01000',
+            'entidad_federativa' => 'Ciudad de México',
+            'colonia' => 'Colonia ficticia',
+            'municipio' => 'Municipio ficticio',
+            'correo_electronico' => 'alta@example.test',
+            'telefono_celular' => '5555555555',
+            'password' => 'nueva-clave-ficticia',
+            'password_confirmation' => 'nueva-clave-ficticia',
+        ];
     }
 
     private function solicitudPdm(Usuario $usuario, int $folio): Solicitud
