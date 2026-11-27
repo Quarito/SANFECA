@@ -23,7 +23,6 @@ const props = defineProps({
     type: String,
     required: true
 },
-soloConsulta: Boolean,
 autorizadoInicialmente: {
     type: Boolean,
     default: false
@@ -36,7 +35,7 @@ autorizadoInicialmente: {
 
 });
 
-const editando = ref(!props.soloConsulta && props.editarInicialmente && !props.autorizadoInicialmente);
+const editando = ref(props.editarInicialmente && !props.autorizadoInicialmente);
 const confirmacionDatos = ref(false);
 const campos = reactive({ ...props.datos });
 
@@ -248,8 +247,7 @@ function cancelar() {
             </div>
         </form>
 	<!-- Autorización de datos personales -->
-<p v-if="soloConsulta">Consulta del modelo PowerDesigner. La actualización y la autorización de datos todavía están pendientes.</p>
-<section v-else-if="!editando" class="seccion-autorizacion">
+<section v-if="!editando" class="seccion-autorizacion">
 
     <template v-if="autorizadoInicialmente">
 

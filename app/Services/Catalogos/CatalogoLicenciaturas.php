@@ -4,7 +4,6 @@ namespace App\Services\Catalogos;
 
 use App\Exceptions\Catalogos\CatalogoNoDisponible;
 use Illuminate\Support\Facades\Log;
-use App\Services\Pdm\Compat\FormacionCatalogoPdm;
 
 /**
  * Catálogo PRELIMINAR de denominaciones de licenciatura (Anuario Estadístico ANUIES), clasificado de forma
@@ -72,7 +71,9 @@ class CatalogoLicenciaturas
 
     public static function persistenciaDisponible(): bool
     {
-        return self::$persistencia ??= FormacionCatalogoPdm::persistenciaDisponible(self::COLUMNAS);
+        // La formación se persiste en ESTUDIO_PROFESIONAL/PERSONA_ESTUDIO_PROFESIONAL (App\Services\Anfeca\FormacionPdm),
+        // que conserva título específico, origen y declaración de posgrado sin columnas adicionales.
+        return self::$persistencia ??= true;
     }
 
     public static function olvidarPersistencia(): void

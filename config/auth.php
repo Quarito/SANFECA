@@ -1,7 +1,6 @@
 <?php
 
-use App\Models\Pdm\Usuario;
-use App\Models\User;
+use App\Models\Cuenta;
 
 return [
 
@@ -17,8 +16,8 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+        'guard' => 'web',
+        'passwords' => 'cuentas',
     ],
 
     /*
@@ -41,12 +40,7 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
-        ],
-
-        'pdm' => [
-            'driver' => 'session',
-            'provider' => 'usuarios_pdm',
+            'provider' => 'cuentas',
         ],
     ],
 
@@ -68,20 +62,11 @@ return [
     */
 
     'providers' => [
-        'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+        // public.usuario del modelo oficial (36 tablas).
+        'cuentas' => [
+            'driver' => 'anfeca-cuentas',
+            'model' => Cuenta::class,
         ],
-
-        'usuarios_pdm' => [
-            'driver' => 'anfeca-pdm',
-            'model' => Usuario::class,
-        ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
 
     /*
@@ -104,16 +89,11 @@ return [
     */
 
     'passwords' => [
-        'pdm' => [
+        // Tokens de recuperación en caché de archivos: no se crea password_reset_tokens.
+        'cuentas' => [
             'driver' => 'cache',
-            'provider' => 'usuarios_pdm',
-            'store' => 'pdm_recuperacion',
-            'expire' => 60,
-            'throttle' => 60,
-        ],
-        'users' => [
-            'provider' => 'users',
-            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'provider' => 'cuentas',
+            'store' => 'recuperacion',
             'expire' => 60,
             'throttle' => 60,
         ],

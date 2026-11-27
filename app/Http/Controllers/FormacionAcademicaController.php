@@ -2,105 +2,43 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Pdm\Espejo\EspejoPdm;
-use App\Models\FormacionAcademica;
-use App\Models\SolicitudCertificacion;
-use App\Models\SeleccionCertificacion;
-use App\Models\FormacionAcademicaSolicitud;
-use App\Services\ConsultaAntecedentesService;
+use App\Services\Anfeca\FormacionPdm;
+use App\Services\Anfeca\Instituciones;
+use App\Services\Anfeca\SolicitudActiva;
+use App\Services\Anfeca\SolicitudVista;
+use App\Services\Anfeca\Tramites;
 use App\Services\Catalogos\CatalogoLicenciaturas;
 use App\Services\Catalogos\CatalogoPosgrados;
 use App\Services\Catalogos\TituloOrigen;
 use App\Services\Catalogos\TituloUltimoGrado;
 use App\Services\Formacion\RequisitosFormacion;
-use App\Models\InstitucionAfiliada;
 use Illuminate\Http\Request;
+use Illuminate\Support\Fluent;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Formación académica sobre NIVEL_PROFESIONAL, ESTUDIO_PROFESIONAL, PERSONA_ESTUDIO_PROFESIONAL, PERSONA
+ * (institución) y SOLICITUD_DOCUMENTO (historial de títulos y cédulas). Reglas de validación sin cambios.
+ */
 class FormacionAcademicaController extends Controller
 {
-    private function solicitudActiva(int $userId, string $certificacion, string $tipo): ?SolicitudCertificacion
-    {
-        return SolicitudCertificacion::where("user_id", $userId)
-            ->where("certificacion", $certificacion)
-            ->where("tipo_tramite", $tipo)
-            ->where("estado", "borrador")
-            ->latest("id")
-            ->first();
+    public function __construct(
+        private readonly SolicitudActiva $activa,
+        private readonly FormacionPdm $formaciones,
+        private readonly Tramites $tramites,
+        private readonly Instituciones $instituciones,
+    ) {
     }
 
-	    private function verificarSolicitud(
-	    Request $request,
-	    ConsultaAntecedentesService $servicio
-	): ?SolicitudCertificacion {
-	    $userId = $request->user()->id;
+    private function verificarSolicitud(Request $request): ?SolicitudVista
+    {
+        return $this->activa->borrador($request->user());
+    }
 
-	    $certificacion = SeleccionCertificacion::where(
-	        'user_id',
-	        $userId
-	    )->value('certificacion');
-
-	    if (!$certificacion) {
-	        return null;
-	    }
-
-	    $tipo = $servicio->determinarTipoTramite($userId);
-
-	    // Conservar el comportamiento de las solicitudes iniciales.
-	    if ($tipo === 'inicial') {
-	        return $this->solicitudActiva(
-	            $userId,
-	            $certificacion,
-	            'inicial'
-	        );
-	    }
-
-	    // Buscar un refrendo en borrador.
-	    $solicitud = $this->solicitudActiva(
-	        $userId,
-	        $certificacion,
-	        'refrendo'
-	    );
-
-	    if (!$solicitud) {
-	        return null;
-	    }
-
-	    // Compatibilidad con refrendos anteriores.
-	    if ($solicitud->certificado_historico_id === null) {
-	        return $tipo === 'refrendo' ? $solicitud : null;
-	    }
-
-	    // Validar el certificado histórico asociado.
-	    $certificado = \App\Models\CertificadoHistorico::find(
-	        $solicitud->certificado_historico_id
-	    );
-
-	    if (!$certificado) {
-	        return null;
-	    }
-
-	    $validado = $servicio->validarCertificadoAnterior(
-	        $userId,
-	        $certificacion,
-	        (string) $certificado->numero_certificado
-	    );
-
-	    if (
-	        !$validado
-	        || (int) $validado->id !== (int) $certificado->id
-	    ) {
-	        return null;
-	    }
-
-	    return $solicitud;
-	}
-
-    
     // BLOQUEO DEFINITIVO DE FORMACION ACADEMICA
-    private function formacionEstaCompletada(?FormacionAcademicaSolicitud $formacion): bool
+    private function formacionEstaCompletada(?Fluent $formacion): bool
     {
         return $formacion !== null
             && $formacion->formacion_completada_at !== null;
@@ -108,9 +46,9 @@ class FormacionAcademicaController extends Controller
 
 
 
-public function create(Request $request, ConsultaAntecedentesService $servicio)
+public function create(Request $request)
     {
-        $solicitud = $this->verificarSolicitud($request, $servicio);
+        $solicitud = $this->verificarSolicitud($request);
         if (!$solicitud) return redirect()->route("registro.certificacion")->with("error", "No existe una solicitud válida para continuar.");
         if ($solicitud->tipo_tramite === "refrendo" && !$solicitud->datosRefrendo) return redirect()->route("registro.refrendo")->with("error", "Primero debe completar los datos de refrendo.");
         $formacion = $solicitud->formacionAcademica;
@@ -138,16 +76,14 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                 []
             ),
             'formacion' => $formacion,
-            'instituciones' => InstitucionAfiliada::orderBy(
-                'numero_afiliacion'
-            )->get(),
+            'instituciones' => $this->instituciones->lista(),
         ]);
     }
 
     
-	public function store(Request $request, ConsultaAntecedentesService $servicio)
+	public function store(Request $request)
         {
-            $solicitud = $this->verificarSolicitud($request, $servicio);
+            $solicitud = $this->verificarSolicitud($request);
             if (!$solicitud) return redirect()->route("registro.certificacion")->with("error", "No existe una solicitud válida para continuar.");
             if ($solicitud->tipo_tramite === "refrendo" && !$solicitud->datosRefrendo) return redirect()->route("registro.refrendo")->with("error", "Primero debe completar los datos de refrendo.");
             $formacion = $solicitud->formacionAcademica;
@@ -194,7 +130,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 		        $ruta = $formacion?->{$campo};
 
 		        $archivoExiste = !empty($ruta)
-		            && Storage::disk('local')->exists($ruta);
+		            && Storage::disk(config('anfeca_8088.disco'))->exists($ruta);
 
 		        if ($archivoExiste && $request->hasFile($campo)) {
 		            return back()
@@ -271,7 +207,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 
 	        'institucion_afiliada_id' => [
 	            'required',
-	            'exists:instituciones_afiliadas,id',
+	            'exists:institucion,inst_id_institucion',
 	        ],
 	    ];
 
@@ -279,7 +215,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 		    $ruta = $formacion?->{$campo};
 
 		    $archivoExiste = !empty($ruta)
-		        && Storage::disk('local')->exists($ruta);
+		        && Storage::disk(config('anfeca_8088.disco'))->exists($ruta);
 
 		    $reglas[$campo] = [
 		        $archivoExiste ? 'nullable' : 'required',
@@ -349,79 +285,38 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 	        unset($datos[$campo]);
 	    }
 
+	    // Los archivos se registran como SOLICITUD_DOCUMENTO dentro de la misma transacción.
 	    $nuevosArchivos = [];
+	    foreach ($documentos as $campo) {
+	        if ($request->hasFile($campo)) {
+	            $nuevosArchivos[$campo] = $request->file($campo);
+	        }
+	    }
+	    $rutasCreadas = [];
 
 	    try {
-	        foreach ($documentos as $campo) {
-	            if ($request->hasFile($campo)) {
-	                $nuevosArchivos[$campo] = $request
-	                    ->file($campo)
-	                    ->store(
-	                        'anfeca/documentos/solicitudes/' . $solicitud->id,
-	                        'local'
-	                    );
-	            }
-	        }
+	        $guardadoBloqueado = DB::transaction(function () use ($solicitud, $datos, $nuevosArchivos, $sinPosgrado, &$rutasCreadas) {
+                $solicitudBloqueada = $this->tramites->bloquear($solicitud->id);
 
-	        $guardadoBloqueado = DB::transaction(function () use (
-                $solicitud, $datos, $nuevosArchivos
-            ) {
-                $solicitudBloqueada = SolicitudCertificacion::query()
-                    ->whereKey($solicitud->id)
-                    ->where('user_id', $solicitud->user_id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-
-                if ($solicitudBloqueada->estado !== 'borrador') {
+                if (!$solicitudBloqueada || $solicitudBloqueada->estado !== 'borrador') {
                     return true;
                 }
 
-                $formacionActual = FormacionAcademicaSolicitud::where(
-                    'solicitud_id',
-                    $solicitud->id
-                )->lockForUpdate()->first();
-
-                if ($this->formacionEstaCompletada($formacionActual)) {
+                if ($this->tramites->tieneEvento($solicitud->id, 'FA')) {
                     return true;
                 }
 
-                foreach ([
-                    'titulo_ultimo_grado_archivo',
-                    'cedula_ultimo_grado_archivo'
-                ] as $campo) {
-                    $anterior = $formacionActual?->{$campo};
-
-                    if (
-                        isset($nuevosArchivos[$campo]) &&
-                        !empty($anterior) &&
-                        $anterior !== $nuevosArchivos[$campo]
-                    ) {
-                        DB::table('historial_documentos_academicos')->insert([
-                            'solicitud_id' => $solicitud->id,
-                            'tipo_documento' => $campo,
-                            'ruta_archivo' => $anterior,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                    }
+                $antes = Storage::disk(config('anfeca_8088.disco'))->allFiles(config('anfeca_8088.carpeta').'/'.$solicitud->id);
+                try {
+                    $this->formaciones->guardar($solicitud->persona_id, $solicitud->id, $datos, $nuevosArchivos, $sinPosgrado);
+                } finally {
+                    $rutasCreadas = array_diff(Storage::disk(config('anfeca_8088.disco'))->allFiles(config('anfeca_8088.carpeta').'/'.$solicitud->id), $antes);
                 }
-
-                FormacionAcademicaSolicitud::updateOrCreate(
-                    ['solicitud_id' => $solicitud->id],
-                    array_merge($datos, $nuevosArchivos)
-                );
-
-                // F3: espejo de formación, documentos académicos e historial.
-                app(EspejoPdm::class)->solicitud($solicitud->id);
 
                 return false;
             });
 
             if ($guardadoBloqueado) {
-                foreach ($nuevosArchivos as $ruta) {
-                    Storage::disk('local')->delete($ruta);
-                }
-
                 return redirect()
                     ->route('registro.formacion')
                     ->with(
@@ -430,19 +325,13 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                     );
             }
 	    } catch (\Throwable $e) {
-	        // Si falla la operación, limpiar archivos recién subidos.
-	        foreach ($nuevosArchivos as $ruta) {
-	            Storage::disk('local')->delete($ruta);
+	        // Si falla la operación (la transacción ya se revirtió), se retiran los archivos recién escritos.
+	        foreach ($rutasCreadas as $ruta) {
+	            Storage::disk(config('anfeca_8088.disco'))->delete($ruta);
 	        }
 
             if ($e instanceof \Illuminate\Validation\ValidationException) {
-                // F3: error controlado del espejo PDM (la transacción ya se revirtió).
                 throw $e;
-            }
-            if ($e instanceof \Illuminate\Database\QueryException
-                && ($controlado = \App\Services\Pdm\ErrorValidacionPdm::desde($e)) !== null) {
-                // F4/F5: dato no registrable en el PDM (disparadores anfeca_compat).
-                throw $controlado;
             }
 
 	        report($e);
@@ -469,11 +358,9 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
     | AUTORIZACIÓN DE FORMACIÓN ACADÉMICA
     |--------------------------------------------------------------------------
     */
-    public function autorizar(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ) {
-        $solicitud = $this->verificarSolicitud($request, $servicio);
+    public function autorizar(Request $request)
+    {
+        $solicitud = $this->verificarSolicitud($request);
 
         if (!$solicitud) {
             return redirect()
@@ -500,14 +387,9 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
         ]);
 
         return DB::transaction(function () use ($solicitud) {
-            SolicitudCertificacion::whereKey(
-                $solicitud->id
-            )->lockForUpdate()->firstOrFail();
+            $this->tramites->bloquear($solicitud->id);
 
-            $formacion = FormacionAcademicaSolicitud::where(
-                'solicitud_id',
-                $solicitud->id
-            )->lockForUpdate()->first();
+            $formacion = $this->formaciones->cargar($solicitud->persona_id, $solicitud->id);
 
             if (!$formacion) {
                 return redirect()
@@ -542,7 +424,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 
                 if (
                     blank($ruta)
-                    || !Storage::disk('local')->exists($ruta)
+                    || !Storage::disk(config('anfeca_8088.disco'))->exists($ruta)
                 ) {
                     return redirect()
                         ->route('registro.formacion')
@@ -555,11 +437,8 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                 }
             }
 
-            $formacion->formacion_completada_at = now();
-            $formacion->save();
-
-            // F3: espejo del evento «Formación académica autorizada».
-            app(EspejoPdm::class)->solicitud($solicitud->id);
+            // Evento «Formación académica autorizada» (ESTADO_SOLICITUD).
+            $this->tramites->registrarEvento($solicitud->id, 'FA');
 
             // «Autorizar y continuar»: tras confirmar el servidor la autorización,
             // se avanza a Documentos probatorios.

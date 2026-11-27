@@ -16,7 +16,7 @@
     <span class="coord-chip">
         {{ $usuario->esCoordinadorNacional() ? 'Coordinación nacional' : 'Coordinación de zona' }}
     </span>
-    <span class="coord-chip" title="Alcance autorizado">{{ $usuario instanceof \App\Models\Pdm\Usuario ? 'Nacional' : $alcance->descripcion($usuario) }}</span>
+    <span class="coord-chip" title="Alcance autorizado">{{ $alcance->descripcion($usuario) }}</span>
 
     <form method="POST" action="{{ route('logout') }}" class="form-cerrar-sesion">
         @csrf

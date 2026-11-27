@@ -2,189 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Pdm\Espejo\EspejoPdm;
-use App\Models\SeleccionCertificacion;
-use App\Models\SolicitudCertificacion;
-use App\Services\ConsultaAntecedentesService;
+use App\Services\Anfeca\SolicitudActiva;
+use App\Services\Anfeca\Tramites;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Aceptación y compromiso: evento «Compromiso de entrega aceptado» (ESTADO_SOLICITUD, fecha y hora).
+ * La casilla es obligatoria y se valida en el servidor antes del envío.
+ */
 class AceptacionCompromisoController extends Controller
 {
-    private function obtenerBorrador(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ): ?SolicitudCertificacion {
-        $userId = $request->user()->id;
-
-        $certificacion = SeleccionCertificacion::where(
-            'user_id',
-            $userId
-        )->value('certificacion');
-
-        if (!$certificacion) {
-            return null;
-        }
-
-        $tipo = $servicio->determinarTipoTramite($userId);
-
-        $borradores = SolicitudCertificacion::where(
-            'user_id',
-            $userId
-        )
-            ->where('certificacion', $certificacion)
-            ->where('estado', 'borrador')
-            ->latest('id')
-            ->get();
-
-        // Mismo criterio que Finalización (RegistroCompletadoController):
-        // un refrendo con certificado histórico asociado se valida por ese
-        // certificado, aunque el antecedente aún no esté vinculado al usuario
-        // (en ese caso determinarTipoTramite() devuelve «revision_pendiente»).
-        foreach ($borradores as $solicitud) {
-            if ($solicitud->tipo_tramite === 'inicial') {
-                if ($tipo === 'inicial') {
-                    return $solicitud;
-                }
-                continue;
-            }
-
-            if ($solicitud->tipo_tramite !== 'refrendo') {
-                continue;
-            }
-
-            if ($solicitud->certificado_historico_id === null) {
-                // Compatibilidad con refrendos anteriores sin asociación.
-                if ($tipo === 'refrendo') {
-                    return $solicitud;
-                }
-                continue;
-            }
-
-            $certificado = \App\Models\CertificadoHistorico::find(
-                $solicitud->certificado_historico_id
-            );
-
-            if (!$certificado) {
-                continue;
-            }
-
-            $validado = $servicio->validarCertificadoAnterior(
-                $userId,
-                $certificacion,
-                (string) $certificado->numero_certificado
-            );
-
-            if (
-                $validado !== null
-                && (int) $validado->id === (int) $certificado->id
-            ) {
-                return $solicitud;
-            }
-        }
-
-        return null;
+    public function __construct(private readonly SolicitudActiva $activa, private readonly Tramites $tramites)
+    {
     }
 
-    public function index(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ) {
-        $solicitud = $this->obtenerBorrador(
-            $request,
-            $servicio
-        );
-
+    public function index(Request $request)
+    {
+        $solicitud = $this->activa->borrador($request->user());
         // Consulta de la aceptación de una solicitud ya enviada.
         if (!$solicitud) {
-            $solicitud = SolicitudCertificacion::where(
-                'user_id',
-                $request->user()->id
-            )
-                ->where('estado', 'enviado')
-                ->where('compromiso_aceptado', true)
-                ->latest('id')
-                ->first();
+            $enviada = $this->tramites->ultimaEnviada((int) $request->user()->usua_id_persona);
+            $solicitud = $enviada?->compromiso_aceptado ? $enviada : null;
         }
-
         if (!$solicitud) {
-            return redirect()
-                ->route('registro.completado')
-                ->with(
-                    'error',
-                    'No existe una solicitud en borrador válida.'
-                );
+            return redirect()->route('registro.completado')->with('error', 'No existe una solicitud en borrador válida.');
         }
 
         return view('registro.aceptacion-compromiso', [
             'aceptado' => (bool) $solicitud->compromiso_aceptado,
-            'aceptadoEn' => $solicitud->compromiso_aceptado_en
-                ?->copy()
-                ->timezone('America/Mexico_City')
-                ->format('d/m/Y H:i'),
+            'aceptadoEn' => $solicitud->compromiso_aceptado_en?->copy()->timezone('America/Mexico_City')->format('d/m/Y H:i'),
             'soloConsulta' => $solicitud->estado !== 'borrador',
         ]);
     }
 
-    public function guardar(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ) {
+    public function guardar(Request $request)
+    {
         $request->validate([
             'compromiso_aceptado' => ['required', 'accepted'],
         ], [
-            'compromiso_aceptado.accepted' =>
-                'Debe aceptar el compromiso para continuar.',
-            'compromiso_aceptado.required' =>
-                'Debe aceptar el compromiso para continuar.',
+            'compromiso_aceptado.accepted' => 'Debe aceptar el compromiso para continuar.',
+            'compromiso_aceptado.required' => 'Debe aceptar el compromiso para continuar.',
         ]);
 
-        $solicitud = $this->obtenerBorrador(
-            $request,
-            $servicio
-        );
-
+        $solicitud = $this->activa->borrador($request->user());
         if (!$solicitud) {
-            return redirect()
-                ->route('registro.completado')
-                ->with(
-                    'error',
-                    'No existe una solicitud en borrador válida.'
-                );
+            return redirect()->route('registro.completado')->with('error', 'No existe una solicitud en borrador válida.');
         }
 
         DB::transaction(function () use ($solicitud) {
-            $actual = SolicitudCertificacion::whereKey(
-                $solicitud->id
-            )
-                ->where('user_id', $solicitud->user_id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($actual->estado !== 'borrador') {
-                throw ValidationException::withMessages([
-                    'solicitud' =>
-                        'La solicitud ya no permite registrar la aceptación.',
-                ]);
+            $actual = $this->tramites->bloquear($solicitud->id);
+            if (!$actual || $actual->estado !== 'borrador') {
+                throw ValidationException::withMessages(['solicitud' => 'La solicitud ya no permite registrar la aceptación.']);
             }
-
             if (!$actual->compromiso_aceptado) {
-                $actual->update([
-                    'compromiso_aceptado' => true,
-                    'compromiso_aceptado_en' => now(),
-                ]);
-
-                // F3: espejo del evento «Compromiso de entrega aceptado».
-                app(EspejoPdm::class)->solicitud($actual->id);
+                $this->tramites->registrarEvento($actual->id, 'CA');
             }
         });
 
-        return redirect()
-            ->route('registro.completado')
-            ->with(
-                'success',
-                'Su compromiso fue registrado correctamente.'
-            );
+        return redirect()->route('registro.completado')->with('success', 'Su compromiso fue registrado correctamente.');
     }
 }

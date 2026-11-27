@@ -185,7 +185,7 @@ onMounted(cargar);
                     <tr v-if="!cargando && !filas.length">
                         <td :colspan="columnas.length + 2" class="coord-cargando">No hay solicitudes con los criterios seleccionados.</td>
                     </tr>
-                    <tr v-for="f in filas" :key="f.id ?? f.folio">
+                    <tr v-for="f in filas" :key="f.folio">
                         <td class="col-num">{{ f.num }}</td>
                         <td class="numero col-folio">{{ f.folio }}</td>
                         <td class="col-zona">
@@ -203,10 +203,10 @@ onMounted(cargar);
                         <td class="col-fecha">{{ f.fecha_envio || '—' }}</td>
                         <td class="col-estado">
                             <span class="coord-insignia" :class="f.estado === 'enviado' ? 'enviado' : 'borrador'">
-                                {{ f.estado_etiqueta ?? (f.estado === 'enviado' ? 'Enviada' : 'Iniciada') }}
+                                {{ f.estado === 'enviado' ? 'Enviada' : 'Iniciada' }}
                             </span>
                         </td>
-                        <td class="col-acciones"><a :href="`${urlExpediente}/${f.id ?? f.folio}`" class="coord-boton secundario pequeno">Consultar</a></td>
+                        <td class="col-acciones"><a :href="`${urlExpediente}/${f.folio}`" class="coord-boton secundario pequeno">Consultar</a></td>
                     </tr>
                 </tbody>
             </table>

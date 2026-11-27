@@ -2,416 +2,146 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Pdm\Espejo\EspejoPdm;
-use App\Models\User;
-use App\Services\Pdm\Solicitantes\ConsultaPersonalPdm;
-use Illuminate\Validation\ValidationException;
-use App\Models\DatosSolicitante;
+use App\Services\Anfeca\ExpedienteSolicitante;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
+/**
+ * Datos personales sobre PERSONA, USUARIO, DOMICILIO y COMUNICACION (36 tablas oficiales).
+ * Las longitudes de validación corresponden a las columnas del modelo (p. ej. calle 170, número exterior 6,
+ * número interior 4, apellidos 60, correo 150).
+ */
 class DatosSolicitanteController extends Controller
 {
-    private function yaTieneDatos(Request $request): bool
+    private const MENSAJES = [
+        'telefono_particular.required_without' => 'Debes proporcionar al menos un teléfono: particular o celular.',
+        'telefono_celular.required_without' => 'Debes proporcionar al menos un teléfono: particular o celular.',
+        'telefono_particular.digits' => 'El teléfono particular debe contener exactamente 10 dígitos.',
+        'telefono_celular.digits' => 'El teléfono celular debe contener exactamente 10 dígitos.',
+    ];
+
+    public function __construct(private readonly ExpedienteSolicitante $expediente)
     {
-        return $request->user() !== null
-            && DatosSolicitante::where('user_id', $request->user()->id)->exists();
+    }
+
+    /** Reglas del domicilio y teléfonos (únicos campos editables antes de autorizar). */
+    private function reglasDomicilio(): array
+    {
+        return [
+            'calle' => ['required', 'string', 'max:170'],
+            'numero_exterior' => ['required', 'string', 'max:6'],
+            'numero_interior' => ['nullable', 'string', 'max:4'],
+            'codigo_postal' => ['required', 'digits:5'],
+            'entidad_federativa' => ['required', 'string', 'max:85'],
+            'colonia' => ['required', 'string', 'max:150'],
+            'municipio' => ['required', 'string', 'max:150'],
+            'telefono_particular' => ['nullable', 'required_without:telefono_celular', 'digits:10'],
+            'telefono_celular' => ['nullable', 'required_without:telefono_particular', 'digits:10'],
+        ];
     }
 
     public function create(Request $request)
-{
-    if (Auth::getDefaultDriver() === 'pdm') {
-        return $request->user()
-            ? redirect()->route('mis-datos.edit')
-            : view('registro.datos-personales', ['datos' => null]);
+    {
+        // Una cuenta con datos personales no vuelve al alta.
+        if ($request->user()) {
+            return redirect()->route('mis-datos.edit');
+        }
+
+        return view('registro.datos-personales', ['datos' => null]);
     }
-
-    // P5: una cuenta que ya tiene datos personales no vuelve al alta.
-    if ($this->yaTieneDatos($request)) {
-        return redirect()->route('mis-datos.edit');
-    }
-
-    $datos = $request->user()
-        ? DatosSolicitante::where(
-            'user_id',
-            $request->user()->id
-        )->first()
-        : null;
-
-    return view('registro.datos-personales', [
-        'datos' => $datos,
-    ]);
-}
 
     public function store(Request $request)
     {
-        if (Auth::getDefaultDriver() === 'pdm') {
-            if ($request->user()) {
-                return redirect()->route('mis-datos.edit');
-            }
-
-            throw ValidationException::withMessages([
-                'colonia' => 'El alta está temporalmente suspendida porque el domicilio no puede vincularse con la colonia y el municipio capturados. No se guardó la cuenta.',
-            ]);
+        if ($request->user()) {
+            return redirect()->route('mis-datos.edit')->with('error', 'Ya existe un registro de datos personales para esta cuenta.');
         }
 
-        // P5: evitar un segundo registro (error 500 por unicidad de user_id).
-        if ($this->yaTieneDatos($request)) {
-            return redirect()
-                ->route('mis-datos.edit')
-                ->with('error', 'Ya existe un registro de datos personales para esta cuenta.');
-        }
-
-        // Convertir CURP y RFC a mayúsculas.
         $request->merge([
             'curp' => strtoupper(trim($request->input('curp', ''))),
             'rfc' => strtoupper(trim($request->input('rfc', ''))),
+            'correo_electronico' => mb_strtolower(trim((string) $request->input('correo_electronico', ''))),
         ]);
 
-        $reglas = [
-            'curp' => [
-                'required', 'string', 'size:18',
-                'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/',
-                'unique:datos_solicitantes,curp'
-            ],
-            'rfc' => [
-                'required', 'string', 'min:12', 'max:13',
-                'unique:datos_solicitantes,rfc'
-            ],
-            'cedula_profesional' => ['nullable', 'string', 'max:30'],
+        $datos = $request->validate([
+            'curp' => ['required', 'string', 'size:18', 'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/'],
+            'rfc' => ['required', 'string', 'min:12', 'max:13'],
+            'cedula_profesional' => ['nullable', 'string', 'max:20'],
             'nombres' => ['required', 'string', 'max:150'],
-            'apellido_paterno' => ['required', 'string', 'max:100'],
-            'apellido_materno' => ['nullable', 'string', 'max:100'],
-            'genero' => [
-                'required',
-                'string',
-                Rule::in([
-                    'Femenino',
-                    'Masculino',
-                ])
-            ],
-	'password' => [
-	    Rule::requiredIf(!Auth::check()),
-	    'nullable',
-	    'string',
-	    'min:12',
-	    'confirmed',
-	],
-            'calle' => ['required', 'string', 'max:200'],
-            'numero_exterior' => ['required', 'string', 'max:20'],
-            'numero_interior' => ['nullable', 'string', 'max:20'],
-            'codigo_postal' => ['required', 'digits:5'],
-            'entidad_federativa' => ['required', 'string', 'max:100'],
-            'colonia' => ['required', 'string', 'max:150'],
-            'municipio' => ['required', 'string', 'max:150'],
-		'correo_electronico' => [
-		    'required',
-		    'email',
-		    'max:255',
-		    Rule::unique('users', 'email')->ignore(Auth::id()),
-		    Rule::unique('datos_solicitantes', 'correo_electronico'),
-		],
-            'telefono_particular' => [
-	    'nullable',
-	    'required_without:telefono_celular',
-	    'digits:10'
-	],
-	'telefono_celular' => [
-	    'nullable',
-	    'required_without:telefono_particular',
-	    'digits:10'
-	],
-	];
+            'apellido_paterno' => ['required', 'string', 'max:60'],
+            'apellido_materno' => ['nullable', 'string', 'max:60'],
+            'genero' => ['required', 'string', Rule::in(['Femenino', 'Masculino'])],
+            'password' => ['required', 'string', 'min:12', 'confirmed'],
+            'correo_electronico' => ['required', 'email', 'max:150'],
+        ] + $this->reglasDomicilio(), self::MENSAJES);
 
+        // Unicidad verificada contra PERSONA, USUARIO y COMUNICACION (el SQL oficial no la impone).
+        $errores = [];
+        if ($this->expediente->curpRegistrada($datos['curp'])) {
+            $errores['curp'] = 'La CURP ya está registrada.';
+        }
+        if ($this->expediente->rfcRegistrado($datos['rfc'])) {
+            $errores['rfc'] = 'El RFC ya está registrado.';
+        }
+        if ($this->expediente->correoRegistrado($datos['correo_electronico'])) {
+            $errores['correo_electronico'] = 'El correo electrónico ya está registrado.';
+        }
+        if ($errores) {
+            return back()->withErrors($errores)->withInput($request->except(['password', 'password_confirmation']));
+        }
 
+        $password = $datos['password'];
+        unset($datos['password']);
+        $cuenta = $this->expediente->registrar($datos, $password);
 
-	// Validar los campos permitidos según el estado del usuario.
-	$datos = $request->validate($reglas, [
-    'telefono_particular.required_without' =>
-        'Debes proporcionar al menos un teléfono: particular o celular.',
-
-    'telefono_celular.required_without' =>
-        'Debes proporcionar al menos un teléfono: particular o celular.',
-
-    'telefono_particular.digits' =>
-        'El teléfono particular debe contener exactamente 10 dígitos.',
-
-    'telefono_celular.digits' =>
-        'El teléfono celular debe contener exactamente 10 dígitos.',
-]);
-
-        $user = DB::transaction(function () use ($datos, $request) {
-
-	    $user = $request->user();
-
-	    if (!$user) {
-	        $user = User::create([
-	            'name' => trim(
-	                $datos['nombres'].' '.
-	                $datos['apellido_paterno'].' '.
-	                ($datos['apellido_materno'] ?? '')
-	            ),
-	            'email' => $datos['correo_electronico'],
-	            'password' => Hash::make($datos['password']),
-	            'rol' => 'solicitante',
-	        ]);
-	    }
-
-	    unset($datos['password']);
-
-	    $datos['user_id'] = $user->id;
-
-	    DatosSolicitante::create($datos);
-
-	    // F3: espejo en anfeca_modelo (persona, usuario, domicilio, contacto).
-	    app(EspejoPdm::class)->persona($user->id);
-
-	    return $user;
-	});
-
-        Auth::login($user);
+        Auth::login($cuenta);
         $request->session()->regenerate();
 
-        return redirect()
-            ->route('registro.certificacion');
+        return redirect()->route('registro.certificacion');
     }
-    /*
-    |--------------------------------------------------------------------------
-    | CONSULTAR DATOS DEL USUARIO REGISTRADO
-    |--------------------------------------------------------------------------
-    */
 
     public function edit(Request $request)
     {
-        if (Auth::getDefaultDriver() === 'pdm') {
-            return view('solicitante.mis-datos', [
-                'datos' => app(ConsultaPersonalPdm::class)->consultar($request->user()),
-                'soloConsultaPdm' => true,
-            ]);
+        $datos = $this->expediente->datos($request->user());
+        if (!$datos) {
+            return redirect()->route('registro.datos');
         }
 
-        $datos = DatosSolicitante::where(
-            'user_id',
-            $request->user()->id
-        )->first();
+        return view('solicitante.mis-datos', ['datos' => $datos]);
+    }
 
-        if (!$datos) {
-    return redirect()->route('registro.datos');
-}
+    /** Antes de autorizar solo se modifican domicilio completo y teléfonos; identidad y correo permanecen bloqueados. */
+    public function update(Request $request)
+    {
+        $cuenta = $request->user();
+        if ($cuenta->datosAutorizados()) {
+            return redirect()->route('mis-datos.edit')->with('error', 'Los datos personales ya fueron autorizados y no pueden modificarse.');
+        }
 
-        return view('solicitante.mis-datos', [
-            'datos' => $datos,
+        $datos = $request->validate($this->reglasDomicilio(), self::MENSAJES);
+        $this->expediente->actualizarDomicilioYTelefonos($cuenta, $datos);
+
+        return redirect()->route('mis-datos.edit')->with('success', 'Datos actualizados correctamente.');
+    }
+
+    public function autorizar(Request $request)
+    {
+        $cuenta = $request->user();
+        if ($cuenta->datosAutorizados()) {
+            return redirect()->route('registro.certificacion');
+        }
+
+        $request->validate([
+            'confirmacion_datos' => ['required', 'accepted'],
+        ], [
+            'confirmacion_datos.required' => 'Debes confirmar que tus datos son correctos.',
+            'confirmacion_datos.accepted' => 'Debes aceptar la confirmación de tus datos.',
         ]);
-    }
-/*
-|--------------------------------------------------------------------------
-| ACTUALIZAR DATOS PERSONALES
-|--------------------------------------------------------------------------
-*/
 
-public function update(Request $request)
-{
-    $user = $request->user();
-
-    $solicitante = DatosSolicitante::where(
-        'user_id',
-        $user->id
-    )->firstOrFail();
-
-    // ANFECA: bloquear modificaciones después de autorizar.
-    if ($solicitante->datos_autorizados) {
-        return redirect()
-            ->route('mis-datos.edit')
-            ->with(
-                'error',
-                'Los datos personales ya fueron autorizados y no pueden modificarse.'
-            );
-    }
-
-// Campos editables antes de autorizar.
-$camposActualizables = [
-    'calle',
-    'numero_exterior',
-    'numero_interior',
-    'colonia',
-    'municipio',
-    'entidad_federativa',
-    'codigo_postal',
-    'telefono_celular',
-    'telefono_particular',
-];
-
-// La identidad se obtiene del expediente almacenado.
-// Nunca se aceptan modificaciones de identidad desde esta pantalla.
-$identidadAutorizada = true;
-
-$request->merge([
-    'curp' => $solicitante->curp,
-    'rfc' => $solicitante->rfc,
-    'cedula_profesional' => $solicitante->cedula_profesional,
-    'nombres' => $solicitante->nombres,
-    'apellido_paterno' => $solicitante->apellido_paterno,
-    'apellido_materno' => $solicitante->apellido_materno,
-    'genero' => $solicitante->genero,
-    'correo_electronico' => $solicitante->correo_electronico,
-]);
-
-// Normalizar información
-    $request->merge([
-        'curp' => strtoupper(trim($request->input('curp', ''))),
-        'rfc' => strtoupper(trim($request->input('rfc', ''))),
-        'correo_electronico' => strtolower(
-            trim($request->input('correo_electronico', ''))
-        ),
-    ]);
-
-    $datos = $request->validate([
-        'curp' => [
-            'required',
-            'string',
-            'size:18',
-            'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/',
-            Rule::unique('datos_solicitantes', 'curp')
-                ->ignore($solicitante->id),
-        ],
-        'rfc' => [
-            'required',
-            'string',
-            'min:12',
-            'max:13',
-            Rule::unique('datos_solicitantes', 'rfc')
-                ->ignore($solicitante->id),
-        ],
-        'cedula_profesional' => [
-            'nullable', 'string', 'max:30'
-        ],
-        'nombres' => [
-            'required', 'string', 'max:150'
-        ],
-        'apellido_paterno' => [
-            'required', 'string', 'max:100'
-        ],
-        'apellido_materno' => [
-            'nullable', 'string', 'max:100'
-        ],
-        'genero' => [
-            Rule::requiredIf(!$identidadAutorizada),
-            'nullable',
-            'string',
-            Rule::in(['Femenino', 'Masculino']),
-        ],
-        'calle' => [
-            'required', 'string', 'max:200'
-        ],
-        'numero_exterior' => [
-            'required', 'string', 'max:20'
-        ],
-        'numero_interior' => [
-            'nullable', 'string', 'max:20'
-        ],
-        'codigo_postal' => [
-            'required', 'digits:5'
-        ],
-        'entidad_federativa' => [
-            'required', 'string', 'max:100'
-        ],
-        'colonia' => [
-            'required', 'string', 'max:150'
-        ],
-        'municipio' => [
-            'required', 'string', 'max:150'
-        ],
-        'correo_electronico' => [
-            'required',
-            'email',
-            'max:255',
-            Rule::unique('users', 'email')
-                ->ignore($user->id),
-            Rule::unique('datos_solicitantes', 'correo_electronico')
-                ->ignore($solicitante->id),
-        ],
-        'telefono_particular' => ['nullable', 'required_without:telefono_celular', 'digits:10'],
-'telefono_celular' => ['nullable', 'required_without:telefono_particular', 'digits:10'],
-], [
-    'telefono_particular.required_without' =>
-        'Debes proporcionar al menos un teléfono: particular o celular.',
-
-    'telefono_celular.required_without' =>
-        'Debes proporcionar al menos un teléfono: particular o celular.',
-
-    'telefono_particular.digits' =>
-        'El teléfono particular debe contener exactamente 10 dígitos.',
-
-    'telefono_celular.digits' =>
-        'El teléfono celular debe contener exactamente 10 dígitos.',
-]);
-
-    DB::transaction(function () use (
-    $solicitante,
-    $datos,
-    $camposActualizables
-) {
-    $datosPermitidos = array_intersect_key(
-        $datos,
-        array_flip($camposActualizables)
-    );
-
-    $solicitante->update($datosPermitidos);
-
-    // F3: espejo de domicilio y teléfonos.
-    app(EspejoPdm::class)->persona($solicitante->user_id);
-});
-
-    return redirect()
-        ->route('mis-datos.edit')
-        ->with(
-            'success',
-            'Datos actualizados correctamente.'
-        );
-}
-/*
-|--------------------------------------------------------------------------
-| AUTORIZACIÓN DE DATOS PERSONALES
-|--------------------------------------------------------------------------
-*/
-
-public function autorizar(Request $request)
-{
-    // Buscar los datos del usuario autenticado.
-    $datos = DatosSolicitante::where(
-        'user_id',
-        $request->user()->id
-    )->firstOrFail();
-
-    // Evitar modificar una autorización existente.
-    if ($datos->datos_autorizados) {
-        return redirect()
-            ->route('registro.certificacion');
-    }
-
-    // Validar la confirmación del usuario.
-    $request->validate([
-        'confirmacion_datos' => ['required', 'accepted'],
-    ], [
-        'confirmacion_datos.required' =>
-            'Debes confirmar que tus datos son correctos.',
-        'confirmacion_datos.accepted' =>
-            'Debes aceptar la confirmación de tus datos.',
-    ]);
-
-    // Validar que el expediente esté completo.
-    $validador = \Illuminate\Support\Facades\Validator::make(
-        $datos->getAttributes(),
-        [
-            'curp' => [
-                'required',
-                'string',
-                'size:18',
-                'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/',
-            ],
+        $datos = $this->expediente->datos($cuenta);
+        $validador = Validator::make($datos?->toArray() ?? [], [
+            'curp' => ['required', 'string', 'size:18', 'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/'],
             'rfc' => ['required', 'string', 'min:12', 'max:13'],
             'nombres' => ['required', 'string'],
             'apellido_paterno' => ['required', 'string'],
@@ -424,38 +154,15 @@ public function autorizar(Request $request)
             'correo_electronico' => ['required', 'email'],
             'telefono_particular' => ['nullable', 'required_without:telefono_celular', 'digits:10'],
             'telefono_celular' => ['nullable', 'required_without:telefono_particular', 'digits:10'],
+        ], ['curp.required' => 'Debes registrar tu CURP antes de autorizar tus datos.']);
 
-        ],
-        [
-            'curp.required' =>
-                'Debes registrar tu CURP antes de autorizar tus datos.',
-        ]
-    );
+        if ($validador->fails()) {
+            return redirect()->route('mis-datos.edit')->withErrors($validador)
+                ->with('error', 'Completa los datos personales obligatorios antes de autorizar.');
+        }
 
-    if ($validador->fails()) {
-        return redirect()
-            ->route('mis-datos.edit')
-            ->withErrors($validador)
-            ->with(
-                'error',
-                'Completa los datos personales obligatorios antes de autorizar.'
-            );
+        $this->expediente->autorizar($cuenta);
+
+        return redirect()->route('registro.certificacion');
     }
-
-    // Registrar la autorización (y su espejo F3 en la misma transacción).
-    DB::transaction(function () use ($datos) {
-        $datos->datos_autorizados = true;
-        $datos->fecha_autorizacion = now();
-        $datos->save();
-
-        app(EspejoPdm::class)->persona($datos->user_id);
-    });
-
-    // La autorización queda registrada; Certificación no muestra un aviso
-    // de éxito por esta transición (los errores y validaciones se conservan).
-    return redirect()
-        ->route('registro.certificacion');
 }
-
-}
-

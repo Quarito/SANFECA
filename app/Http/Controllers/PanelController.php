@@ -2,78 +2,46 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DatosSolicitante;
-use App\Models\Pdm\Usuario;
-use App\Services\Pdm\Solicitantes\ConsultaExpedientesPdm;
-use App\Models\SeleccionCertificacion;
-use App\Models\FormacionAcademicaSolicitud;
-use App\Models\SolicitudCertificacion;
+use App\Services\Anfeca\Tramites;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PanelController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, Tramites $tramites)
     {
-        if ($request->user() instanceof Usuario) {
-            $consulta = app(ConsultaExpedientesPdm::class);
-            $expedientesPdm = $consulta->consulta()
-                ->where('soli_id_persona', $request->user()->usua_id_persona)
-                ->orderByDesc('soli_id_solicitud')->paginate(20);
+        $persona = (int) $request->user()->usua_id_persona;
 
-            return view('panel', compact('expedientesPdm'));
-        }
-
-        $userId = $request->user()->id;
-
-        $datosCompletos = DatosSolicitante::where(
-            'user_id', $userId
-        )->exists();
-
-        $certificacionCompleta = SeleccionCertificacion::where(
-            'user_id', $userId
-        )->exists();
-
-        // Formación del trámite actual (formaciones_academicas_solicitud); la tabla antigua
-        // formaciones_academicas ya no se escribe y no existe en el modelo PowerDesigner.
-        $formacionCompleta = FormacionAcademicaSolicitud::whereIn(
-            'solicitud_id',
-            SolicitudCertificacion::where('user_id', $userId)->select('id')
-        )->whereNotNull('formacion_completada_at')->exists();
+        // Etapas calculadas desde PERSONA, SOLICITUD y ESTADO_SOLICITUD (36 tablas oficiales).
+        $datosCompletos = DB::table('persona')->where('pers_id_persona', $persona)->exists();
+        $solicitudes = DB::table('solicitud')->where('soli_id_persona', $persona)->pluck('soli_id_solicitud');
+        $certificacionCompleta = $solicitudes->isNotEmpty();
+        $formacionCompleta = DB::table('estado_solicitud')->whereIn('esso_id_solicitud', $solicitudes)->where('esso_siglas', 'FA')->exists();
 
         $etapas = [
-	    [
-	        'nombre' => 'Datos Personales',
-	        'descripcion' => 'Información personal, domicilio y contacto.',
-	        'completa' => $datosCompletos,
-	        'ruta' => $datosCompletos
-	            ? 'mis-datos.edit'
-	            : 'registro.datos',
-	    ],
-	    [
-	        'nombre' => 'Selección de Certificación',
-	        'descripcion' => 'Certificación, tipo de personal y área académica.',
-	        'completa' => $certificacionCompleta,
-	        'ruta' => 'registro.certificacion',
-	    ],
-	    [
-	        'nombre' => 'Formación Académica',
-	        'descripcion' => 'Grados académicos, documentos e institución.',
-	        'completa' => $formacionCompleta,
-	        'ruta' => 'registro.formacion',
-	    ],
-	];
-        $completadas = collect($etapas)
-            ->where('completa', true)
-            ->count();
+            [
+                'nombre' => 'Datos Personales',
+                'descripcion' => 'Información personal, domicilio y contacto.',
+                'completa' => $datosCompletos,
+                'ruta' => $datosCompletos ? 'mis-datos.edit' : 'registro.datos',
+            ],
+            [
+                'nombre' => 'Selección de Certificación',
+                'descripcion' => 'Certificación, tipo de personal y área académica.',
+                'completa' => $certificacionCompleta,
+                'ruta' => 'registro.certificacion',
+            ],
+            [
+                'nombre' => 'Formación Académica',
+                'descripcion' => 'Grados académicos, documentos e institución.',
+                'completa' => $formacionCompleta,
+                'ruta' => 'registro.formacion',
+            ],
+        ];
 
-        $porcentaje = (int) round(
-            ($completadas / count($etapas)) * 100
-        );
+        $completadas = collect($etapas)->where('completa', true)->count();
+        $porcentaje = (int) round(($completadas / count($etapas)) * 100);
 
-        return view('panel', compact(
-            'etapas',
-            'completadas',
-            'porcentaje'
-        ));
+        return view('panel', compact('etapas', 'completadas', 'porcentaje'));
     }
 }

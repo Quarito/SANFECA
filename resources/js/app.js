@@ -164,7 +164,6 @@ if (contenedorActualizar) {
     accionAutorizar: contenedorActualizar.dataset.accionAutorizar,
     urlSiguiente: contenedorActualizar.dataset.urlSiguiente,
     autorizadoInicialmente: contenedorActualizar.dataset.autorizado === '1',
-    soloConsulta: contenedorActualizar.dataset.soloConsulta === '1',
 
 
 

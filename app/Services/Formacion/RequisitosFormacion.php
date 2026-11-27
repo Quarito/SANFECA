@@ -2,7 +2,6 @@
 
 namespace App\Services\Formacion;
 
-use App\Services\Pdm\Compat\FormacionCatalogoPdm;
 use Illuminate\Validation\Rule;
 
 /**
@@ -26,7 +25,9 @@ class RequisitosFormacion
     /** ¿Existe la columna cuenta_con_posgrado? (la aplicación funciona sin ella). */
     public static function persistenciaDisponible(): bool
     {
-        return self::$persistencia ??= FormacionCatalogoPdm::persistenciaDisponible(['cuenta_con_posgrado']);
+        // La formación se persiste en ESTUDIO_PROFESIONAL/PERSONA_ESTUDIO_PROFESIONAL (App\Services\Anfeca\FormacionPdm),
+        // que conserva título específico, origen y declaración de posgrado sin columnas adicionales.
+        return self::$persistencia ??= true;
     }
 
     public static function olvidarPersistencia(): void

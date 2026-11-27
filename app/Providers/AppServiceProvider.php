@@ -2,9 +2,8 @@
 
 namespace App\Providers;
 
-use App\Models\Pdm\Usuario;
-use App\Models\User;
-use App\Services\Pdm\Autenticacion\ProveedorUsuarioPdm;
+use App\Models\Cuenta;
+use App\Services\Anfeca\Autenticacion\ProveedorCuentas;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Auth::provider('anfeca-pdm', fn ($app, array $config) => new ProveedorUsuarioPdm($app['hash'], $config['model']));
+        Auth::provider('anfeca-cuentas', fn ($app, array $config) => new ProveedorCuentas($app['hash'], $config['model']));
 
         // V8: además del límite por IP (igual al anterior throttle:N,1),
         // se limita por cuenta para frenar intentos desde varias IP.
@@ -43,8 +42,8 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(5)->by('recuperacion-correo:'.$correo($r)),
         ]);
 
-        // Módulo de coordinación: solo perfiles administrativos (users.rol).
-        Gate::define('acceder-coordinacion', fn (User|Usuario $u) => $u instanceof Usuario ? $u->esCoordinadorNacional() : $u->esCoordinador());
+        // Módulo de coordinación: perfiles con ROL de coordinación y privilegio de consulta (ROL_PRIVILEGIO).
+        Gate::define('acceder-coordinacion', fn (Cuenta $u) => $u->esCoordinador() && $u->tienePrivilegio('consultar_solicitudes'));
 
         RateLimiter::for('restablecer', fn (Request $r) => [
             Limit::perMinute(5)->by('restablecer-ip:'.$r->ip()),

@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => env('CACHE_STORE', 'database'),
+    'default' => env('CACHE_STORE', 'file'),
 
     /*
     |--------------------------------------------------------------------------
@@ -33,9 +33,9 @@ return [
     */
 
     'stores' => [
-        'pdm_recuperacion' => [
+        'recuperacion' => [
             'driver' => 'file',
-            'path' => storage_path('framework/cache/pdm-recuperacion'),
+            'path' => storage_path('framework/cache/recuperacion'),
         ],
 
         'array' => [

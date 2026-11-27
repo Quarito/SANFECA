@@ -22,32 +22,19 @@ Route::get('/', function () {
         return redirect()->route('login');
     }
 
-    if (auth()->getDefaultDriver() === 'pdm') {
-        return redirect()->route(auth()->user()->esCoordinadorNacional() ? 'coordinacion.solicitudes' : 'mis-datos.edit');
-    }
-
     // Perfiles administrativos: módulo de coordinación.
     if (auth()->user()->esCoordinador()) {
         return redirect()->route('coordinacion.inicio');
     }
 
-    $userId = auth()->id();
+    $tramites = app(\App\Services\Anfeca\Tramites::class);
+    $persona = (int) auth()->user()->usua_id_persona;
 
-    $tieneBorrador = \App\Models\SolicitudCertificacion::query()
-        ->where('user_id', $userId)
-        ->where('estado', 'borrador')
-        ->exists();
-
-    if ($tieneBorrador) {
+    if ($tramites->borrador($persona)) {
         return redirect()->route('mis-datos.edit');
     }
 
-    $tieneEnviada = \App\Models\SolicitudCertificacion::query()
-        ->where('user_id', $userId)
-        ->where('estado', 'enviado')
-        ->exists();
-
-    if ($tieneEnviada) {
+    if ($tramites->ultimaEnviada($persona)) {
         return redirect()->route('registro.completado');
     }
 

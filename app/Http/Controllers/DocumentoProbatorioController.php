@@ -2,16 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Pdm\Espejo\EspejoPdm;
-use App\Models\DocumentoProbatorioSolicitud;
-use App\Models\SeleccionCertificacion;
-use App\Models\SolicitudCertificacion;
-use App\Services\ConsultaAntecedentesService;
+use App\Services\Anfeca\DocumentosPdm;
+use App\Services\Anfeca\SolicitudActiva;
+use App\Services\Anfeca\SolicitudVista as SolicitudCertificacion;
+use App\Services\Anfeca\Tramites;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Documentos probatorios sobre SOLICITUD_DOCUMENTO, ESTADO_SOLICITUD_DOCUMENTO y PAGO (36 tablas oficiales).
+ * Una vez guardados quedan en solo consulta, igual que antes.
+ */
 class DocumentoProbatorioController extends Controller
 {
+    public function __construct(
+        private readonly SolicitudActiva $activa,
+        private readonly DocumentosPdm $documentosPdm,
+        private readonly Tramites $tramites,
+    ) {
+    }
+
     private const ACADEMICOS = [
         'titulo_origen_archivo' => 'Título de Licenciatura',
         'cedula_origen_archivo' => 'Cédula de Licenciatura',
@@ -68,76 +79,14 @@ class DocumentoProbatorioController extends Controller
             );
     }
 
-private function solicitudActiva(
-    Request $request,
-    ConsultaAntecedentesService $servicio
-): ?SolicitudCertificacion {
-    $userId = $request->user()->id;
-
-    $certificacion = SeleccionCertificacion::where(
-        'user_id',
-        $userId
-    )->value('certificacion');
-
-    if (!$certificacion) {
-        return null;
-    }
-
-    $tipo = $servicio->determinarTipoTramite($userId);
-
-    // Mantener el comportamiento original para trámites
-    // cuyo tipo puede determinarse normalmente.
-    if (in_array($tipo, ['inicial', 'refrendo'], true)) {
-        $solicitud = SolicitudCertificacion::where('user_id', $userId)
-            ->where('certificacion', $certificacion)
-            ->where('tipo_tramite', $tipo)
-            ->where('estado', 'borrador')
-            ->latest('id')
-            ->first();
-
-        if ($solicitud) {
-            return $solicitud;
-        }
-    }
-
-    // Recuperar únicamente un refrendo con certificado
-    // histórico asociado y validado.
-    $solicitudes = SolicitudCertificacion::where('user_id', $userId)
-        ->where('certificacion', $certificacion)
-        ->where('tipo_tramite', 'refrendo')
-        ->where('estado', 'borrador')
-        ->whereNotNull('certificado_historico_id')
-        ->latest('id')
-        ->get();
-
-    foreach ($solicitudes as $solicitud) {
-        $certificado = \App\Models\CertificadoHistorico::find(
-            $solicitud->certificado_historico_id
-        );
-
-        if (!$certificado) {
-            continue;
-        }
-
-        $validado = $servicio->validarCertificadoAnterior(
-            $userId,
-            $certificacion,
-            (string) $certificado->numero_certificado
-        );
-
-        if ($validado && (int) $validado->id === (int) $certificado->id) {
-            return $solicitud;
-        }
-    }
-
-    return null;
+private function solicitudActiva(Request $request): ?SolicitudCertificacion
+{
+    return $this->activa->borrador($request->user());
 }
 
-    private function verificarSolicitud(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ) {
-        $solicitud = $this->solicitudActiva($request, $servicio);
+    private function verificarSolicitud(Request $request)
+    {
+        $solicitud = $this->solicitudActiva($request);
 
         if (!$solicitud) {
             return redirect()
@@ -173,11 +122,9 @@ private function solicitudActiva(
         return $solicitud;
     }
 
-    public function create(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ) {
-        $resultado = $this->verificarSolicitud($request, $servicio);
+    public function create(Request $request)
+    {
+        $resultado = $this->verificarSolicitud($request);
 
         if (!$resultado instanceof SolicitudCertificacion) {
             return $resultado;
@@ -195,7 +142,7 @@ private function solicitudActiva(
             }
             $ruta = $formacion?->{$campo};
             $disponible = !empty($ruta)
-                && Storage::disk('local')->exists($ruta);
+                && $this->documentosPdm->disco()->exists($ruta);
 
             $academicos[$campo] = [
                 'nombre' => $nombre,
@@ -216,7 +163,7 @@ private function solicitudActiva(
         foreach ($camposDocumentos as $campo => $nombre) {
             $ruta = $documentos?->{$campo};
             $disponible = !empty($ruta)
-                && Storage::disk('local')->exists($ruta);
+                && $this->documentosPdm->disco()->exists($ruta);
 
             $nuevos[$campo] = [
                 'nombre' => $nombre,
@@ -239,11 +186,9 @@ private function solicitudActiva(
         ]);
     }
 
-    public function store(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ) {
-        $resultado = $this->verificarSolicitud($request, $servicio);
+    public function store(Request $request)
+    {
+        $resultado = $this->verificarSolicitud($request);
 
         if (!$resultado instanceof SolicitudCertificacion) {
             return $resultado;
@@ -270,7 +215,7 @@ private function solicitudActiva(
         $reglas = [
             'link' => $esArticulo14
                 ? ['exclude']
-                : ['required', 'url:http,https', 'max:2048'],
+                : ['required', 'url:http,https', 'max:300'],
         ];
 
         foreach ($camposDocumentos as $campo => $nombre) {
@@ -288,68 +233,42 @@ private function solicitudActiva(
             unset($datos[$campo]);
         }
 
-        $archivosNuevos = [];
+        $rutasCreadas = [];
 
         try {
-            foreach ($camposDocumentos as $campo => $nombre) {
-                if ($request->hasFile($campo)) {
-                    $archivosNuevos[$campo] = $request
-                        ->file($campo)
-                        ->store(
-                            'anfeca/documentos/solicitudes/' . $solicitud->id,
-                            'local'
-                        );
+            DB::transaction(function () use ($solicitud, $datos, $camposDocumentos, $request, &$rutasCreadas) {
+                $solicitudBloqueada = $this->tramites->bloquear($solicitud->id);
+
+                if (!$solicitudBloqueada || $solicitudBloqueada->estado !== 'borrador') {
+                    throw new \RuntimeException('La solicitud ya no admite modificaciones.');
                 }
-            }
 
-            \Illuminate\Support\Facades\DB::transaction(
-                function () use ($solicitud, $datos, $archivosNuevos) {
-                    $solicitudBloqueada = SolicitudCertificacion::query()
-                        ->whereKey($solicitud->id)
-                        ->where('user_id', $solicitud->user_id)
-                        ->lockForUpdate()
-                        ->firstOrFail();
-
-                    if ($solicitudBloqueada->estado !== 'borrador') {
-                        throw new \RuntimeException(
-                            'La solicitud ya no admite modificaciones.'
-                        );
-                    }
-
-                    if (
-                        DocumentoProbatorioSolicitud::where(
-                            'solicitud_id',
-                            $solicitudBloqueada->id
-                        )->exists()
-                    ) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            'documentos' =>
-                                'Los documentos ya están guardados y no pueden modificarse.',
-                        ]);
-                    }
-
-                    DocumentoProbatorioSolicitud::updateOrCreate(
-                        ['solicitud_id' => $solicitudBloqueada->id],
-                        array_merge($datos, $archivosNuevos)
-                    );
-
-                    // F3: espejo de documentos probatorios, enlace y pago.
-                    app(EspejoPdm::class)->solicitud($solicitudBloqueada->id);
+                if ($this->documentosPdm->probatorios($solicitudBloqueada->id) !== null) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'documentos' =>
+                            'Los documentos ya están guardados y no pueden modificarse.',
+                    ]);
                 }
-            );
+
+                foreach ($camposDocumentos as $campo => $nombre) {
+                    if ($request->hasFile($campo)) {
+                        $rutasCreadas[] = $this->documentosPdm->guardar($solicitudBloqueada->id, $campo, $request->file($campo));
+                    }
+                }
+                if (filled($datos['link'] ?? null)) {
+                    $this->documentosPdm->guardarEnlace($solicitudBloqueada->id, $datos['link']);
+                }
+
+                // Evento «Documentos probatorios registrados» (ESTADO_SOLICITUD).
+                $this->tramites->registrarEvento($solicitudBloqueada->id, 'DP');
+            });
         } catch (\Throwable $e) {
-            foreach ($archivosNuevos as $ruta) {
-                Storage::disk('local')->delete($ruta);
+            foreach ($rutasCreadas as $ruta) {
+                $this->documentosPdm->disco()->delete($ruta);
             }
 
             if ($e instanceof \Illuminate\Validation\ValidationException) {
-                // F3: error controlado del espejo PDM (la transacción ya se revirtió).
                 throw $e;
-            }
-            if ($e instanceof \Illuminate\Database\QueryException
-                && ($controlado = \App\Services\Pdm\ErrorValidacionPdm::desde($e)) !== null) {
-                // F4/F5: dato no registrable en el PDM (disparadores anfeca_compat).
-                throw $controlado;
             }
 
             report($e);
@@ -376,11 +295,9 @@ private function solicitudActiva(
      * propia que sea refrendo por artículo 14; en cualquier otro caso, 404.
      * Se entrega el archivo original sin transformarlo.
      */
-    public function formatoArticulo14(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ) {
-        $resultado = $this->verificarSolicitud($request, $servicio);
+    public function formatoArticulo14(Request $request)
+    {
+        $resultado = $this->verificarSolicitud($request);
 
         if (
             !$resultado instanceof SolicitudCertificacion
@@ -404,12 +321,9 @@ private function solicitudActiva(
         );
     }
 
-    public function ver(
-        Request $request,
-        string $campo,
-        ConsultaAntecedentesService $servicio
-    ) {
-        $resultado = $this->verificarSolicitud($request, $servicio);
+    public function ver(Request $request, string $campo)
+    {
+        $resultado = $this->verificarSolicitud($request);
 
         if (!$resultado instanceof SolicitudCertificacion) {
             return $resultado;
@@ -434,10 +348,10 @@ private function solicitudActiva(
         $ruta = $registro?->{$campo};
 
         abort_if(
-            empty($ruta) || !Storage::disk('local')->exists($ruta),
+            empty($ruta) || !$this->documentosPdm->disco()->exists($ruta),
             404
         );
 
-        return Storage::disk('local')->download($ruta);
+        return $this->documentosPdm->disco()->download($ruta, $campo.'.'.pathinfo($ruta, PATHINFO_EXTENSION));
     }
 }

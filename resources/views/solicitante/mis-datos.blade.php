@@ -239,9 +239,6 @@
 
 
 
-            @if($soloConsultaPdm ?? false)
-                <p><a href="{{ route('panel') }}">Consultar mis solicitudes</a></p>
-            @endif
             <div
                 data-vue-encabezado
                 data-titulo="Autorización de Datos"
@@ -277,7 +274,6 @@ data-datos="{{ json_encode([
     data-accion-autorizar="{{ route('mis-datos.autorizar') }}"
     data-url-siguiente="{{ route('registro.certificacion') }}"    
     data-autorizado="{{ $datos->datos_autorizados ? '1' : '0' }}"
-    data-solo-consulta="{{ ($soloConsultaPdm ?? false) ? '1' : '0' }}"
 ></div>
 
            

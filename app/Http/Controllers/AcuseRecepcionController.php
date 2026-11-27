@@ -2,35 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DatosSolicitante;
-use App\Models\SolicitudCertificacion;
+use App\Services\Anfeca\DocumentosPdm;
+use App\Services\Anfeca\ExpedienteSolicitante;
+use App\Services\Anfeca\Instituciones;
+use App\Services\Anfeca\Tramites;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class AcuseRecepcionController extends Controller
 {
     public function descargar(Request $request, int $solicitudId)
     {
-        $solicitud = SolicitudCertificacion::query()
-            ->whereKey($solicitudId)
-            ->where('user_id', $request->user()->id)
-            ->where('estado', 'enviado')
-            ->firstOrFail();
+        // Solo la solicitud ENVIADA propia (misma persona) genera acuse.
+        $solicitud = app(Tramites::class)->porId($solicitudId);
+        abort_unless($solicitud && $solicitud->persona_id === (int) $request->user()->usua_id_persona
+            && $solicitud->estado === 'enviado', 404);
 
-        $solicitud->load([
-            'formacionAcademica.institucionAfiliada',
-            'documentosProbatorios',
-            'datosRefrendo',
-        ]);
-
-        $datos = DatosSolicitante::where(
-            'user_id',
-            $solicitud->user_id
-        )->first();
+        $datos = app(ExpedienteSolicitante::class)->datos($request->user());
 
         $formacion = $solicitud->formacionAcademica;
-        $institucion = $formacion?->institucionAfiliada;
+        $institucion = app(Instituciones::class)->porId($formacion?->institucion_afiliada_id);
         $documentos = $solicitud->documentosProbatorios;
 
         $archivos = [
@@ -69,7 +60,7 @@ class AcuseRecepcionController extends Controller
         $documentosRecibidos = [];
 
         foreach ($archivos as $nombre => $ruta) {
-            if ($ruta && Storage::disk('local')->exists($ruta)) {
+            if ($ruta && app(DocumentosPdm::class)->disco()->exists($ruta)) {
                 $documentosRecibidos[] = $nombre;
             }
         }

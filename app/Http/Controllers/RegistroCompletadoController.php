@@ -2,138 +2,43 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Pdm\Espejo\EspejoPdm;
-use App\Models\DatosSolicitante;
-use App\Models\SeleccionCertificacion;
-use App\Models\SolicitudCertificacion;
-use App\Services\ConsultaAntecedentesService;
+use App\Services\Anfeca\DocumentosPdm;
+use App\Services\Anfeca\ExpedienteSolicitante;
+use App\Services\Anfeca\SolicitudActiva;
+use App\Services\Anfeca\SolicitudVista as SolicitudCertificacion;
+use App\Services\Anfeca\Tramites;
 use App\Services\Formacion\RequisitosFormacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
+/**
+ * Finalización: revisa requisitos sobre las 36 tablas y registra el evento «Enviada», que bloquea toda
+ * modificación posterior de la solicitud.
+ */
 class RegistroCompletadoController extends Controller
 {
     private const PROBATORIOS = [
         'constancia_antiguedad_archivo',
         'comprobante_pago_archivo',
     ];
-private function tipoTramiteValido(
-    SolicitudCertificacion $solicitud,
-    ConsultaAntecedentesService $servicio
-): bool {
-    $tipoDetectado = $servicio->determinarTipoTramite(
-        $solicitud->user_id
-    );
-
-    if ($solicitud->tipo_tramite === 'inicial') {
-        return $tipoDetectado === 'inicial';
-    }
-
-    if ($solicitud->tipo_tramite !== 'refrendo') {
-        return false;
-    }
-
-    // Compatibilidad con solicitudes anteriores.
-    if ($solicitud->certificado_historico_id === null) {
-        return $tipoDetectado === 'refrendo';
-    }
-
-    // Validar el certificado histórico asociado.
-    $certificado = \App\Models\CertificadoHistorico::find(
-        $solicitud->certificado_historico_id
-    );
-
-    if (!$certificado) {
-        return false;
-    }
-
-    $validado = $servicio->validarCertificadoAnterior(
-        $solicitud->user_id,
-        $solicitud->certificacion,
-        (string) $certificado->numero_certificado
-    );
-
-    return $validado !== null
-        && (int) $validado->id === (int) $certificado->id;
+public function __construct(
+    private readonly SolicitudActiva $activa,
+    private readonly Tramites $tramites,
+    private readonly DocumentosPdm $documentosPdm,
+    private readonly ExpedienteSolicitante $expediente,
+) {
 }
-private function obtenerSolicitud(
-    Request $request,
-    ConsultaAntecedentesService $servicio
-): ?SolicitudCertificacion {
-    $userId = $request->user()->id;
 
-    $certificacion = SeleccionCertificacion::where(
-        'user_id',
-        $userId
-    )->value('certificacion');
-
-    if ($certificacion) {
-        $tipo = $servicio->determinarTipoTramite($userId);
-
-        $borradores = SolicitudCertificacion::where('user_id', $userId)
-            ->where('certificacion', $certificacion)
-            ->where('estado', 'borrador')
-            ->latest('id')
-            ->get();
-
-        foreach ($borradores as $solicitud) {
-            if ($solicitud->tipo_tramite === 'refrendo') {
-                // Si tiene certificado asociado, debe validarse siempre.
-                if ($solicitud->certificado_historico_id !== null) {
-                    $certificado = \App\Models\CertificadoHistorico::find(
-                        $solicitud->certificado_historico_id
-                    );
-
-                    if (!$certificado) {
-                        continue;
-                    }
-
-                    $validado = $servicio->validarCertificadoAnterior(
-                        $userId,
-                        $certificacion,
-                        (string) $certificado->numero_certificado
-                    );
-
-                    if (
-                        $validado !== null
-                        && (int) $validado->id === (int) $certificado->id
-                    ) {
-                        return $solicitud;
-                    }
-
-                    continue;
-                }
-
-                // Compatibilidad con refrendos anteriores sin asociación.
-                if ($tipo === 'refrendo') {
-                    return $solicitud;
-                }
-            }
-
-            if (
-                $solicitud->tipo_tramite === 'inicial'
-                && $tipo === 'inicial'
-            ) {
-                return $solicitud;
-            }
-        }
-    }
-
-    // Permitir consultar una solicitud enviada anteriormente.
-    return SolicitudCertificacion::where('user_id', $userId)
-        ->where('estado', 'enviado')
-        ->latest('id')
-        ->first();
+/** El borrador (con su certificado revalidado si es refrendo) o la última solicitud enviada. */
+private function obtenerSolicitud(Request $request): ?SolicitudCertificacion
+{
+    return $this->activa->paraConsulta($request->user());
 }
 
     private function requisitos(
         SolicitudCertificacion $solicitud
     ): array {
-        $datos = DatosSolicitante::where(
-            'user_id',
-            $solicitud->user_id
-        )->first();
+        $datos = $this->expediente->datos($solicitud->user_id);
 
         $formacion = $solicitud->formacionAcademica;
         $documentos = $solicitud->documentosProbatorios;
@@ -156,7 +61,7 @@ private function obtenerSolicitud(
                 && (bool) $datos->datos_autorizados,
             'certificacion' => in_array(
                 $solicitud->certificacion,
-                ['ANFECA', 'CACSLA', 'CACECA'],
+                array_keys((array) config('anfeca_8088.certificaciones')),
                 true
             ),
             'refrendo' => $solicitud->tipo_tramite === 'inicial'
@@ -191,7 +96,7 @@ private function obtenerSolicitud(
 
 	        if (
 	            !$ruta
-	            || !Storage::disk('local')->exists($ruta)
+	            || !$this->documentosPdm->disco()->exists($ruta)
 	        ) {
 	            $resultado['formacion_academica'] = false;
 	        }
@@ -216,7 +121,7 @@ private function obtenerSolicitud(
 
             if (
                 !$ruta
-                || !Storage::disk('local')->exists($ruta)
+                || !$this->documentosPdm->disco()->exists($ruta)
             ) {
                 $resultado['documentos_probatorios'] = false;
             }
@@ -225,11 +130,9 @@ private function obtenerSolicitud(
         return $resultado;
     }
 
-    public function index(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ) {
-        $solicitud = $this->obtenerSolicitud($request, $servicio);
+    public function index(Request $request)
+    {
+        $solicitud = $this->obtenerSolicitud($request);
 
         if (!$solicitud) {
             return redirect()
@@ -261,11 +164,9 @@ private function obtenerSolicitud(
         ]);
     }
 
-    public function confirmar(
-        Request $request,
-        ConsultaAntecedentesService $servicio
-    ) {
-        $solicitud = $this->obtenerSolicitud($request, $servicio);
+    public function confirmar(Request $request)
+    {
+        $solicitud = $this->obtenerSolicitud($request);
 
         if (!$solicitud) {
             return redirect()
@@ -279,14 +180,6 @@ private function obtenerSolicitud(
                 ->with('success', 'La solicitud ya fue enviada.');
         }
 
-        if (!$this->tipoTramiteValido($solicitud, $servicio)) {
-    return redirect()
-        ->route('registro.completado')
-        ->with(
-            'error',
-            'Los antecedentes requieren una nueva revisión antes del envío.'
-        );
-}
 
         $requisitos = $this->requisitos($solicitud);
 
@@ -306,24 +199,18 @@ private function obtenerSolicitud(
                 );
         }
 
-        $envioRealizado = DB::transaction(function () use ($solicitud, $servicio) {
-            $actual = SolicitudCertificacion::whereKey($solicitud->id)
-                ->where('user_id', $solicitud->user_id)
-                ->lockForUpdate()
-                ->firstOrFail();
+        $envioRealizado = DB::transaction(function () use ($solicitud) {
+            $actual = $this->tramites->bloquear($solicitud->id);
 
-            if ($actual->estado !== 'borrador') {
+            if (!$actual || $actual->estado !== 'borrador') {
                 return false;
             }
 
-		if (
-		    !$this->tipoTramiteValido($actual, $servicio)
-		    || in_array(false, $this->requisitos($actual), true)
-		) {
-		    throw \Illuminate\Validation\ValidationException::withMessages([
-		        'solicitud' => 'La solicitud requiere una nueva revisión antes del envío.',
-		    ]);
-		}
+            if (in_array(false, $this->requisitos($actual), true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'solicitud' => 'La solicitud requiere una nueva revisión antes del envío.',
+                ]);
+            }
 
             // VALIDACION_COMPROMISO_ANFECA_20261119
             if (!$actual->compromiso_aceptado) {
@@ -333,34 +220,14 @@ private function obtenerSolicitud(
                 ]);
             }
 
-            // Conservar los datos de certificación al momento del envío.
-            $seleccion = \App\Models\SeleccionCertificacion::where(
-                'user_id',
-                $actual->user_id
-            )->where(
-                'certificacion',
-                $actual->certificacion
-            )->first();
-
-            if (
-                !$seleccion
-                || !filled($seleccion->tipo_personal)
-                || !filled($seleccion->area_certificacion)
-            ) {
+            if (!filled($actual->tipo_personal) || !filled($actual->area_certificacion)) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'solicitud' => 'Debe revisar la selección de certificación antes del envío.',
                 ]);
             }
 
-            $actual->update([
-                'estado' => 'enviado',
-                'fecha_envio' => now(),
-                'tipo_personal' => $seleccion->tipo_personal,
-                'area_certificacion' => $seleccion->area_certificacion,
-            ]);
-
-            // F3: espejo del envío (evento «Enviada»).
-            app(EspejoPdm::class)->solicitud($actual->id);
+            // Evento «Enviada»: a partir de aquí la solicitud queda bloqueada.
+            $this->tramites->registrarEvento($actual->id, 'EN');
 
             return true;
         });
@@ -373,7 +240,7 @@ private function obtenerSolicitud(
 
         return redirect()
             ->route('registro.completado')
-            ->with('success', 'Solicitud enviada correctamente.')
+            ->with('success', 'Su solicitud fue registrada correctamente.')
             ->with('descargar_acuse_solicitud_id', $solicitud->id);
     }
 }

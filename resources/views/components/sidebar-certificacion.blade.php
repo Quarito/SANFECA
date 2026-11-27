@@ -3,27 +3,14 @@
     $tieneDatos = false;
     $esRefrendo = false;
     $tramiteEnviado = false;
-    if (!$esPreview && auth()->getDefaultDriver() === 'pdm') {
-        $tieneDatos = auth()->check();
-    } elseif (!$esPreview && auth()->check()) {
-        $tieneDatos = \App\Models\DatosSolicitante::where(
-            'user_id', auth()->id()
-        )->exists();
-
-        $solicitudMenu = \App\Models\SolicitudCertificacion::where(
-            'user_id', auth()->id()
-        )
-            ->where('estado', 'borrador')
-            ->latest('id')
-            ->first();
+    if (!$esPreview && auth()->check()) {
+        // Persistencia en las 36 tablas oficiales (PERSONA y SOLICITUD/ESTADO_SOLICITUD).
+        $tieneDatos = auth()->user()->persona()->exists();
+        $tramitesMenu = app(\App\Services\Anfeca\Tramites::class);
+        $solicitudMenu = $tramitesMenu->borrador((int) auth()->user()->usua_id_persona);
 
         if (!$solicitudMenu) {
-            $solicitudMenu = \App\Models\SolicitudCertificacion::where(
-                'user_id', auth()->id()
-            )
-                ->where('estado', 'enviado')
-                ->latest('id')
-                ->first();
+            $solicitudMenu = $tramitesMenu->ultimaEnviada((int) auth()->user()->usua_id_persona);
 
             $tramiteEnviado = $solicitudMenu !== null;
         }
