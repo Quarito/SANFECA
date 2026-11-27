@@ -1,0 +1,11 @@
+FROM php:8.5.12-fpm-trixie@sha256:128f02f6ea8cd5d272fcbcefe1abbc8ae444469debd47c1b6c10507d018ed64e
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libfcgi-bin libicu-dev libjpeg62-turbo-dev libpng-dev libpq-dev libzip-dev unzip \
+    && docker-php-ext-configure gd --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" bcmath gd intl pcntl pdo_pgsql pgsql sockets zip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
+COPY anfeca.ini /usr/local/etc/php/conf.d/zz-anfeca.ini

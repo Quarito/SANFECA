@@ -113,7 +113,7 @@ comprobar_limite post_max_size 25M $((25 * 1024 * 1024))
 # ---------------------------------------------------------------------------
 titulo "PHP, extensiones y Composer"
 VERSION_PHP=$(php -r 'echo PHP_VERSION;' 2>/dev/null)
-[[ "$VERSION_PHP" == "8.5.12" ]] && ok "PHP CLI $VERSION_PHP" || aviso "PHP CLI ${VERSION_PHP:-no encontrado} (se validó con 8.5.12)"
+[[ "$VERSION_PHP" == "8.5.12" ]] && ok "PHP CLI $VERSION_PHP" || error "PHP CLI ${VERSION_PHP:-no encontrado}: se requiere exactamente 8.5.12"
 MODULOS=$(php -m 2>/dev/null | tr 'A-Z' 'a-z')
 for e in bcmath ctype curl dom fileinfo filter gd iconv intl mbstring openssl pcntl pdo_pgsql pgsql session sockets tokenizer xml xmlreader xmlwriter zip zlib; do
     grep -qx "$e" <<<"$MODULOS" || error "falta la extensión PHP: $e"
