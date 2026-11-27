@@ -142,6 +142,42 @@ class AutenticacionModeloOficialTest extends PdmTestCase
         $this->get('/mis-datos')->assertRedirect('/login');
     }
 
+    public function test_alta_desde_cero_rechaza_perdida_del_domicilio_sin_escrituras_ni_clave_en_sesion(): void
+    {
+        config(['auth.defaults.guard' => 'pdm']);
+        $datos = [
+            'curp' => 'AAAA010101MDFBBB09',
+            'rfc' => 'AAAA0101016A2',
+            'nombres' => 'Ana',
+            'apellido_paterno' => 'Prueba',
+            'genero' => 'Femenino',
+            'calle' => 'Calle ficticia',
+            'numero_exterior' => '7',
+            'codigo_postal' => '01000',
+            'entidad_federativa' => 'Ciudad de México',
+            'colonia' => 'Colonia ficticia',
+            'municipio' => 'Municipio ficticio',
+            'correo_electronico' => 'alta@example.test',
+            'telefono_celular' => '5555555555',
+            'password' => 'nueva-clave-ficticia',
+            'password_confirmation' => 'nueva-clave-ficticia',
+        ];
+
+        $this->from('/registro/datos-personales')->post('/registro/datos-personales', $datos)
+            ->assertRedirect('/registro/datos-personales')->assertSessionHasErrors('colonia')
+            ->assertSessionMissing('_old_input.password')->assertSessionMissing('_old_input.password_confirmation');
+        foreach (['persona', 'usuario', 'comunicacion', 'domicilio', 'solicitud'] as $tabla) {
+            $this->assertDatabaseEmpty("anfeca_modelo.{$tabla}");
+        }
+        $this->assertGuest('pdm');
+
+        $usuario = $this->crearUsuario('alta@example.test');
+        $this->actingAs($usuario, 'pdm')->post('/registro/datos-personales', $datos)
+            ->assertRedirect(route('mis-datos.edit'));
+        $this->assertSame(1, Usuario::count());
+        $this->assertSame(1, Persona::count());
+    }
+
     public function test_http_recuperacion_verifica_contacto_y_consumo_unico(): void
     {
         config([

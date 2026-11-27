@@ -49,8 +49,12 @@ class DatosSolicitanteController extends Controller
     public function store(Request $request)
     {
         if (Auth::getDefaultDriver() === 'pdm') {
+            if ($request->user()) {
+                return redirect()->route('mis-datos.edit');
+            }
+
             throw ValidationException::withMessages([
-                'colonia' => 'El modelo PowerDesigner oficial aún no permite registrar la colonia y el municipio del domicilio. Este alta no se guardó.',
+                'colonia' => 'El alta está temporalmente suspendida porque el domicilio no puede vincularse con la colonia y el municipio capturados. No se guardó la cuenta.',
             ]);
         }
 
