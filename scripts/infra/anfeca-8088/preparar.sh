@@ -163,7 +163,13 @@ if [[ "$selinux" != Disabled ]]; then
     etiqueta httpd_sys_rw_content_t "$web/storage(/.*)?"
     etiqueta httpd_sys_rw_content_t "$web/bootstrap/cache(/.*)?"
     tipos=$(semanage port -l)
-    tipo=$(awk '$2=="tcp" {for(i=3;i<=NF;i++){gsub(/,/,"",$i); n=split($i,p,"-"); if(p[1]<=8088 && (n==1?p[1]:p[2])>=8088) print $1}}' <<< "$tipos")
+    tipo=$(awk '$2=="tcp" && $1!="unreserved_port_t" && $1!="port_t" {
+        for(i=3;i<=NF;i++){
+            gsub(/,/,"",$i)
+            n=split($i,p,"-")
+            if(p[1]<=8088 && (n==1?p[1]:p[2])>=8088) print $1
+        }
+    }' <<< "$tipos" | sort -u)
     case "$tipo" in
         http_port_t) ;;
         '') semanage port -a -t http_port_t -p tcp 8088 ;;
