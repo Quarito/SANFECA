@@ -422,3 +422,7 @@ select row_to_json(o) from objetos o order by clase,esquema,tabla,nombre;
 ```
 
 </details>
+
+## Revalidación con el nombre oficial
+
+En esta fase se repitieron el cotejo SHA-256 de la fuente, la instalación mediante Laravel y el volcado sobre una base desechable llamada `certificacion_anfeca` en PostgreSQL 18.7. Las 36 filas de la matriz siguen aprobadas. El volcado normalizado y el inventario conservaron las huellas documentadas arriba. El directorio SQL de PowerDesigner quedó idéntico al del PR #12. Las guardas añadidas operan en Laravel y no cambian las definiciones de PostgreSQL.
