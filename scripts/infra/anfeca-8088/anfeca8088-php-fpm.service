@@ -1,0 +1,14 @@
+[Unit]
+Description=PHP-FPM exclusivo de ANFECA 8088
+After=systemd-tmpfiles-setup.service anfeca8088-postgresql.service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/php-fpm --nodaemonize --fpm-config /etc/anfeca8088/php-fpm.conf
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/run/anfeca8088-fpm /var/www/ANFECA_8088/storage /var/www/ANFECA_8088/bootstrap/cache
+
+[Install]
+WantedBy=multi-user.target

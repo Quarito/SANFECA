@@ -1,0 +1,27 @@
+Listen 192.168.7.130:8088
+<VirtualHost 192.168.7.130:8088>
+    ServerName 192.168.7.130
+    DocumentRoot "/var/www/ANFECA_8088/public"
+    DirectoryIndex index.php
+    ProxyRequests Off
+
+    <Directory "/var/www/ANFECA_8088/public">
+        Options -Indexes -FollowSymLinks
+        AllowOverride None
+        Require ip 127.0.0.1 192.168.7.130 @CIDR@
+        FallbackResource /index.php
+    </Directory>
+
+    <FilesMatch "^(index|__infra)\.php$">
+        SetHandler "proxy:unix:/run/anfeca8088-fpm/php.sock|fcgi://localhost/"
+    </FilesMatch>
+    <FilesMatch "^\.|\.(php[0-9]+|phtml|phar|inc)$|^(?!(index|__infra)\.php$).*\.php$">
+        Require all denied
+    </FilesMatch>
+    <Location "/__infra.php">
+        Require ip 127.0.0.1 192.168.7.130
+    </Location>
+
+    ErrorLog "/var/log/httpd/anfeca8088-error.log"
+    CustomLog "/var/log/httpd/anfeca8088-access.log" combined
+</VirtualHost>
