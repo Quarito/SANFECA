@@ -18,12 +18,14 @@ done
 echo 'Espacio de almacenamiento (sin escrituras):'
 df -Ph "$HOME" /var/tmp 2>/dev/null || true
 fallos=0
+encontrados=0
 for app in /var/www/ANFECA_ENSAYO /var/www/anfeca; do
   printf '\n=== %s ===\n' "$app"
   if [[ ! -d "$app" ]]; then
     echo 'Instalación ausente en este host; inspeccionar en el host correspondiente.'
     continue
   fi
+  encontrados=$((encontrados+1))
   printf 'HEAD: '; git -C "$app" rev-parse --short HEAD 2>/dev/null || echo desconocido
   printf 'Rama: '; git -C "$app" branch --show-current 2>/dev/null || echo desconocida
   printf 'Espacio: '; df -Ph "$app" | tail -1 || true
@@ -34,4 +36,8 @@ for app in /var/www/ANFECA_ENSAYO /var/www/anfeca; do
 done
 echo 'No se realizaron respaldos, migraciones ni cambios de configuración.'
 echo 'Antes de restaurar: verificar topología, capacidad real de datos y tamaño del volumen temporal.'
+if [[ "$encontrados" -eq 0 ]]; then
+  echo "No se encontró ninguna instalación en este host; diagnóstico incompleto." >&2
+  exit 2
+fi
 [[ "$fallos" -eq 0 ]]
