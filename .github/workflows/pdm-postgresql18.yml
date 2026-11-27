@@ -19,9 +19,9 @@ permissions:
 
 jobs:
   pruebas:
-    name: PHP 8.4 / PostgreSQL 18 / PHPUnit
+    name: PHP 8.5.12 / PHP-FPM / PostgreSQL 18
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:18
@@ -29,8 +29,6 @@ jobs:
           POSTGRES_DB: postgres
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d postgres"
           --health-interval 5s
@@ -42,60 +40,80 @@ jobs:
       DB_PORT: '5432'
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
-      PGHOST: 127.0.0.1
-      PGPORT: '5432'
-      PGUSER: postgres
-      PGPASSWORD: postgres
       ANFECA_PDM_MODO: apagado
     steps:
       - name: Recuperar código
         uses: actions/checkout@v4
 
-      - name: PHP 8.4 y extensiones
-        uses: shivammathur/setup-php@v2
+      - name: Compilar los recursos de Laravel
+        uses: actions/setup-node@v4
         with:
-          php-version: '8.4'
-          extensions: mbstring, dom, xml, curl, zip, gd, intl, pdo_pgsql, pgsql, pdo_sqlite, sqlite3
-          coverage: none
-          tools: composer:v2
+          node-version: '24'
 
-      - name: Dependencias y clave aislada
+      - run: npm ci --ignore-scripts && npm run build
+
+      - name: Preparar runtime exacto en la red del PostgreSQL desechable
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: |
+          docker build -f scripts/anfeca/runtime/Dockerfile.php8512 -t anfeca-ci-php:8.5.12 scripts/anfeca/runtime
+          docker run -d --name anfeca-ci-php --network "container:$POSTGRES_CONTAINER" \
+            --user "$(id -u):$(id -g)" --workdir /app --volume "$GITHUB_WORKSPACE:/app" \
+            -e HOME=/tmp -e APP_ENV -e DB_HOST -e DB_PORT -e DB_USERNAME -e DB_PASSWORD -e ANFECA_PDM_MODO \
+            --entrypoint sleep anfeca-ci-php:8.5.12 infinity
+          docker exec anfeca-ci-php php -r 'if (PHP_VERSION !== "8.5.12") exit(1); echo PHP_VERSION, PHP_EOL;'
+          docker exec anfeca-ci-php php-fpm -v | grep -F 'PHP 8.5.12 (fpm-fcgi)'
           cp .env.example .env
-          composer install --prefer-dist --no-interaction --no-progress
-          php artisan key:generate --force --no-interaction
+          docker exec anfeca-ci-php composer install --prefer-dist --no-interaction --no-progress
+          docker exec anfeca-ci-php composer check-platform-reqs --lock
+          docker exec anfeca-ci-php php artisan key:generate --force --no-interaction
 
       - name: Validación sintáctica del script de ensayo
         run: bash -n scripts/anfeca/ensayo_copia_f2.sh
 
       - name: Bases desechables exclusivas del runner
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: |
-          psql -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE bd_anfeca_pruebas_pg'
-          psql -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE bd_anfeca_desechable_pruebas_pg'
+          docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE DATABASE bd_anfeca_pruebas_pg;
+          CREATE DATABASE bd_anfeca_desechable_pruebas_pg;
+          CREATE DATABASE certificacion_anfeca;
+          SQL
 
       - name: Respaldo y huellas con escritura concurrente
-        run: bash scripts/anfeca/pruebas/probar_instantanea_respaldo.sh
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker cp scripts/anfeca "$POSTGRES_CONTAINER:/tmp/anfeca"
+          docker exec -e PGHOST=127.0.0.1 -e PGPORT=5432 -e PGUSER=postgres -e PGPASSWORD=postgres \
+            "$POSTGRES_CONTAINER" bash /tmp/anfeca/pruebas/probar_instantanea_respaldo.sh
+
+      - name: Instalación Laravel y PowerDesigner en certificacion_anfeca
+        run: |
+          docker exec -e DB_CONNECTION=pgsql -e DB_DATABASE=certificacion_anfeca anfeca-ci-php \
+            php artisan migrate --force --no-interaction
+          docker exec -e DB_CONNECTION=pgsql -e DB_DATABASE=certificacion_anfeca -e ANFECA_PDM_AUTORIZAR_INSTALACION=si \
+            anfeca-ci-php php artisan anfeca:modelo-instalar --ejecutar --confirmar --no-interaction
+          docker exec -e DB_CONNECTION=pgsql -e DB_DATABASE=certificacion_anfeca -e ANFECA_PDM_AUTORIZAR_EXTENSIONES=si \
+            anfeca-ci-php php artisan migrate --path=database/migrations_pdm --force --no-interaction
+          docker exec -e DB_CONNECTION=pgsql -e DB_DATABASE=certificacion_anfeca anfeca-ci-php \
+            php artisan anfeca:modelo-verificar --no-interaction
+
+      - name: Prueba Laravel mediante el pool PHP-FPM 8.5.12
+        run: >-
+          docker exec -e DB_CONNECTION=pgsql -e DB_DATABASE=certificacion_anfeca
+          anfeca-ci-php bash scripts/anfeca/pruebas/probar_php_fpm.sh
 
       - name: Pruebas generales SQLite
-        run: php vendor/bin/phpunit -c phpunit.xml
+        run: docker exec anfeca-ci-php php vendor/bin/phpunit -c phpunit.xml
 
-      - name: Obtener espacio de red de PostgreSQL desechable
-        id: pgnet
-        run: |
-          CID=$(docker ps --filter "ancestor=postgres:18" --format '{{.ID}}' | head -n 1)
-          test -n "$CID"
-          PID=$(docker inspect --format '{{.State.Pid}}' "$CID")
-          test "$PID" -gt 1
-          echo "pid=$PID" >> "$GITHUB_OUTPUT"
+      - name: Pruebas PDM PostgreSQL 18
+        run: docker exec anfeca-ci-php php vendor/bin/phpunit -c phpunit.pgsql.xml
 
-      - name: Pruebas PDM PostgreSQL 18 (loopback del contenedor)
-        run: >-
-          sudo nsenter --target "${{ steps.pgnet.outputs.pid }}" --net --
-          env DB_HOST=127.0.0.1 DB_PORT=5432 DB_USERNAME=postgres DB_PASSWORD=postgres DB_URL=''
-          php vendor/bin/phpunit -c phpunit.pgsql.xml
+      - name: Pruebas de revisión documental PostgreSQL 18
+        run: docker exec anfeca-ci-php php vendor/bin/phpunit -c phpunit.revision-pg.xml
 
-      - name: Pruebas revisión documental PostgreSQL 18 (loopback del contenedor)
-        run: >-
-          sudo nsenter --target "${{ steps.pgnet.outputs.pid }}" --net --
-          env DB_HOST=127.0.0.1 DB_PORT=5432 DB_USERNAME=postgres DB_PASSWORD=postgres DB_URL=''
-          php vendor/bin/phpunit -c phpunit.revision-pg.xml
+      - name: Retirar el runtime de pruebas
+        if: always()
+        run: docker rm -f anfeca-ci-php || true
