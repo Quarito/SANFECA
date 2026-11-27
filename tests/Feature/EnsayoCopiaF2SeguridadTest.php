@@ -35,6 +35,13 @@ class EnsayoCopiaF2SeguridadTest extends TestCase
         $this->assertStringNotContainsString('pg_restore reportó advertencias', $script);
     }
 
+    public function test_no_ignora_fallos_al_generar_el_plan_pdm(): void
+    {
+        $script = $this->script();
+        $this->assertStringContainsString('Falló la generación del plan PDM.', $script);
+        $this->assertStringNotContainsString('anfeca:pdm-migrar --informe="$SALIDA/plan.json" || true', $script);
+    }
+
     public function test_comparacion_aborta_si_fallan_consultas_o_difieren_conteos(): void
     {
         $script = $this->script();
