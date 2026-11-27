@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Services\Pdm\Espejo\EspejoPdm;
 use App\Models\User;
+use App\Services\Pdm\Solicitantes\ConsultaPersonalPdm;
+use Illuminate\Validation\ValidationException;
 use App\Models\DatosSolicitante;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +23,12 @@ class DatosSolicitanteController extends Controller
 
     public function create(Request $request)
 {
+    if (Auth::getDefaultDriver() === 'pdm') {
+        return $request->user()
+            ? redirect()->route('mis-datos.edit')
+            : view('registro.datos-personales', ['datos' => null]);
+    }
+
     // P5: una cuenta que ya tiene datos personales no vuelve al alta.
     if ($this->yaTieneDatos($request)) {
         return redirect()->route('mis-datos.edit');
@@ -40,6 +48,12 @@ class DatosSolicitanteController extends Controller
 
     public function store(Request $request)
     {
+        if (Auth::getDefaultDriver() === 'pdm') {
+            throw ValidationException::withMessages([
+                'colonia' => 'El modelo PowerDesigner oficial aún no permite registrar la colonia y el municipio del domicilio. Este alta no se guardó.',
+            ]);
+        }
+
         // P5: evitar un segundo registro (error 500 por unicidad de user_id).
         if ($this->yaTieneDatos($request)) {
             return redirect()
@@ -168,6 +182,13 @@ class DatosSolicitanteController extends Controller
 
     public function edit(Request $request)
     {
+        if (Auth::getDefaultDriver() === 'pdm') {
+            return view('solicitante.mis-datos', [
+                'datos' => app(ConsultaPersonalPdm::class)->consultar($request->user()),
+                'soloConsultaPdm' => true,
+            ]);
+        }
+
         $datos = DatosSolicitante::where(
             'user_id',
             $request->user()->id

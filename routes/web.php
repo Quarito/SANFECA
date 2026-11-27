@@ -22,6 +22,10 @@ Route::get('/', function () {
         return redirect()->route('login');
     }
 
+    if (auth()->getDefaultDriver() === 'pdm') {
+        return redirect()->route('mis-datos.edit');
+    }
+
     // Perfiles administrativos: módulo de coordinación.
     if (auth()->user()->esCoordinador()) {
         return redirect()->route('coordinacion.inicio');
