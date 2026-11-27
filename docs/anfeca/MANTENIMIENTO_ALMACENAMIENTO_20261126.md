@@ -106,3 +106,18 @@ El procedimiento de esa sección sigue vigente. Datos nuevos:
 3. Conservar solo dos versiones de Claude: la que está en ejecución y la predeterminada.
 4. Al concluir cada verificación visual, eliminar los navegadores de Playwright y los árboles temporales.
 5. Antes de pruebas pesadas, comprobar que hay ≥ 5 GB libres. Los scripts de demostración y de migración ya lo verifican y se detienen si no se cumple.
+
+## 7. Ampliación ejecutada (OPS-02 cerrado) · 2026-11-26
+
+Ejecutada por el responsable con sudo, siguiendo §4. Verificación posterior (solo lectura):
+
+| Elemento | Resultado |
+|---|---|
+| Disco VMware (`nvme0n1`) | 50 GiB |
+| Partición `nvme0n1p3` (LVM) | 48 GiB |
+| `root` (XFS, ampliado en línea) | 44 GiB · 32 GiB libres · 28 % de ocupación |
+| `swap` | 2 GiB (sin cambio) |
+| Reserva libre en el VG `almalinux` | ≈ 2 GiB (disponible para swap o `root` en una ventana futura) |
+| Apache, PHP-FPM y PostgreSQL 18 | Activos |
+
+El umbral preventivo de 5 GB se conserva en los scripts. No se repite el mantenimiento. Con este margen se desplegó el catálogo de licenciaturas en 8086 (`catalogos/DESPLIEGUE_LICENCIATURAS_POSGRADO_8086.md`): libre antes 32 722 MB, después ≈ 32 700 MB.
