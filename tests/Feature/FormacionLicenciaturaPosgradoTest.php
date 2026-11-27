@@ -284,6 +284,28 @@ class FormacionLicenciaturaPosgradoTest extends TestCase
         $this->assertSame(0, $this->archivosFisicos($s), 'Los archivos subidos en intentos rechazados no permanecen.');
     }
 
+    public function test_cambio_de_area_a_una_que_exige_posgrado_detiene_autorizacion_y_envio(): void
+    {
+        // CAL-01 · incidente de revisión: «solo licenciatura» guardado en Informática Administrativa y después el área
+        // de certificación cambia a Disciplinas vinculadas (que exige posgrado). No debe autorizarse ni enviarse.
+        [$u, $s] = $this->solicitante('Informática Administrativa');
+        $this->guardar($u, $this->catLic('LIC-00000000000C') + ['cuenta_con_posgrado' => '0'], self::DOCS_ORIGEN)->assertSessionHasNoErrors();
+        $area = 'Disciplinas vinculadas al ámbito económico-administrativo';
+        DB::table('solicitudes_certificacion')->where('id', $s->id)->update(['area_certificacion' => $area]);
+
+        $this->assertTrue(RequisitosFormacion::faltaPosgradoObligatorio($this->fila($s), $area));
+        $this->actingAs($u)->post('/registro/formacion-academica/autorizar', ['confirmacion_formacion' => '1'])
+            ->assertRedirect(route('registro.formacion'))
+            ->assertSessionHas('error', RequisitosFormacion::mensajePosgradoObligatorio($area));
+
+        $requisitos = (new \ReflectionMethod(\App\Http\Controllers\RegistroCompletadoController::class, 'requisitos'))
+            ->invoke(app(\App\Http\Controllers\RegistroCompletadoController::class), $s->fresh());
+        $this->assertFalse($requisitos['formacion_academica'], 'El envío final tampoco acepta la formación sin posgrado.');
+
+        // Un 0 numérico se interpreta como «solo licenciatura» y se rechaza igual (no como escenario 2).
+        $this->guardar($u, $this->catLic('LIC-00000000000C') + ['cuenta_con_posgrado' => 0])->assertSessionHasErrors('cuenta_con_posgrado');
+    }
+
     public function test_cambio_de_casilla_conserva_y_recupera_el_posgrado_sin_borrar(): void
     {
         [$u, $s] = $this->solicitante('Contaduría Pública');

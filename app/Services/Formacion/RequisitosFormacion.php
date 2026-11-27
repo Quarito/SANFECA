@@ -3,6 +3,7 @@
 namespace App\Services\Formacion;
 
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 /**
  * FUENTE ÚNICA de los requisitos de la Formación Académica (etapa 1), según los dos escenarios autorizados:
@@ -48,6 +49,62 @@ class RequisitosFormacion
     public static function exigePosgrado(?string $areaCertificacion): bool
     {
         return in_array($areaCertificacion, (array) config('anfeca_catalogos.declaracion_posgrado.areas_que_exigen_posgrado', []), true);
+    }
+
+    /**
+     * Escenario 1 guardado en un área que EXIGE posgrado. Ocurre si el solicitante cambia el área de certificación
+     * después de guardar «solo licenciatura»: la autorización y el envío deben detenerse (DOC-02).
+     */
+    public static function faltaPosgradoObligatorio(mixed $formacion, ?string $areaCertificacion): bool
+    {
+        return self::soloLicenciatura($formacion) && self::exigePosgrado($areaCertificacion);
+    }
+
+    public static function mensajePosgradoObligatorio(?string $areaCertificacion): string
+    {
+        return 'Para la certificación en '.$areaCertificacion.' es requisito contar con estudios de posgrado '
+            .'(Reglamento para la Certificación Académica, arts. 1 y 13; Instrumento de evaluación, factor 1.1). '
+            .'Marque «Cuento con estudios de posgrado concluidos» y registre su último grado.';
+    }
+
+    /**
+     * Reglas de la casilla y de los datos de posgrado según el escenario (las usa el guardado de la Formación).
+     *
+     * @param  bool  $sinPosgrado  escenario 1 solicitado en este guardado
+     * @param  ?bool  $declarada  declaración ya guardada (null = sin declarar: la casilla es obligatoria)
+     */
+    public static function reglasDeclaracion(bool $sinPosgrado, ?bool $declarada, ?string $areaCertificacion): array
+    {
+        $reglas = ['cuenta_con_posgrado' => [
+            $declarada === null ? 'required' : 'nullable',
+            Rule::in(self::exigePosgrado($areaCertificacion) ? ['1'] : ['0', '1']),
+        ]];
+        if ($sinPosgrado) {
+            // Escenario 1: no se recibe ningún dato ni archivo de posgrado (los guardados antes se conservan).
+            foreach ([...self::CAMPOS_ULTIMO, 'titulo_ultimo_grado_otro', 'modo_titulo_ultimo_grado', 'clave_posgrado_catalogo',
+                      'titulo_ultimo_grado_manual', ...self::DOCUMENTOS_ULTIMO] as $campo) {
+                $reglas[$campo] = ['prohibited'];
+            }
+        } else {
+            // Escenario 2: el último grado SOLO puede ser un posgrado (nunca una segunda licenciatura).
+            $reglas['nivel_ultimo_grado'] = ['required', Rule::in(self::NIVELES_POSGRADO)];
+        }
+
+        return $reglas;
+    }
+
+    public static function mensajesDeclaracion(?string $areaCertificacion): array
+    {
+        $sinDocumentos = 'No se reciben documentos de posgrado si indicó que solo cuenta con licenciatura.';
+
+        return [
+            'cuenta_con_posgrado.required' => 'Indique si cuenta con estudios de posgrado concluidos.',
+            'cuenta_con_posgrado.in' => self::mensajePosgradoObligatorio($areaCertificacion),
+            'nivel_ultimo_grado.in' => 'El último grado debe ser Especialidad, Maestría o Doctorado. Si solo cuenta con licenciatura, desmarque la casilla «Cuento con estudios de posgrado concluidos».',
+            'nivel_ultimo_grado.prohibited' => 'No se reciben datos de posgrado si indicó que solo cuenta con licenciatura.',
+            'titulo_ultimo_grado_archivo.prohibited' => $sinDocumentos,
+            'cedula_ultimo_grado_archivo.prohibited' => $sinDocumentos,
+        ];
     }
 
     /** Valor normalizado de la declaración: true, false o null (no declarada / histórico). */
