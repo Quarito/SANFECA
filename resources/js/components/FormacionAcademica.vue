@@ -303,20 +303,47 @@ const origenManual = ref(
     ?? (f.origen_titulo_origen === 'manual' ? f.titulo_origen_especifico : (historicoOrigenOtro ? f.titulo_origen_otro : ''))
     ?? ''
 );
+// Filtro de búsqueda por área académica.
+const areaOrigenFiltro = ref(
+    props.titulosPermitidos.length === 1
+        ? props.titulosPermitidos[0]
+        : (
+            titulosOrigen.includes(f.titulo_origen)
+                ? f.titulo_origen
+                : (props.titulosPermitidos[0] ?? '')
+        )
+);
+
 const campoClaveOrigen = ref(null);
 const campoModoOrigen = ref(null);
 const campoManualOrigen = ref(null);
 
 async function buscarLicenciaturas(texto) {
     const parametros = new URLSearchParams({ q: texto });
+    if (areaOrigenFiltro.value) {
+        parametros.set('area', areaOrigenFiltro.value);
+    }
     const r = await fetch(`${props.catalogoLicenciaturas.url}?${parametros}`, {
         headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin'
     });
     if (!r.ok) throw new Error(String(r.status));
     return r.json();
 }
+function cambiarAreaOrigen() {
+    claveOrigen.value = '';
+    textoOrigen.value = '';
+    notificarCambio(campoClaveOrigen);
+}
+
 function elegirOrigen(opcion) {
     claveOrigen.value = opcion.clave;
+    textoOrigen.value = (
+        opcion.titulo_completo
+        ?? opcion.titulo
+        ?? opcion.nombre
+        ?? opcion.label
+        ?? ''
+    );
     textoOrigen.value = opcion.titulo;
     modoOrigen.value = 'catalogo';
     notificarCambio(campoClaveOrigen);
@@ -376,24 +403,36 @@ const institucionSeleccionada = computed(() => {
             <!-- FORMACIÓN ACADÉMICA DE ORIGEN -->
             <section class="seccion mejora-columnas-97153">
 		<h2>Formación Académica de Origen</h2>
-		<div class="campo">
-		    <label for="nivel_origen_visible">
-		        Nivel
-		    </label>
 
-		    <select id="nivel_origen_visible" disabled>
-		        <option value="Licenciatura">
-		            Licenciatura
-		        </option>
-		    </select>
+                <div v-if="declaracion"
+                     class="ug-espacio-alineacion"
+                     aria-hidden="true"></div>
+                <div class="ug-catalogo">
+                    <div :class="licActivo ? 'ug-fila-nivel-area' : ''">
+                        <div class="ug-campo">
+                            <label for="nivel_origen_visible">Nivel</label>
+                            <select id="nivel_origen_visible" disabled>
+                                <option value="Licenciatura">Licenciatura</option>
+                            </select>
+                            <input type="hidden" name="nivel_origen" value="Licenciatura">
+                        </div>
 
-		    <input
-			    
-			    type="hidden"
-			    name="nivel_origen"
-			    value="Licenciatura"
-			>
-		</div>
+                        <div v-if="licActivo" class="ug-campo">
+                            <label for="area_origen_filtro">Área</label>
+                            <select id="area_origen_filtro"
+                                    v-model="areaOrigenFiltro"
+                                    :disabled="formacionBloqueada"
+                                    @change="cambiarAreaOrigen">
+                                <option v-for="area in titulosOrigen"
+                                        :key="area"
+                                        :value="area"
+                                        :disabled="!tituloOrigenDisponible(area)">
+                                    {{ area }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 <p v-if="licError" class="aviso-catalogo-posgrados" role="status">
                     El catálogo de licenciaturas no está disponible por el momento; capture su información como de costumbre.
                 </p>
@@ -410,6 +449,7 @@ const institucionSeleccionada = computed(() => {
                         <SelectorBuscable
                             v-if="modoOrigen === 'catalogo'"
                             id="titulo_origen"
+                            :key="areaOrigenFiltro"
                             :model-value="claveOrigen"
                             :texto-seleccionado="textoOrigen"
                             placeholder="Seleccione o busque su título"
@@ -1100,6 +1140,28 @@ const institucionSeleccionada = computed(() => {
     }
 }
 
+
+/* Ajuste rápido: mostrar títulos completos */
+#titulo_origen,
+#titulo_ultimo_grado {
+    white-space: normal;
+}
+
+.ug-catalogo .campo-busqueda input,
+.ug-catalogo input,
+.ug-catalogo .selector-busqueda__input,
+.ug-catalogo .selector-busqueda__control {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+.ug-catalogo .selector-busqueda__opcion,
+.ug-catalogo .selector-busqueda__menu li,
+.ug-catalogo .selector-busqueda__menu-item {
+    white-space: normal !important;
+    line-height: 1.25 !important;
+}
 </style>
 
 <style>
@@ -1140,3 +1202,22 @@ const institucionSeleccionada = computed(() => {
 #vue-formacion-academica .fila-titulos-origen .selector-buscable { width: 100%; }
 </style>
 
+
+
+<style>
+/* Homologación vertical de ambas fichas académicas. */
+
+#vue-formacion-academica .ug-espacio-alineacion {
+    height: 20px;
+    min-height: 20px;
+}
+
+/* Reservar el espacio únicamente cuando las fichas
+   se presentan en dos columnas. */
+
+@media (max-width: 768px) {
+    #vue-formacion-academica .ug-espacio-alineacion {
+        display: none;
+    }
+}
+</style>

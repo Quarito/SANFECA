@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Laravel sobre el modelo APROBADO de 36 tablas (sin public ni anfeca_compat), contra PostgreSQL AISLADO.
+
+    php vendor/bin/phpunit -c phpunit.pdm36.xml
+
+    - Base por omisión: bd_anfeca_pdm36_pruebas (la prueba se niega con cualquier otro nombre).
+    - Usuario, contraseña y puerto se toman del entorno o de .env (no se escriben aquí).
+    - La preparación BORRA y recrea el contenido de esa base aislada: nunca apunte a bd_laravelanfeca_pruebas.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Pdm36">
+            <directory>tests/Pdm36</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="DB_CONNECTION" value="pgsql" force="true"/>
+        <env name="DB_DATABASE" value="bd_anfeca_pdm36_pruebas" force="true"/>
+        <env name="ANFECA_PDM36" value="true" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="ANFECA_PDM_MODO" value="apagado" force="true"/>
+    </php>
+</phpunit>

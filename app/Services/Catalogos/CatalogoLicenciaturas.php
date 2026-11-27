@@ -118,11 +118,11 @@ class CatalogoLicenciaturas
     }
 
     /**
-     * Búsqueda en TODAS las áreas (sin filtros permanentes), parcial, por palabras, sin acentos ni mayúsculas, en
+     * Búsqueda en todas las áreas o en un área específica, parcial, por palabras, sin acentos ni mayúsculas, en
      * orden alfabético. Devuelve el total de coincidencias para que la interfaz pida afinar la búsqueda cuando se
      * supera el límite: ningún título queda inaccesible (basta escribir más palabras).
      */
-    public function buscar(string $busqueda, ?int $limite = null): array
+    public function buscar(string $busqueda, ?int $limite = null, ?string $area = null): array
     {
         $this->datos();
         $palabras = array_values(array_filter(explode(' ', CatalogoPosgrados::normalizar($busqueda))));
@@ -130,6 +130,9 @@ class CatalogoLicenciaturas
         $total = 0;
         $titulos = [];
         foreach ($this->indice as [$n, $clave, $titulo]) {
+            if ($area !== null && ($this->porClave[$clave]['area'] ?? null) !== $area) {
+                continue;
+            }
             foreach ($palabras as $p) {
                 if (!str_contains($n, $p)) {
                     continue 2;
