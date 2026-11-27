@@ -55,12 +55,16 @@ cat > "$T/scr/respaldo_verificado.sh" <<EOF
 mkdir -p "$T/resp"; cp "$T/huellas_origen.txt" "$T/resp/huellas_origen.txt"; touch "$T/resp/base.dump"
 echo "RESULTADO: respaldo restaurable y equivalente. Archivo: $T/resp/base.dump"
 EOF
-cat > "$T/scr/huellas_documentos.sh" <<'EOF'
+cat > "$T/scr/huellas_documentos.sh" <<EOF
 #!/bin/bash
-echo '{}' > "$2"
+# Defecto 2 del despliegue: servidorweb no puede escribir en la evidencia de root.
+case "\$2" in "$T/evid"*) echo "PermissionError: \$2" >&2; exit 13;; esac
+echo '{}' > "\$2"
 EOF
 cat > "$T/sincronizar.sh" <<'EOF'
 #!/bin/bash
+# Defecto 1 del despliegue: sudo reinicia el entorno; el socket del servicio debe llegar explícitamente.
+case "${PG8086_ADMIN:-}" in *"-h /run/anfeca-pg8086 "*) ;; *) echo "socket incorrecto: '${PG8086_ADMIN:-}'" >&2; exit 2;; esac
 [ "${SIM_FALLA:-}" = sincronizacion ] && { echo "huellas distintas" >&2; exit 1; }; echo "sincronizada"
 EOF
 chmod +x "$T"/bin/* "$T"/scr/*.sh "$T/sincronizar.sh"
@@ -92,5 +96,8 @@ bash "$D/03_revertir_root.sh" "$U" > "$T/s6.log" 2>&1; rc=$?
 caso "6. reversión con escrituras nuevas → mantenimiento, VirtualHost original, tablas listadas" "2 mantenimiento original si" "$rc $(abierto && echo abierto || echo mantenimiento) $(cmp -s "$T/vhost.conf" "$T/vhost.original" && echo original || echo modificado) $([ -s "$U/tablas_con_escrituras_nuevas.txt" ] && echo si || echo no)"
 cp "$T/huellas_reales.txt" "$U/huellas_al_conmutar.txt"; bash "$D/03_revertir_root.sh" "$U" > "$T/s7.log" 2>&1; rc=$?
 caso "7. reversión sin escrituras (reejecución) → reabierto con el VirtualHost original" "0 abierto original" "$rc $(abierto && echo abierto || echo mantenimiento) $(cmp -s "$T/vhost.conf" "$T/vhost.original" && echo original || echo modificado)"
+caso "9. sin directorios temporales de evidencia remanentes" "0" "$(find /tmp -maxdepth 1 -name 'anfeca8086_docs.*' -user "$(id -u)" -newer "$T/vhost.original" 2>/dev/null | wc -l)"
+D_SIN=$(sed -n 's/^ADMIN=(\${PG8086_ADMIN:-\(.*\)})$/\1/p' "$D/sincronizar_bd.sh"); D_SERV=$(grep -o "unix_socket_directories = '[^']*'" "$D/01_preparar_servicios_root.sh" | cut -d"'" -f2)
+caso "10. socket por omisión de sincronizar_bd.sh = socket del servicio" "si" "$(echo "$D_SIN" | grep -q -- "-h $D_SERV " && echo si || echo "no ($D_SIN / $D_SERV)")"
 grep -rhiE 'password|contraseña=' "$T"/s*.log "$T"/evid/*/bitacora.txt 2>/dev/null | grep -v 'password@-' | head -3 && { echo "FALLA bitácoras con contraseñas"; R=1; } || echo "ok    8. bitácoras sin contraseñas"
 exit $R

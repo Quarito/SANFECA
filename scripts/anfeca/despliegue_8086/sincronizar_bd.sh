@@ -21,8 +21,9 @@ RESP="${1:?directorio del respaldo verificado}"; MODO="${2:-ensayo}"
 [[ "$MODO" =~ ^(ensayo|definitivo)$ ]] || { echo "Modo: ensayo|definitivo" >&2; exit 1; }
 DIR=$(cd "$(dirname "$0")/.." && pwd); source "$DIR/huellas_bd.inc.sh"
 PG=/usr/pgsql-18/bin; TS=$(date +%Y%m%d%H%M%S); SINC=certificacion_anfeca_sinc_$TS; PREVIA=certificacion_anfeca_previa_$TS
-CRED=~/ANFECA_CREDENCIALES/pg8086_certificacion_anfeca.txt
-ADMIN=(${PG8086_ADMIN:-$PG/psql -h /home/servidorweb/anfeca_pg8086/run -p 5433 -U servidorweb})
+CRED=/home/servidorweb/ANFECA_CREDENCIALES/pg8086_certificacion_anfeca.txt   # ruta absoluta: HOME puede variar bajo sudo
+# Socket del servicio permanente anfeca-pg8086 (unix_socket_directories de 01_preparar_servicios_root.sh).
+ADMIN=(${PG8086_ADMIN:-$PG/psql -h /run/anfeca-pg8086 -p 5433 -U servidorweb})
 detener() { echo "DETENIDO: $*" >&2; exit 1; }
 adm() { "${ADMIN[@]}" -X -At -v ON_ERROR_STOP=1 -d postgres "$@"; }
 

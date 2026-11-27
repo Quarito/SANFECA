@@ -23,11 +23,12 @@ TS=$(date +%Y%m%d_%H%M%S); R=$EVID/anfeca8086_conmutacion_$TS
 export PG8086_ADMIN="${PG8086_ADMIN:-/usr/pgsql-18/bin/psql -h /run/anfeca-pg8086 -p 5433 -U servidorweb}"
 paso() { echo; echo "== $*" | tee -a "$R/bitacora.txt"; }
 huellas_docs() { (cd "$APP/storage/app/private" && find anfeca -type f -print0 | sort -z | xargs -0 -r sha256sum) > "$1"; }
-FASE=previa; SONDA=""
+FASE=previa; SONDA=""; DOC_TMP=""
 
 recuperar() {
     local rc=$?; trap - ERR INT TERM; set +e
     [ -n "$SONDA" ] && rm -f "$SONDA"
+    [ -n "$DOC_TMP" ] && rm -rf -- "$DOC_TMP"
     echo "FALLA en la fase «$FASE» (código $rc): recuperación automática" | tee -a "$R/bitacora.txt" >&2
     if vhost_conmutado; then
         bash "$DIR/03_revertir_root.sh" "$R"
@@ -72,7 +73,7 @@ huellas_docs "$R/documentos_antes.sha256"; echo "   documentos: $(wc -l < "$R/do
 
 FASE=sincronizacion; paso "3. Sincronización de certificacion_anfeca"
 systemctl stop anfeca8086-fpm
-SW bash "${ANFECA_SINCRONIZAR:-$DIR/sincronizar_bd.sh}" "$RESP" definitivo > "$R/sincronizacion.txt" 2>&1; tail -2 "$R/sincronizacion.txt"
+SW env PG8086_ADMIN="$PG8086_ADMIN" bash "${ANFECA_SINCRONIZAR:-$DIR/sincronizar_bd.sh}" "$RESP" definitivo > "$R/sincronizacion.txt" 2>&1; tail -2 "$R/sincronizacion.txt"
 cp "$RESP/huellas_origen.txt" "$R/huellas_al_conmutar.txt"
 systemctl start anfeca8086-fpm; for i in $(seq 20); do [ -S "$SOCK" ] && break; sleep 1; done; [ -S "$SOCK" ]
 
@@ -105,7 +106,13 @@ php "$APP/artisan" up >/dev/null
 curl -s "http://192.168.7.130:8086/$(basename "$SONDA")" > "$R/identidad_http.txt"; rm -f "$SONDA"; SONDA=""
 grep -qx '8.5.12 fpm-fcgi' "$R/identidad_http.txt"
 [ "$(curl -s -o /dev/null -w '%{http_code}' http://192.168.7.130:8086/login)" = 200 ]
-SW bash "$SCR/huellas_documentos.sh" http://192.168.7.130:8086 "$R/documentos_http.json" >/dev/null
+# servidorweb no puede escribir en la evidencia de root: directorio temporal privado (700) que se elimina siempre,
+# también desde recuperar(); el resultado queda en la evidencia con propietario root y modo 600.
+DOC_TMP=$(mktemp -d /tmp/anfeca8086_docs.XXXXXXXX); chmod 700 "$DOC_TMP"
+[ "${ANFECA_SIMULACION:-0}" = 1 ] || chown servidorweb:servidorweb "$DOC_TMP"
+SW bash "$SCR/huellas_documentos.sh" http://192.168.7.130:8086 "$DOC_TMP/documentos_http.json" >/dev/null
+cp "$DOC_TMP/documentos_http.json" "$R/documentos_http.json"; chmod 600 "$R/documentos_http.json"
+rm -rf -- "$DOC_TMP"; DOC_TMP=""
 huellas_docs "$R/documentos_despues.sha256"; cmp -s "$R/documentos_antes.sha256" "$R/documentos_despues.sha256"
 protegidos > "$R/protegidos_despues.txt"; cmp -s "$R/protegidos_antes.txt" "$R/protegidos_despues.txt"
 ! tail -c +"$((LOG_INICIO + 1))" "$LOG" 2>/dev/null | grep -q 'production\.\(ERROR\|CRITICAL\)'

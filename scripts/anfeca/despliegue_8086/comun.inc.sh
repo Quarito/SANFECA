@@ -16,7 +16,12 @@ if [ "${ANFECA_SIMULACION:-0}" = 1 ]; then
 else
     [ "$(id -u)" = 0 ] || { echo "Ejecutar con sudo" >&2; exit 1; }
 fi
-SW() { if [ "${ANFECA_SIMULACION:-0}" = 1 ]; then "$@"; else sudo -u servidorweb XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" "$@"; fi; }
+# sudo -u servidorweb REINICIA el entorno (env_reset): lo que el comando necesite debe pasarse explícitamente
+# (p. ej., SW env PG8086_ADMIN=… bash …). La simulación reproduce ese reinicio con env -i.
+SW() {
+    if [ "${ANFECA_SIMULACION:-0}" = 1 ]; then env -i PATH="$PATH" HOME="$HOME" SIM_FALLA="${SIM_FALLA:-}" "$@"
+    else sudo -u servidorweb XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" "$@"; fi
+}
 fallo() { echo "DETENIDO: $*" >&2; exit 1; }
 vhost_conmutado() { grep -q 'ANFECA_8086' "$VH"; }
 protegidos() {   # huella de los ambientes protegidos (no debe cambiar)
