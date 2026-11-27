@@ -8,4 +8,7 @@ RUN apt-get update \
 
 COPY --from=docker.io/library/composer:2.11.3 /usr/bin/composer /usr/local/bin/composer
 
+# Base de producción, igual que el PHP del servidor (display_errors Off, log_errors On, exception_ignore_args On…).
+RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
 COPY anfeca.ini /usr/local/etc/php/conf.d/zz-anfeca.ini
