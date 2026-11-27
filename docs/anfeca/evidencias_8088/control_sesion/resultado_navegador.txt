@@ -1,0 +1,14 @@
+APROBADA Usuario activo: no recibe aviso y su actividad real renueva la sesión vigente — {"vigente":true,"autenticado":true,"restante":54}
+APROBADA Usuario inactivo: recibe el aviso antes del vencimiento
+APROBADA Aviso de 15 segundos con cuenta regresiva correcta — 15,14,13,12
+APROBADA El aviso no elimina datos capturados sin guardar
+APROBADA Continuar sesión: permanece conectado, en la misma pantalla y con sus datos — {"vigente":true,"autenticado":true,"restante":60}
+APROBADA Sin respuesta al aviso: la sesión se cierra y se muestra un mensaje amigable
+APROBADA Sesión vencida: no se reactiva (pide iniciar sesión)
+APROBADA Tras el cierre por inactividad no queda sesión autenticada — {"vigente":true,"autenticado":false,"restante":60}
+código AJAX 401
+APROBADA Solicitud AJAX con sesión terminada (401/419): respuesta controlada y aviso sin borrar la captura
+APROBADA Con la sesión dada por terminada se impide el envío del formulario
+APROBADA El temporizador del acuse conserva su comportamiento y no se mezcla con el aviso de inactividad — acuse=11
+
+Resultado: 11/11 verificaciones aprobadas.

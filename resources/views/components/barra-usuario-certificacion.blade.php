@@ -17,5 +17,7 @@
                 Cerrar sesión
             </button>
         </form>
+
+        @include('partials.control-sesion')
     @endauth
 </div>

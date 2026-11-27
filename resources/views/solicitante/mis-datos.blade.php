@@ -302,5 +302,6 @@ data-datos="{{ json_encode([
     </footer>
 
 </div>
+@include('partials.control-sesion')
 </body>
 </html>

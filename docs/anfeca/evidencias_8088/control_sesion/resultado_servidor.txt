@@ -1,0 +1,18 @@
+APROBADA Inicio de sesión sin regresiones — http://127.0.0.1:8188/registro/completado
+APROBADA Navegación entre etapas sin cierres inesperados — {'/mis-datos': 200, '/registro/certificacion': 200, '/registro/completado': 200, '/registro/compromiso': 200, '/panel': 200}
+APROBADA Las pantallas del registro incluyen el aviso (oculto) y la configuración
+APROBADA Acuse PDF y su temporizador propio se conservan
+APROBADA Cierre manual de sesión como antes
+APROBADA HTTP 419 con sesión activa: página amigable, código 419 conservado, sin detalles técnicos
+APROBADA Solicitud AJAX con HTTP 419: JSON controlado (mensaje + marca de sesión) — {"message":"Su sesi\u00f3n termin\u00f3 o la p\u00e1gina expir\u00f3.","mensaje":"Su sesi\
+APROBADA HTTP 419 de visitante (login): ofrece iniciar sesión
+APROBADA Continuar sesión exige CSRF (419 sin token)
+APROBADA Continuar sesión vigente: renueva al tiempo completo — {'vigente': True, 'autenticado': True, 'restante': 60}
+APROBADA Después de continuar, la sesión sigue activa más allá del vencimiento original
+APROBADA La consulta de estado no prolonga la sesión (restante decreciente) — [44, 29, 14]
+APROBADA Sesión vencida: «continuar» no la reactiva (401, marca finalizada)
+APROBADA Sesión vencida: no hay acceso autenticado (redirige a iniciar sesión)
+APROBADA Envío con sesión vencida: redirección a «sesión finalizada» con mensaje amigable, sin 419
+APROBADA Sin bucles: «sesión finalizada» responde 200 y ofrece iniciar sesión
+
+Resultado: 16/16 verificaciones aprobadas.
