@@ -69,9 +69,13 @@ CONTEOS="select 'users', count(*) from public.users union all select 'datos_soli
  union all select 'formaciones_academicas_solicitud', count(*) from public.formaciones_academicas_solicitud union all select 'documentos_probatorios_solicitud', count(*) from public.documentos_probatorios_solicitud
  union all select 'historial_documentos_academicos', count(*) from public.historial_documentos_academicos union all select 'certificados_historicos', count(*) from public.certificados_historicos
  union all select 'instituciones_afiliadas', count(*) from public.instituciones_afiliadas order by 1"
-diff <(psql -d "$TRABAJO" -At -F ' ' -c "$CONTEOS") <(psql -d "$COPIA" -At -F ' ' -c "$CONTEOS") \
-    && echo "Conteos idénticos: la copia es actual." \
+CONTEOS_ORIGEN=$(psql -d "$TRABAJO" -v ON_ERROR_STOP=1 -At -F ' ' -c "$CONTEOS") \
+    || falla "No se pudieron consultar los conteos del origen."
+CONTEOS_COPIA=$(psql -d "$COPIA" -v ON_ERROR_STOP=1 -At -F ' ' -c "$CONTEOS") \
+    || falla "No se pudieron consultar los conteos de la copia."
+[[ "$CONTEOS_ORIGEN" == "$CONTEOS_COPIA" ]] \
     || falla "La copia difiere de la base de ensayo. Detenido antes de ejecutar migraciones o escrituras."
+echo "Conteos idénticos: la copia corresponde al origen verificado."
 
 paso "4. Conexión efectiva de Laravel hacia la copia"
 php artisan config:clear >/dev/null
