@@ -16,6 +16,8 @@ MODO="${2:-plan}"
 ESPERADO="${ANFECA_ENSAYO_SHA256:-}"
 HUELLAS_ORIGEN="${ANFECA_ENSAYO_HUELLAS:-}"
 TRABAJO="bd_anfeca_ensayo_pruebas_pg"
+TRABAJO="${ANFECA_ENSAYO_BD_ORIGEN:-$TRABAJO}"
+[[ "$TRABAJO" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || { echo "Identificador de base de origen inválido." >&2; exit 1; }
 falla() { echo "ERROR: $*" >&2; exit 1; }
 paso() { echo; echo "=== $* ==="; }
 
@@ -48,7 +50,7 @@ SHA=$(sha256sum < "$DUMP")
 SHA=${SHA%% *}
 [[ "$SHA" == "${ESPERADO,,}" ]] || falla "El SHA-256 del respaldo difiere del manifiesto."
 pg_restore --list "$DUMP" > "$SALIDA/respaldo.toc" || falla "No se pudo leer el catálogo del respaldo."
-grep -qE "^;[[:space:]]+dbname: ${TRABAJO}$" "$SALIDA/respaldo.toc" ||
+[[ "$(sed -nE 's/^;[[:space:]]+dbname: (.*)$/\1/p' "$SALIDA/respaldo.toc")" == "$TRABAJO" ]] ||
     falla "El catálogo del respaldo no identifica una base de pruebas de ANFECA."
 grep -q 'TABLE DATA public solicitudes_certificacion ' "$SALIDA/respaldo.toc" || falla "No hay datos de solicitudes en el respaldo."
 echo "$SHA" > "$SALIDA/respaldo.sha256"

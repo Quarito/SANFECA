@@ -43,3 +43,28 @@ La prueba omitida comprueba una regla de fecha exclusiva de PostgreSQL. Se ejecu
 | Despliegue en los servidores actuales | **NO EJECUTADO**. El despliegue queda condicionado a la validación institucional y a la aceptación de la capa operativa. |
 
 [Inventario estructural detallado](AUDITORIA_36_TABLAS_POWERDESIGNER.md) · [Restauración y huellas](VALIDACION_INTEGRIDAD_DATOS.md) · [Compatibilidad de Laravel](COMPATIBILIDAD_LARAVEL_POWERDESIGNER.md)
+
+## Fase de homologación a certificacion_anfeca
+
+La referencia de esta fase es el [PR #12 en `85bf92e`](https://github.com/Quarito/SANFECA/pull/12). Al iniciar se verificaron exitosas las [acciones del PR #11](https://github.com/Quarito/SANFECA/actions/runs/45951778605) y las [del PR #12](https://github.com/Quarito/SANFECA/actions/runs/45953360149). PHP 8.4.28 y PostgreSQL 18.7 se ejecutaron en clústeres desechables.
+
+| Comprobación de esta fase | Resultado |
+| --- | --- |
+| PHPUnit general | 203 aprobadas, 1 omitida |
+| PHPUnit PDM en PostgreSQL 18.7 | 79 aprobadas |
+| PHPUnit revisión documental PostgreSQL 18.7 | 22 aprobadas |
+| Total | **304 aprobadas, 0 fallidas, 1 omitida**. La omitida en SQLite se comprobó en PostgreSQL. |
+| DDL aprobado frente a `certificacion_anfeca` | 36/36; SHA-256 de cada volcado normalizado `aceed2c859f69addc6c1916c1db9fff56b5f4798a975a00b6cdfdf75e9a8ad52`. |
+| Protección y uso del nombre oficial | Instalación, extensiones, seed y verificación ejecutados con autorización de proceso solo en el laboratorio. Rechazados instalación, extensiones, simulación, migración y vaciado sin la autorización o identidad descartable aplicable. |
+| Aislamiento y FK | Dos clústeres temporales con el mismo nombre físico, identificadores distintos y escrituras independientes. Eloquent leyó la relación creada. PostgreSQL rechazó la FK huérfana. |
+| Restauración histórica y oficial sintéticas | PASÓ con `pg_dump -Fc`, `pg_restore --list`, `ensayo_copia_f2.sh … plan`, comprobación de huellas y migración, conciliación, equivalencia y retorno desde exclusivo. |
+| Pruebas del validador Bash y compilación | 18/18 del validador de ensayo. Sintaxis de scripts y PHP aprobada; Vite compiló. |
+| Copias reales, catálogos oficiales y despliegue | PENDIENTE, sin acceso autorizado a los ambientes o respaldos. |
+
+| Problema verificado | Causa e impacto | Corrección y evidencia |
+| --- | --- | --- |
+| Clasificación del ensayo histórico como descartable | El nombre de 8086 termina en `_pruebas_pg`. Basarse solo en ese sufijo permitía omitir controles de escritura. | `app/Services/Pdm/BasePdm.php`, migraciones, seeder y comandos Artisan comprueban identidad, conexión y autorización. Regresión en `BasePdmTest.php` y `GuardiaBaseAisladaTest.php`, más prueba en una base local con nombre oficial. |
+| Origen fijado a un nombre único del respaldo | El TOC de una base ya homologada deja de coincidir con el nombre histórico. | Variable explícita de origen en `scripts/anfeca/ensayo_copia_f2.sh` con coincidencia literal, SHA-256 y huellas verificados. Ensayos con ambos nombres. |
+| Topología institucional sin evidencia | Los puertos HTTP no determinan la separación de PostgreSQL. | Inventario de solo lectura y procedimientos por ambiente. El laboratorio probó el caso de dos clústeres; la topología real sigue pendiente. |
+
+[Inventario de servidores](AUDITORIA_SERVIDORES_8086_8008.md) · [Nombre oficial](MIGRACION_NOMBRE_CERTIFICACION_ANFECA.md) · [Despliegue](PLAN_DESPLIEGUE_8086_8008.md) · [Reversión](PLAN_REVERSIÓN_BASE_DATOS.md)

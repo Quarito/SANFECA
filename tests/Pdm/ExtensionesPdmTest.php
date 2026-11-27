@@ -137,9 +137,9 @@ class ExtensionesPdmTest extends PdmTestCase
 
     public function test_extensiones_protegen_la_base_en_uso(): void
     {
-        config(['anfeca_modelo.bd_permitida' => DB::connection()->getDatabaseName()]);
         $this->capaCompatibilidad()->down();
         $this->migracion()->down();
+        config(['anfeca_modelo.bd_permitida' => DB::connection()->getDatabaseName()]);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('ANFECA_PDM_AUTORIZAR_EXTENSIONES=si');

@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Pdm\BasePdm;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -19,10 +20,7 @@ return new class extends Migration
             throw new RuntimeException('Requiere PostgreSQL con anfeca_modelo y las extensiones de F1.');
         }
 
-        $bd = DB::connection()->getDatabaseName();
-        if ($bd === config('anfeca_modelo.bd_permitida') && env('ANFECA_PDM_AUTORIZAR_EXTENSIONES') !== 'si') {
-            throw new RuntimeException("La base {$bd} es la de pruebas en uso. Defina ANFECA_PDM_AUTORIZAR_EXTENSIONES=si solo en ese comando, tras un respaldo verificado.");
-        }
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_EXTENSIONES');
 
         DB::unprepared(<<<'SQL'
             create table anfeca_modelo.integracion_control (
@@ -43,6 +41,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_EXTENSIONES');
+
         $modo = DB::table('anfeca_modelo.integracion_control')->value('ic_modo');
         if ($modo !== null && $modo !== 'apagado') {
             throw new RuntimeException("El modo registrado es '{$modo}': ejecute primero anfeca:pdm-modo apagado.");

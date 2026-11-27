@@ -40,3 +40,7 @@ Las pruebas automáticas cubren D-11, D-13 y D-14 con casos ficticios, incluidos
 ## Copia institucional pendiente
 
 El respaldo y su manifiesto institucional no estuvieron disponibles desde Work. La integridad de `bd_anfeca_ensayo_pruebas_pg`, los certificados históricos reales, los archivos privados y los catálogos oficiales instalados quedan **PENDIENTES**. Sobre una futura copia institucional se cotejarán los archivos y metadatos, se resolverán D-11, D-13 y D-14 con sus fuentes, y se exigirá cero bloqueos y diferencias no justificadas antes de evaluar un despliegue. Las bases institucionales y sus archivos quedaron intactos. [Procedimiento de validación](VALIDACION_PDM_POSTGRESQL18.md)
+
+## Compatible con respaldos bajo ambos nombres
+
+El ensayo acepta el origen histórico por defecto y un origen explícito mediante `ANFECA_ENSAYO_BD_ORIGEN`. Compara literalmente esa identidad con el catálogo del respaldo. Se repitió la restauración sintética bajo ambos nombres en clústeres nuevos. La copia generada conservó las huellas de las 26 tablas, y migración, espejo, principal, exclusivo, exportación y retorno a apagado finalizaron con cero diferencias. Las pruebas negativas de manifiesto, truncado y contenido divergente continuaron deteniendo el ensayo antes de Laravel.

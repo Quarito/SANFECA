@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\AnfecaModeloInspector;
+use App\Services\Pdm\BasePdm;
 use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
 use PDOException;
@@ -86,9 +87,9 @@ class AnfecaModeloInstalar extends Command
             return $this->rechazar('La conexión por defecto no es PostgreSQL (pgsql). No se instala nada.');
         }
 
-        $bd = $inspector->baseDeDatos();
+        $bd = $inspector->conexion()->selectOne('select current_database() as base')->base;
 
-        if ($bd !== $bdPermitida) {
+        if ($bd !== $bdPermitida || $bd !== $inspector->baseDeDatos()) {
             return $this->rechazar("La base de datos conectada es '{$bd}' y solo se permite '{$bdPermitida}' (ANFECA_MODELO_BD_PERMITIDA).");
         }
 
@@ -107,6 +108,10 @@ class AnfecaModeloInstalar extends Command
             $this->info('Comprobaciones correctas. Para aplicar: php artisan anfeca:modelo-instalar --ejecutar');
 
             return self::SUCCESS;
+        }
+
+        if (in_array($bd, BasePdm::INSTITUCIONALES, true) && env('ANFECA_PDM_AUTORIZAR_INSTALACION') !== 'si') {
+            return $this->rechazar('Se requiere ANFECA_PDM_AUTORIZAR_INSTALACION=si en la base institucional autorizada.');
         }
 
         if (!$this->option('confirmar') && !$this->confirm("¿Crear el esquema {$esquema} en {$bd}? Confirme que existe un respaldo pg_dump verificado", false)) {

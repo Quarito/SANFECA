@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Pdm\Compat\FormacionCatalogoPdm;
+use App\Services\Pdm\BasePdm;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -14,10 +15,7 @@ return new class extends Migration
             throw new RuntimeException('Instale las extensiones y la capa de compatibilidad PDM antes de integrar los catálogos.');
         }
 
-        if (DB::connection()->getDatabaseName() === config('anfeca_modelo.bd_permitida')
-            && env('ANFECA_PDM_AUTORIZAR_EXTENSIONES') !== 'si') {
-            throw new RuntimeException('Defina ANFECA_PDM_AUTORIZAR_EXTENSIONES=si tras verificar el respaldo.');
-        }
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_EXTENSIONES');
 
         if (DB::table('anfeca_modelo.integracion_control')->where('ic_modo', '<>', 'apagado')->exists()) {
             throw new RuntimeException('La extensión de formación requiere un esquema con PDM apagado.');

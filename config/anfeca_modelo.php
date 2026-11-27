@@ -19,7 +19,7 @@ return [
 
     // Única base de datos donde se permite instalar el esquema.
     // Protege contra ejecutarlo por error en otra instalación (p. ej. /var/www/ANFECA).
-    'bd_permitida' => env('ANFECA_MODELO_BD_PERMITIDA', 'bd_laravelanfeca_pruebas'),
+    'bd_permitida' => env('ANFECA_MODELO_BD_PERMITIDA', \App\Services\Pdm\BasePdm::OFICIAL),
 
     // Script versionado (aislado, sin DROP, calificado con el esquema).
     'script' => database_path('sql/anfeca_modelo/anfeca_modelo.sql'),

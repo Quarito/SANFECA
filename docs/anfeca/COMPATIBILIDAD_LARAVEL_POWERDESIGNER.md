@@ -20,3 +20,7 @@ En esta auditoría se endureció `tests/Pdm/EsquemaPdmTest.php`. La comprobació
 ### Condición para aprobar la capa operativa
 
 La instalación base es idéntica al archivo aprobado. La capa operativa agrega ocho tablas en `anfeca_modelo`, además de columnas, restricciones e índices aditivos sobre 22 tablas originales. También agrega vistas, tablas y funciones en `anfeca_compat` y triggers sobre las tablas Laravel de la copia. Si el entorno debe limitarse a los 36 objetos de tabla y sus definiciones exactas, esa condición corresponde al esquema base únicamente. El inventario operativo requiere aceptación expresa durante la revisión antes de un despliegue. [Inventario y objetos adicionales](AUDITORIA_36_TABLAS_POWERDESIGNER.md)
+
+## Conexión con el nombre físico oficial
+
+Se verificó una consulta Laravel a `current_database()` en `certificacion_anfeca`. Se escribieron y recuperaron persona y contacto mediante Eloquent en un clúster local desechable y se comprobó que la FK rechazó un contacto huérfano con SQLSTATE 23503. Una base homónima en un segundo clúster temporal conservó cero filas en `persona`. La suite de PostgreSQL mantuvo las pruebas de llaves compuestas, 47 FK operativas, catálogos y modos PDM.

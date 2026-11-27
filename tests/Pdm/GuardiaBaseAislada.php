@@ -2,6 +2,8 @@
 
 namespace Tests\Pdm;
 
+use App\Services\Pdm\BasePdm;
+
 /**
  * Reglas que deben cumplirse para ejecutar pruebas que reconstruyen una base PostgreSQL.
  * Lógica pura (sin conexión) para poder probarla en la suite normal.
@@ -40,7 +42,7 @@ final class GuardiaBaseAislada
             $motivos[] = "PostgreSQL reporta la base '{$bdReal}', distinta de la configurada '{$bdConfigurada}'";
         }
         foreach (array_filter([$bdConfigurada, $bdReal]) as $bd) {
-            if ($bdPermitida !== null && $bd === $bdPermitida) {
+            if (in_array($bd, BasePdm::INSTITUCIONALES, true) || $bd === $bdPermitida) {
                 $motivos[] = "'{$bd}' es la base de pruebas en uso";
             }
         }

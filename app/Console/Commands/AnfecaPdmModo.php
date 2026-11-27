@@ -6,6 +6,7 @@ use App\Services\Pdm\Compat\EquivalenciaPdm;
 use App\Services\Pdm\Migracion\ConciliadorPdm;
 use App\Services\Pdm\Migracion\PlanMigracionPdm;
 use App\Services\Pdm\Migracion\ProteccionMigracion;
+use App\Services\Pdm\BasePdm;
 use App\Services\Pdm\ModoPdm;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -93,9 +94,7 @@ class AnfecaPdmModo extends Command
         $this->salidaDeExclusivo();
 
         $bd = DB::connection()->getDatabaseName();
-        if ($bd === config('anfeca_modelo.bd_permitida') && env('ANFECA_PDM_AUTORIZAR_ESPEJO') !== 'si') {
-            throw new RuntimeException("Para activar el espejo en {$bd} defina ANFECA_PDM_AUTORIZAR_ESPEJO=si solo en este comando, con F2 aprobada y un respaldo verificado.");
-        }
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_ESPEJO');
 
         if (!DB::table('anfeca_modelo.persona')->exists() && DB::table('public.datos_solicitantes')->exists()) {
             throw new RuntimeException('El PDM no tiene datos migrados: ejecute primero anfeca:pdm-migrar --ejecutar (F2).');
@@ -138,6 +137,8 @@ class AnfecaPdmModo extends Command
             return self::SUCCESS;
         }
 
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_APAGADO');
+
         DB::transaction(function () {
             $this->salidaDeExclusivo();
             $this->registrar(ModoPdm::APAGADO, DB::connection()->getDatabaseName(), 0, 'Apagado manual.');
@@ -170,9 +171,7 @@ class AnfecaPdmModo extends Command
 
         $bd = DB::connection()->getDatabaseName();
         $variable = 'ANFECA_PDM_AUTORIZAR_'.strtoupper($modo);
-        if ($bd === config('anfeca_modelo.bd_permitida') && env($variable) !== 'si') {
-            throw new RuntimeException("Para activar el modo {$modo} en {$bd} defina {$variable}=si solo en este comando, con un respaldo verificado.");
-        }
+        BasePdm::verificarEscritura($variable);
 
         if (!DB::table('anfeca_modelo.persona')->exists() && DB::table('public.datos_solicitantes')->exists()) {
             throw new RuntimeException('El PDM no tiene datos migrados: ejecute primero anfeca:pdm-migrar --ejecutar (F2).');
