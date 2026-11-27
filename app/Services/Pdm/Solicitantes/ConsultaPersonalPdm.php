@@ -2,6 +2,7 @@
 
 namespace App\Services\Pdm\Solicitantes;
 
+use App\Models\Pdm\Colonia;
 use App\Models\Pdm\Usuario;
 
 final class ConsultaPersonalPdm
@@ -11,6 +12,12 @@ final class ConsultaPersonalPdm
         $persona = $usuario->persona;
         $domicilios = $persona->domicilios()->with('entidadFederativa')->limit(2)->get();
         $domicilio = $domicilios->count() === 1 ? $domicilios->first() : null;
+        $colonia = $domicilio?->domi_id_colonia
+            ? Colonia::with('alcaldiaMunicipio')->find($domicilio->domi_id_colonia)
+            : null;
+        if ($colonia && $colonia->alcaldiaMunicipio->almu_id_entidad_federativa !== $domicilio->domi_id_entidad_federativa) {
+            $colonia = null;
+        }
         $contactos = $persona->comunicaciones()->with('tipoComunicacion')->get()
             ->filter(fn ($fila) => $fila->tipoComunicacion->tico_estado === 'ACT')
             ->groupBy(fn ($fila) => $fila->tipoComunicacion->tico_tipo_comunicacion);
@@ -37,9 +44,9 @@ final class ConsultaPersonalPdm
             'numero_exterior' => $domicilio?->domi_numero_ext,
             'numero_interior' => $domicilio?->domi_numero_int,
             'entidad_federativa' => $domicilio?->entidadFederativa->enfe_nombre,
-            'codigo_postal' => null,
-            'colonia' => null,
-            'municipio' => null,
+            'codigo_postal' => $colonia?->colo_codigo_postal,
+            'colonia' => $colonia?->colo_nombre,
+            'municipio' => $colonia?->alcaldiaMunicipio->almu_nombre,
             'correo_electronico' => $contacto('CORREO'),
             'telefono_particular' => $contacto('TEL_PARTICULAR'),
             'telefono_celular' => $contacto('TEL_CELULAR'),
