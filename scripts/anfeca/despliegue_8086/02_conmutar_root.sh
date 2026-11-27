@@ -43,7 +43,7 @@ recuperar() {
 mkdir -m 700 -p "$R"; paso "0. Precondiciones"
 vhost_conmutado && fallo "8086 ya está conmutado al release (sin cambios). Para volver: 03_revertir_root.sh"
 systemctl is-active --quiet anfeca-pg8086 anfeca8086-fpm httpd || fallo "servicios exclusivos o httpd no activos"
-[ -S "$SOCK" ] || fallo "no existe el socket de PHP-FPM 8.5.12 ($SOCK)"
+socket_fpm_disponible || fallo "no existe el socket de PHP-FPM 8.5.12 ($SOCK)"
 [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18087/login)" = 200 ] || fallo "el candidato 127.0.0.1:18087 no responde 200"
 grep -q '^ANFECA_PDM_MODO=apagado' "$REL/.env" || fallo "PDM no está apagado en el release"
 [ "$(df -Pm "$EVID" | awk 'NR==2{print $4}')" -ge 2048 ] || fallo "menos de 2 GB libres para el respaldo final"
@@ -75,7 +75,7 @@ FASE=sincronizacion; paso "3. Sincronización de certificacion_anfeca"
 systemctl stop anfeca8086-fpm
 SW env PG8086_ADMIN="$PG8086_ADMIN" bash "${ANFECA_SINCRONIZAR:-$DIR/sincronizar_bd.sh}" "$RESP" definitivo > "$R/sincronizacion.txt" 2>&1; tail -2 "$R/sincronizacion.txt"
 cp "$RESP/huellas_origen.txt" "$R/huellas_al_conmutar.txt"
-systemctl start anfeca8086-fpm; for i in $(seq 20); do [ -S "$SOCK" ] && break; sleep 1; done; [ -S "$SOCK" ]
+systemctl start anfeca8086-fpm; for i in $(seq 20); do socket_fpm_disponible && break; sleep 1; done; socket_fpm_disponible
 
 FASE=cache; paso "4. Caché Laravel con PHP 8.5.12"
 for c in optimize:clear config:cache view:cache; do podman exec anfeca8086-fpm php "$REL/artisan" $c >/dev/null; done

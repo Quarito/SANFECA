@@ -71,6 +71,9 @@ jobs:
       - name: Validación sintáctica del script de ensayo
         run: bash -n scripts/anfeca/ensayo_copia_f2.sh
 
+      - name: Simular conmutación y reversión de 8086
+        run: bash scripts/anfeca/pruebas/probar_conmutacion_simulada.sh "$RUNNER_TEMP/conmutacion-8086"
+
       - name: Bases desechables exclusivas del runner
         env:
           POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
