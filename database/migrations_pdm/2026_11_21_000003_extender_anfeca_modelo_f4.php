@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Pdm\BasePdm;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -25,10 +26,7 @@ return new class extends Migration
             throw new RuntimeException('Las extensiones F4 ya están aplicadas.');
         }
 
-        $bd = DB::connection()->getDatabaseName();
-        if ($bd === config('anfeca_modelo.bd_permitida') && env('ANFECA_PDM_AUTORIZAR_EXTENSIONES') !== 'si') {
-            throw new RuntimeException("La base {$bd} es la de pruebas en uso. Defina ANFECA_PDM_AUTORIZAR_EXTENSIONES=si solo en ese comando, tras un respaldo verificado.");
-        }
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_EXTENSIONES');
 
         DB::unprepared((string) file_get_contents(database_path('sql/anfeca_modelo/anfeca_modelo_extensiones_f4.sql')));
         DB::unprepared(<<<'SQL'
@@ -41,6 +39,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_EXTENSIONES');
+
         foreach (self::TABLAS as $t) {
             if (DB::table("anfeca_modelo.{$t}")->exists()) {
                 throw new RuntimeException("No se revierte F4: anfeca_modelo.{$t} tiene datos.");

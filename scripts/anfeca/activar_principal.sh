@@ -79,7 +79,7 @@ esquema|datos|espejo)
     esquema)
         [[ "$(modo_bd)" =~ ^(sin_control|apagado)$ ]] || falla "El modo no es apagado."
         (cd "$APP" && ANFECA_PDM_AUTORIZAR_EXTENSIONES=si php artisan migrate --path=database/migrations_pdm --force)
-        art db:seed --class='Database\Seeders\Pdm\CatalogosPdmSeeder' --force
+        ANFECA_PDM_AUTORIZAR_CATALOGOS=si art db:seed --class='Database\Seeders\Pdm\CatalogosPdmSeeder' --force
         art migrate:status --path=database/migrations_pdm ;;
     datos)
         [[ "$(modo_bd)" == "apagado" ]] || falla "El modo no es apagado (o falta la fase esquema)."
@@ -109,7 +109,8 @@ comprobar)
     login ;;
 
 apagar)
-    art anfeca:pdm-modo apagado
+    autorizada
+    ANFECA_PDM_AUTORIZAR_APAGADO=si art anfeca:pdm-modo apagado
     echo "Cambie ANFECA_PDM_MODO=apagado en $APP/.env; después:"; echo "  cd $APP && php artisan config:clear"
     login ;;
 esac

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Pdm;
 
+use App\Services\Pdm\BasePdm;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -27,6 +28,8 @@ class CatalogosPdmSeeder extends Seeder
         }
 
         $c = config('anfeca_pdm.catalogos');
+
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_CATALOGOS');
 
         DB::transaction(function () use ($c) {
             // Entidades: ID = clave INEGI.

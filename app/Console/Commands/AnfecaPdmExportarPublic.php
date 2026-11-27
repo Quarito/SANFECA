@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\Pdm\Compat\EquivalenciaPdm;
 use App\Services\Pdm\Migracion\ConciliadorPdm;
 use App\Services\Pdm\Migracion\PlanMigracionPdm;
+use App\Services\Pdm\BasePdm;
 use App\Services\Pdm\ModoPdm;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -43,9 +44,7 @@ class AnfecaPdmExportarPublic extends Command
             }
 
             $bd = DB::connection()->getDatabaseName();
-            if ($bd === config('anfeca_modelo.bd_permitida') && env('ANFECA_PDM_AUTORIZAR_EXPORTACION') !== 'si') {
-                throw new RuntimeException("Para exportar en {$bd} defina ANFECA_PDM_AUTORIZAR_EXPORTACION=si solo en este comando, con un respaldo verificado.");
-            }
+            BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_EXPORTACION');
 
             if (!$this->option('confirmar') && !$this->confirm("¿Copiar a public de {$bd} los datos del PDM?", false)) {
                 $this->warn('Cancelado.');

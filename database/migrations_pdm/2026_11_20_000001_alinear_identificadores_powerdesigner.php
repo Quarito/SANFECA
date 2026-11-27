@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Pdm\BasePdm;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -20,6 +21,8 @@ return new class extends Migration
             ! $db->selectOne("select to_regnamespace('anfeca_modelo') is not null as instalado")->instalado) {
             throw new RuntimeException('Instale primero el esquema base del PDM en PostgreSQL.');
         }
+
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_EXTENSIONES');
 
         // Ejecutar antes de las extensiones pendientes y también sobre instalaciones que ya tienen F4/F5.
         // El bloqueo transaccional serializa reintentos antes de consultar los nombres.
@@ -45,11 +48,6 @@ return new class extends Migration
 
         if ($pendientes === []) {
             return;
-        }
-
-        if ($db->getDatabaseName() === config('anfeca_modelo.bd_permitida')
-            && env('ANFECA_PDM_AUTORIZAR_EXTENSIONES') !== 'si') {
-            throw new RuntimeException('Defina ANFECA_PDM_AUTORIZAR_EXTENSIONES=si tras verificar el respaldo de la base autorizada.');
         }
 
         // PostgreSQL mantiene datos, PK, FK, índices y dependencias de vistas al renombrar.

@@ -32,6 +32,14 @@ class GuardiaBaseAisladaTest extends TestCase
         $this->assertNotEmpty($this->motivos(['bdConfigurada' => 'bd_laravelanfeca_pruebas', 'bdReal' => 'bd_laravelanfeca_pruebas']));
     }
 
+    public function test_rechaza_el_nombre_oficial_y_el_ensayo_historico_con_cualquier_configuracion(): void
+    {
+        foreach (['certificacion_anfeca', 'bd_anfeca_ensayo_pruebas_pg'] as $base) {
+            $motivos = $this->motivos(['bdConfigurada' => $base, 'bdReal' => $base, 'bdPermitida' => 'otra_base']);
+            $this->assertStringContainsString('es la base de pruebas en uso', implode(' ', $motivos));
+        }
+    }
+
     public function test_rechaza_una_base_real_distinta_de_la_configurada(): void
     {
         $motivos = $this->motivos(['bdReal' => 'bd_laravelanfeca_pruebas']);

@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Pdm\Compat\FormacionCatalogoPdm;
+use App\Services\Pdm\BasePdm;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -27,10 +28,7 @@ return new class extends Migration
             throw new RuntimeException('La capa de compatibilidad (anfeca_compat) ya está instalada.');
         }
 
-        $bd = DB::connection()->getDatabaseName();
-        if ($bd === config('anfeca_modelo.bd_permitida') && env('ANFECA_PDM_AUTORIZAR_EXTENSIONES') !== 'si') {
-            throw new RuntimeException("La base {$bd} es la de pruebas en uso. Defina ANFECA_PDM_AUTORIZAR_EXTENSIONES=si solo en ese comando, tras un respaldo verificado.");
-        }
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_EXTENSIONES');
 
         foreach (['esquema', 'funciones_pdm', 'vistas'] as $archivo) {
             DB::unprepared((string) file_get_contents(database_path("sql/anfeca_modelo/anfeca_compat_{$archivo}.sql")));
@@ -63,6 +61,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        BasePdm::verificarEscritura('ANFECA_PDM_AUTORIZAR_EXTENSIONES');
+
         $modo = DB::table('anfeca_modelo.integracion_control')->value('ic_modo');
         if (in_array($modo, ['principal', 'exclusivo'], true)) {
             throw new RuntimeException("El modo registrado es '{$modo}': vuelva primero a espejo o apagado (en exclusivo, exporte antes con anfeca:pdm-exportar-public).");

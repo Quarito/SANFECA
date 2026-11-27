@@ -2,6 +2,7 @@
 
 namespace App\Services\Pdm\Migracion;
 
+use App\Services\Pdm\BasePdm;
 use App\Services\Pdm\ModoPdm;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -40,22 +41,15 @@ class ProteccionMigracion
             throw new RuntimeException('El modo espejo está activo: ejecute primero php artisan anfeca:pdm-modo apagado.');
         }
 
-        $bd = (string) $con->getDatabaseName();
-        $aislada = str_ends_with($bd, (string) config('anfeca_pdm.sufijo_bd_pruebas')) && $bd !== config('anfeca_modelo.bd_permitida');
-
-        if ($operacion === 'simular' && !$aislada) {
-            throw new RuntimeException("La simulación solo se permite en una base aislada *_pruebas_pg (actual: {$bd}). En la base en uso, use el plan (sin opciones).");
+        if ($operacion === 'simular') {
+            $identidad = DB::selectOne('select current_database() as base, host(inet_server_addr()) as direccion');
+            if ($identidad->base !== $con->getDatabaseName() || ! BasePdm::descartable($identidad->base, $identidad->direccion)) {
+                throw new RuntimeException('La simulación solo se permite en una base aislada *_pruebas_pg con conexión local verificada.');
+            }
         }
 
-        if (in_array($operacion, ['ejecutar', 'vaciar'], true) && !$aislada) {
-            $variable = $operacion === 'ejecutar' ? 'ANFECA_PDM_AUTORIZAR_MIGRACION' : 'ANFECA_PDM_AUTORIZAR_VACIADO';
-
-            if ($bd !== config('anfeca_modelo.bd_permitida')) {
-                throw new RuntimeException("Base '{$bd}' no permitida para {$operacion}.");
-            }
-            if (env($variable) !== 'si') {
-                throw new RuntimeException("Para {$operacion} en {$bd} defina {$variable}=si solo en ese comando, después de un respaldo verificado.");
-            }
+        if (in_array($operacion, ['ejecutar', 'vaciar'], true)) {
+            BasePdm::verificarEscritura($operacion === 'ejecutar' ? 'ANFECA_PDM_AUTORIZAR_MIGRACION' : 'ANFECA_PDM_AUTORIZAR_VACIADO');
         }
 
         if (in_array($operacion, ['ejecutar', 'simular'], true)) {
