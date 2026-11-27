@@ -66,7 +66,10 @@ echo "4. Intercambio por renombre"
 CONEX=$(adm -c "select count(*) from pg_stat_activity where datname in ('certificacion_anfeca','$SINC')")
 [ "$CONEX" = 0 ] || detener "$CONEX conexiones abiertas: detenga el pool PHP-FPM de 8086 antes del intercambio"
 adm -c "alter database certificacion_anfeca rename to $PREVIA"
-adm -c "alter database $SINC rename to certificacion_anfeca"
+if ! adm -c "alter database $SINC rename to certificacion_anfeca"; then
+    adm -c "alter database $PREVIA rename to certificacion_anfeca" || true      # certificacion_anfeca nunca queda ausente
+    detener "falló el segundo renombre; se restituyó certificacion_anfeca"
+fi
 adm -c "select datname from pg_database where datname like 'certificacion_anfeca%' order by 1" | sed 's/^/   /'
 if [ "$MODO" = ensayo ]; then
     echo "5. Ensayo de reversión del intercambio"
