@@ -21,7 +21,7 @@
 # =============================================================================
 set -euo pipefail
 ACCION="${1:-}"; [[ "$ACCION" =~ ^--(verificar|ejecutar)$ ]] || { echo "Use --verificar o --ejecutar" >&2; exit 1; }
-COMMIT="${ANFECA_COMMIT:-9431a94}"
+COMMIT="${ANFECA_COMMIT:?indique el commit del artefacto aprobado (p. ej., ANFECA_COMMIT=<commit> sudo -E …)}"
 ART=/home/servidorweb/anfeca_trabajo/artefactos/anfeca8086_$COMMIT.tar.gz
 PG_HOME=/home/servidorweb/anfeca_pg8086; PG_DEST=/var/lib/pgsql/anfeca8086; PGBIN=/usr/pgsql-18/bin
 ID_CLUSTER=7712865409902226718; REL_RAIZ=/var/www/ANFECA_8086; REL=$REL_RAIZ/releases/$COMMIT
@@ -32,6 +32,8 @@ paso() { echo; echo "== $*"; }
 
 paso "Comprobaciones previas"
 [ -s "$ART" ] && (cd "$(dirname "$ART")" && sha256sum -c --quiet "$(basename "$ART").sha256") || fallo "artefacto $ART ausente o con SHA-256 distinto"
+tar -xzOf "$ART" "$COMMIT/VERSION_ARTEFACTO" | grep -q "^$COMMIT " || fallo "el artefacto no declara el commit $COMMIT"
+tar -xzOf "$ART" "$COMMIT/public/build/manifest.json" | grep -q "assets/app-ZPlUBWH0.js" || fallo "la compilación del artefacto no es la aprobada (app-ZPlUBWH0.js)"
 for p in $FPM_PUERTO $CAND_PUERTO; do ! ss -ltn | grep -q "127.0.0.1:$p " || fallo "puerto $p ocupado"; done
 [ ! -e "$PG_DEST" ] || fallo "$PG_DEST ya existe"
 [ ! -e "$REL" ] || fallo "$REL ya existe"

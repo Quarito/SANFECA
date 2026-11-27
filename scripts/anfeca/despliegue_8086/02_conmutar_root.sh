@@ -77,4 +77,7 @@ cmp -s "$R/http_protegidos_antes.txt" "$R/http_protegidos_despues.txt"
 ! grep -q 'production\.\(ERROR\|CRITICAL\)' <(tail -n 200 "$APP/storage/logs/laravel.log" 2>/dev/null)
 trap - ERR
 echo; echo "✔ 8086 conmutado: $(cat "$R/identidad.txt"). Evidencia: $R"
-echo "  Pruebas posteriores con usuarios ficticios: ANFECA_E2E_PERMITIR_8086=si python3 -I $SCR/pruebas/e2e_candidato.py http://192.168.7.130:8086 …"
+echo "  Etapa C (no destructiva, como servidorweb), comparada con la línea base de la etapa A:"
+echo "    BASE=http://192.168.7.130:8086 SALIDA=<dir> node $SCR/pruebas/regresion_visual.js"
+echo "    A=/home/servidorweb/anfeca_trabajo/evidencias_regresion/visual_actual B=<dir> SALIDA=<dir_cmp> node $SCR/pruebas/comparar_regresion_visual.js"
+echo "  Cualquier página distinta de la línea base (salvo fechas) es motivo para ejecutar 03_revertir_root.sh."
