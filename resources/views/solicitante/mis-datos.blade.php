@@ -239,6 +239,9 @@
 
 
 
+            @if($soloConsultaPdm ?? false)
+                <p><a href="{{ route('panel') }}">Consultar mis solicitudes</a></p>
+            @endif
             <div
                 data-vue-encabezado
                 data-titulo="Autorización de Datos"

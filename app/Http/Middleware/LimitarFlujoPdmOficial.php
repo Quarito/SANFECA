@@ -19,6 +19,8 @@ final class LimitarFlujoPdmOficial
         abort_unless(app()->environment('local', 'testing'), 503, 'El guard PDM oficial requiere un entorno aislado.');
         abort_unless($request->is('/') || $request->routeIs(
             'login', 'login.submit', 'logout', 'registro.create', 'registro.datos', 'registro.datos.guardar',
+            'panel', 'coordinacion.solicitudes', 'coordinacion.api.solicitudes',
+            'coordinacion.solicitudes.ver', 'coordinacion.solicitudes.documento',
             'password.request', 'password.email', 'password.sent', 'password.reset', 'password.update', 'mis-datos.edit'
         ), 503, 'Este paso todavía no está habilitado para el modelo PowerDesigner oficial.');
 

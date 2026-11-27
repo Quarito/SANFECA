@@ -48,6 +48,18 @@
 
             <h2>Panel del solicitante</h2>
 
+            @isset($expedientesPdm)
+                <p><a href="{{ route('mis-datos.edit') }}">Consultar datos personales</a></p>
+                <h3>Mis solicitudes</h3>
+                <ul>
+                    @forelse($expedientesPdm as $solicitud)
+                        <li>Folio {{ $solicitud->soli_folio_solicitud }} · {{ $solicitud->ultimoEstado?->esso_descripcion ?? 'Sin estado registrado' }}</li>
+                    @empty
+                        <li>Sin solicitudes registradas.</li>
+                    @endforelse
+                </ul>
+                {{ $expedientesPdm->links() }}
+            @else
             <p class="panel-descripcion">
                 Consulta el avance de tu registro
                 y continúa con las etapas pendientes.
@@ -91,6 +103,8 @@
                     </section>
                 @endforeach
             </div>
+
+            @endisset
 
             <div class="panel-acciones">
                 <form method="POST"

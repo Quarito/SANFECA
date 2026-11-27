@@ -4,6 +4,7 @@ namespace App\Models\Pdm;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Tabla anfeca_modelo.solicitud del modelo PowerDesigner.
@@ -100,6 +101,15 @@ class Solicitud extends PdmModel
     public function estadoSolicitudes(): HasMany
     {
         return $this->hasMany(EstadoSolicitud::class, 'esso_id_solicitud', 'soli_id_solicitud');
+    }
+
+    public function ultimoEstado(): HasOne
+    {
+        return $this->estadoSolicitudes()->one()->ofMany([
+            'esso_fecha' => 'max',
+            'esso_hora' => 'max',
+            'esso_id__estado_solicitud' => 'max',
+        ]);
     }
 
     /** FK FK_EVALUACI_RELATIONS_SOLICITU: evaluacion.eval_id_solicitud → solicitud.soli_id_solicitud */

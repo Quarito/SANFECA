@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Pdm\Usuario;
 use App\Models\User;
 use App\Services\Pdm\Autenticacion\ProveedorUsuarioPdm;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -43,7 +44,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         // Módulo de coordinación: solo perfiles administrativos (users.rol).
-        Gate::define('acceder-coordinacion', fn (User $u) => $u->esCoordinador());
+        Gate::define('acceder-coordinacion', fn (User|Usuario $u) => $u instanceof Usuario ? $u->esCoordinadorNacional() : $u->esCoordinador());
 
         RateLimiter::for('restablecer', fn (Request $r) => [
             Limit::perMinute(5)->by('restablecer-ip:'.$r->ip()),

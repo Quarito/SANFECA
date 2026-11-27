@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\DatosSolicitante;
+use App\Models\Pdm\Usuario;
+use App\Services\Pdm\Solicitantes\ConsultaExpedientesPdm;
 use App\Models\SeleccionCertificacion;
 use App\Models\FormacionAcademicaSolicitud;
 use App\Models\SolicitudCertificacion;
@@ -12,6 +14,15 @@ class PanelController extends Controller
 {
     public function index(Request $request)
     {
+        if ($request->user() instanceof Usuario) {
+            $consulta = app(ConsultaExpedientesPdm::class);
+            $expedientesPdm = $consulta->consulta()
+                ->where('soli_id_persona', $request->user()->usua_id_persona)
+                ->orderByDesc('soli_id_solicitud')->paginate(20);
+
+            return view('panel', compact('expedientesPdm'));
+        }
+
         $userId = $request->user()->id;
 
         $datosCompletos = DatosSolicitante::where(

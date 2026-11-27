@@ -23,7 +23,7 @@ Route::get('/', function () {
     }
 
     if (auth()->getDefaultDriver() === 'pdm') {
-        return redirect()->route('mis-datos.edit');
+        return redirect()->route(auth()->user()->esCoordinadorNacional() ? 'coordinacion.solicitudes' : 'mis-datos.edit');
     }
 
     // Perfiles administrativos: módulo de coordinación.
