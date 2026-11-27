@@ -26,7 +26,10 @@ falla() { echo "ERROR: $*" >&2; exit 1; }
 paso()  { echo; echo "=== $* ==="; }
 
 [[ -f artisan ]] || falla "Ejecute el script desde la raíz del worktree."
-[[ "$(pwd -P)" != /var/www/ANFECA_PRUEBAS* ]] || falla "No se permite ejecutar en /var/www/ANFECA_PRUEBAS."
+case "$(pwd -P)" in
+    /var/www/ANFECA_PRUEBAS|/var/www/ANFECA_PRUEBAS/*|/var/www/ANFECA_ENSAYO|/var/www/ANFECA_ENSAYO/*|/var/www/anfeca|/var/www/anfeca/*)
+        falla "Ejecute este script desde un worktree aislado, nunca desde un despliegue activo." ;;
+esac
 [[ "$MODO" =~ ^(plan|simular|completo)$ ]] || falla "Modo no válido: $MODO"
 [[ -n "$DUMP" && -s "$DUMP" ]] || falla "Indique un respaldo existente: $0 /ruta/respaldo.dump"
 
@@ -53,7 +56,8 @@ if psql -d postgres -Atc "select 1 from pg_database where datname = '$COPIA'" | 
     dropdb "$COPIA"
 fi
 createdb "$COPIA" || falla "No se pudo crear $COPIA. Créela con: sudo -u postgres createdb -O $PGUSER $COPIA"
-pg_restore --no-owner --no-privileges -d "$COPIA" "$DUMP" || echo "AVISO: pg_restore reportó advertencias (revise arriba)."
+pg_restore --exit-on-error --single-transaction --no-owner --no-privileges -d "$COPIA" "$DUMP" \
+    || falla "Falló la restauración: la copia no es válida. No se ejecutarán migraciones ni escrituras."
 
 paso "3. ¿La copia corresponde a la base de trabajo actual? (conteos; solo SELECT en $TRABAJO)"
 CONTEOS="select 'users', count(*) from public.users union all select 'datos_solicitantes', count(*) from public.datos_solicitantes
