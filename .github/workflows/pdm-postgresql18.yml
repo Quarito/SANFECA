@@ -76,8 +76,17 @@ jobs:
       - name: Pruebas generales SQLite
         run: php vendor/bin/phpunit -c phpunit.xml
 
-      - name: Pruebas PDM PostgreSQL 18
-        run: php vendor/bin/phpunit -c phpunit.pgsql.xml
+      - name: Obtener espacio de red de PostgreSQL desechable
+        id: pgnet
+        run: |
+          CID=$(docker ps --filter "ancestor=postgres:18" --format '{{.ID}}' | head -n 1)
+          test -n "$CID"
+          PID=$(docker inspect --format '{{.State.Pid}}' "$CID")
+          test "$PID" -gt 1
+          echo "pid=$PID" >> "$GITHUB_OUTPUT"
 
-      - name: Pruebas revisión documental PostgreSQL 18
-        run: php vendor/bin/phpunit -c phpunit.revision-pg.xml
+      - name: Pruebas PDM PostgreSQL 18 (loopback del contenedor)
+        run: sudo -E nsenter --target "${{ steps.pgnet.outputs.pid }}" --net -- php vendor/bin/phpunit -c phpunit.pgsql.xml
+
+      - name: Pruebas revisión documental PostgreSQL 18 (loopback del contenedor)
+        run: sudo -E nsenter --target "${{ steps.pgnet.outputs.pid }}" --net -- php vendor/bin/phpunit -c phpunit.revision-pg.xml
