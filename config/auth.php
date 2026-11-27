@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Pdm\Usuario;
 use App\Models\User;
 
 return [
@@ -74,7 +75,7 @@ return [
 
         'usuarios_pdm' => [
             'driver' => 'anfeca-pdm',
-            'model' => App\Models\Pdm\Usuario::class,
+            'model' => Usuario::class,
         ],
 
         // 'users' => [
