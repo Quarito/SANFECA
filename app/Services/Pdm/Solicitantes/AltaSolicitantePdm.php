@@ -82,12 +82,13 @@ final class AltaSolicitantePdm
                 'pers_genero' => config('anfeca_pdm.catalogos.generos')[$datos['genero']],
                 'pers_activo' => true,
             ]);
-            $persona->domicilios()->create([
-                'domi_id_colonia' => $colonia->getKey(),
+            $domicilio = $persona->domicilios()->make([
                 'domi_id_entidad_federativa' => $colonia->alcaldiaMunicipio->almu_id_entidad_federativa,
                 'domi_calle' => $datos['calle'], 'domi_numero_ext' => $datos['numero_exterior'],
                 'domi_numero_int' => $datos['numero_interior'] ?? null,
             ]);
+            $domicilio->domi_id_colonia = $colonia->getKey();
+            $domicilio->save();
             foreach (['CORREO' => $correo, 'TEL_PARTICULAR' => $datos['telefono_particular'] ?? null,
                 'TEL_CELULAR' => $datos['telefono_celular'] ?? null] as $tipo => $valor) {
                 if ($valor !== null) {

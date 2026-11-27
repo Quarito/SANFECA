@@ -23,7 +23,6 @@ class Domicilio extends PdmModel
         'domi_id_domicilio',
         'domi_id_persona',
         'domi_id_entidad_federativa',
-        'domi_id_colonia',
         'domi_calle',
         'domi_numero_ext',
         'domi_numero_int',
