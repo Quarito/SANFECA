@@ -29,9 +29,9 @@ class Documento extends PdmModel
         'docu_id_documento' => 'integer',
     ];
 
-    /** FK FK_SOLICITU_RELATIONS_DOCUMENT: solicitud_documento.docu_id_documento → documento.docu_id_documento */
+    /** FK FK_SOLICITU_RELATIONS_DOCUMENT: solicitud_documento.socu_id_documento → documento.docu_id_documento */
     public function solicitudDocumentos(): HasMany
     {
-        return $this->hasMany(SolicitudDocumento::class, 'docu_id_documento', 'docu_id_documento');
+        return $this->hasMany(SolicitudDocumento::class, 'socu_id_documento', 'docu_id_documento');
     }
 }

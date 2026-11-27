@@ -42,6 +42,14 @@ class EsquemaPdmTest extends PdmTestCase
         $this->assertSame(47, (int) $fks, '35 del PDM + 7 de F1 + 5 de F4');
     }
 
+    public function test_verificador_reconoce_el_esquema_base_con_extensiones(): void
+    {
+        $this->artisan('anfeca:modelo-verificar')
+            ->expectsOutputToContain('36/36 tablas, 35/35 FK')
+            ->expectsOutputToContain('Tablas de extensión y control')
+            ->assertSuccessful();
+    }
+
     public function test_cada_fk_del_sql_existe_en_postgresql(): void
     {
         $reales = array_map(

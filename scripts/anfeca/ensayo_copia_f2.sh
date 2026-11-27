@@ -75,9 +75,8 @@ paso "5. PDM en la copia: esquema original, extensiones y catálogos"
 N=$(psql -d "$COPIA" -Atc "select count(*) from pg_tables where schemaname = 'anfeca_modelo'")
 if [[ "$N" == "0" ]]; then
     ANFECA_MODELO_BD_PERMITIDA="$COPIA" php artisan anfeca:modelo-instalar --ejecutar --confirmar
-    N=36
 fi
-[[ "$N" == "36" ]] && php artisan migrate --path=database/migrations_pdm --force
+php artisan migrate --path=database/migrations_pdm --force
 php artisan db:seed --class="Database\\Seeders\\Pdm\\CatalogosPdmSeeder" --force
 psql -d "$COPIA" -Atc "select 'tablas PDM: '||count(*) from pg_tables where schemaname='anfeca_modelo'"
 psql -d "$COPIA" -Atc "select 'FK PDM: '||count(*) from pg_constraint where contype='f' and connamespace='anfeca_modelo'::regnamespace"

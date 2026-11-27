@@ -30,8 +30,8 @@ class Convocatoria extends PdmModel
         'conv_fecha_entrega_certificados',
         'conv_puntuacion_max',
         'conv_puntuacion_min',
-        'con_lugar_entrega',
-        'con_evento_entrega',
+        'conv_lugar_entrega',
+        'conv_evento_entrega',
     ];
 
     protected $casts = [

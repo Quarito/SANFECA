@@ -8,13 +8,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Tabla anfeca_modelo.historico_certificado del modelo PowerDesigner.
  * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
- * PK compuesta en el PDM (hice_id_historico_certificado, hice_folio_certificado); Eloquent usa hice_id_historico_certificado (SERIAL único).
+ * La PK compuesta se aplica al recargar y guardar la instancia.
  */
 class HistoricoCertificado extends PdmModel
 {
     protected $table = 'anfeca_modelo.historico_certificado';
 
     protected $primaryKey = 'hice_id_historico_certificado';
+
+    protected array $columnasClaveCompuesta = ['hice_folio_certificado'];
 
     public $incrementing = true;
 

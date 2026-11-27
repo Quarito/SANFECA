@@ -1,29 +1,4 @@
--- =====================================================================
--- ANFECA — Capa de COMPATIBILIDAD (F4): vistas con la forma de las tablas de public
--- y los datos de anfeca_modelo (PowerDesigner).
---
--- * Esquema técnico anfeca_compat (no forma parte del PDM).
--- * Cada vista tiene exactamente el nombre y las columnas de la tabla Laravel que sustituye,
---   para que modelos Eloquent, validaciones, Blade y Vue funcionen sin cambios cuando la
---   conexión usa search_path = anfeca_compat, public (modos principal y exclusivo).
--- * Una sola tabla base en FROM (lo demás son subconsultas escalares): así
---   SELECT ... FOR UPDATE (lockForUpdate) sigue funcionando sobre las vistas.
--- * Fechas y horas locales del PDM (America/Mexico_City) se devuelven en UTC, como Laravel.
--- =====================================================================
-
-create schema anfeca_compat;
-
--- ---------------------------------------------------------------------
--- Tablas técnicas de correspondencia (se llenan desde config/anfeca_pdm.php al migrar)
--- ---------------------------------------------------------------------
-create table anfeca_compat.mapa_documento (campo varchar(60) primary key, descripcion varchar(150) not null);
-create table anfeca_compat.mapa_comunicacion (campo varchar(60) primary key, descripcion varchar(50) not null);
-create table anfeca_compat.mapa_estado_solicitud (siglas varchar(2) primary key, descripcion varchar(50) not null);
-create table anfeca_compat.alias_entidad (clave varchar(100) primary key, entidad varchar(85) null, motivo varchar(300) null);
-create table anfeca_compat.parametro (clave varchar(60) primary key, valor varchar(100) not null);
-
--- ---------------------------------------------------------------------
--- Funciones auxiliares de lectura
+-- Funciones auxiliares de lectura y vistas de la capa anfeca_compat
 -- ---------------------------------------------------------------------
 -- Fecha y hora locales del PDM (America/Mexico_City) → marca de tiempo en la zona de la aplicación
 -- (config app.timezone, guardada en parametro.zona_app; UTC en ANFECA).
@@ -35,23 +10,6 @@ $$;
 create function anfeca_compat.evento_utc(p_sol int, p_siglas text) returns timestamp(0) language sql stable as $$
     select anfeca_compat.a_utc(e.esso_fecha, e.esso_hora) from anfeca_modelo.estado_solicitud e
     where e.esso_id_solicitud = p_sol and e.esso_siglas = p_siglas order by e.esso_id__estado_solicitud desc limit 1
-$$;
-
-create function anfeca_compat.comunicacion(p_persona int, p_campo text) returns varchar language sql stable as $$
-    select c.comu_valor from anfeca_modelo.comunicacion c
-    join anfeca_modelo.tipo_comunicacion t on t.tico_id_tipo_comunicacion = c.comu_id_tipo_comunicacion
-    join anfeca_compat.mapa_comunicacion m on m.descripcion = t.tico_tipo_comunicacion
-    where c.cumu_id_persona = p_persona and m.campo = p_campo limit 1
-$$;
-
--- Documento vigente (estado Cargado) de un campo de Laravel en una solicitud.
-create function anfeca_compat.documento_vigente(p_sol int, p_campo text) returns varchar language sql stable as $$
-    select d.socu_url_archivo from anfeca_modelo.solicitud_documento d
-    join anfeca_modelo.documento x on x.docu_id_documento = d.docu_id_documento
-    join anfeca_compat.mapa_documento m on m.descripcion = x.docu_descripcion and m.campo = p_campo
-    join anfeca_modelo.estado_solicitud_documento e on e.esdo_id_documentacion = d.socu_id_documentacion
-    join anfeca_modelo.estado_documento s on s.esdo_id_estado_documento = e.esdo_id_estado_documento and s.esdo_estado_documento = 'Cargado'
-    where d.socu_id_solicitud = p_sol order by d.socu_id_documentacion desc limit 1
 $$;
 
 -- Estudio (origen o último grado) de una solicitud: nivel, título (catálogo u «Otro») y texto «Otro».
@@ -168,7 +126,7 @@ from anfeca_modelo.documentos_solicitud d;
 create view anfeca_compat.historial_documentos_academicos as
 select d.socu_id_documentacion::bigint as id, d.socu_id_solicitud::bigint as solicitud_id,
     (select m.campo::varchar(80) from anfeca_modelo.documento x join anfeca_compat.mapa_documento m on m.descripcion = x.docu_descripcion
-        where x.docu_id_documento = d.docu_id_documento) as tipo_documento,
+        where x.docu_id_documento = d.socu_id_documento) as tipo_documento,
     d.socu_url_archivo::text as ruta_archivo,
     (select anfeca_compat.a_utc(e.esdo_fecha, e.esdo_hora) from anfeca_modelo.estado_solicitud_documento e
         where e.esdo_id_documentacion = d.socu_id_documentacion limit 1) as created_at,
@@ -179,7 +137,7 @@ where exists (select 1 from anfeca_modelo.estado_solicitud_documento e
         join anfeca_modelo.estado_documento s on s.esdo_id_estado_documento = e.esdo_id_estado_documento
         where e.esdo_id_documentacion = d.socu_id_documentacion and s.esdo_estado_documento = 'Sustituido')
   and exists (select 1 from anfeca_modelo.documento x join anfeca_compat.mapa_documento m on m.descripcion = x.docu_descripcion
-        where x.docu_id_documento = d.docu_id_documento
+        where x.docu_id_documento = d.socu_id_documento
           and m.campo in ('titulo_origen_archivo', 'cedula_origen_archivo', 'titulo_ultimo_grado_archivo', 'cedula_ultimo_grado_archivo'));
 
 create view anfeca_compat.certificados_historicos as

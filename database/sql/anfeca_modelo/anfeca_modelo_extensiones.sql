@@ -41,7 +41,7 @@ create unique index EXT_DOMICILIO_PERSONA_UK on anfeca_modelo.DOMICILIO (DOMI_ID
 -- ---------------------------------------------------------------------
 -- COMUNICACION: un valor por persona y tipo (sin duplicados)
 -- ---------------------------------------------------------------------
-create unique index EXT_COMUNICACION_PERSONA_TIPO_UK on anfeca_modelo.COMUNICACION (CUMU_ID_PERSONA, COMU_ID_TIPO_COMUNICACION);
+create unique index EXT_COMUNICACION_PERSONA_TIPO_UK on anfeca_modelo.COMUNICACION (COMU_ID_PERSONA, COMU_ID_TIPO_COMUNICACION);
 
 -- ---------------------------------------------------------------------
 -- ZONA y COORDINADOR_ZONA (public.zonas, public.coordinador_zona) — D-11
@@ -161,7 +161,7 @@ create unique index EXT_ESTUDIO_NIVEL_NOMBRE_UK on anfeca_modelo.ESTUDIO_PROFESI
 alter table anfeca_modelo.SOLICITUD_DOCUMENTO
    add column SOCU_URL_ARCHIVO VARCHAR(500) not null;
 comment on column anfeca_modelo.SOLICITUD_DOCUMENTO.SOCU_URL_ARCHIVO is 'EXT ANFECA: ruta relativa del disco local o URL del enlace de evidencias';
-create index EXT_SOCU_SOLICITUD_DOCUMENTO_IDX on anfeca_modelo.SOLICITUD_DOCUMENTO (SOCU_ID_SOLICITUD, DOCU_ID_DOCUMENTO);
+create index EXT_SOCU_SOLICITUD_DOCUMENTO_IDX on anfeca_modelo.SOLICITUD_DOCUMENTO (SOCU_ID_SOLICITUD, SOCU_ID_DOCUMENTO);
 
 -- ---------------------------------------------------------------------
 -- Claves estables de catálogo (para resolver IDs sin depender del orden)
