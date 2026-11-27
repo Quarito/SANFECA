@@ -42,6 +42,11 @@ class PrincipalPdmTest extends PdmTestCase
         $this->assertSame('enviado', DB::table('public.solicitudes_certificacion')->where('id', $solicitudId)->value('estado'));
         $this->assertSame(1, DB::table('public.historial_documentos_academicos')->where('solicitud_id', $solicitudId)->count());
         $this->assertSame($personaId, (int) DB::table('public.datos_solicitantes')->where('user_id', $user->id)->value('id'));
+
+        $coordinador = User::factory()->create(['rol' => 'coordinador_nacional']);
+        $this->actingAs($coordinador)->get("/coordinacion/solicitudes/{$solicitudId}")
+            ->assertOk()->assertSee('Institución Ficticia');
+        $this->get("/coordinacion/solicitudes/{$solicitudId}/documentos/titulo_origen_archivo")->assertOk();
     }
 
     public function test_refrendo_articulo_14_en_principal(): void

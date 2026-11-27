@@ -92,7 +92,9 @@ class AnfecaPdmExportarPublic extends Command
         $resumen = [];
         foreach (self::TABLAS as $tabla) {
             $columnas = array_map(fn ($c) => $c->column_name, DB::select(
-                "select column_name from information_schema.columns where table_schema = 'anfeca_compat' and table_name = ? order by ordinal_position", [$tabla]));
+                "select v.column_name from information_schema.columns v
+                join information_schema.columns p on p.table_schema = 'public' and p.table_name = v.table_name and p.column_name = v.column_name
+                where v.table_schema = 'anfeca_compat' and v.table_name = ? order by v.ordinal_position", [$tabla]));
             $lista = implode(', ', array_map(fn ($c) => '"'.$c.'"', $columnas));
             $n = 0;
 
@@ -104,7 +106,11 @@ class AnfecaPdmExportarPublic extends Command
             }
 
             foreach ($pendientes[$tabla]['cambios'] ?? [] as $id => $cols) {
-                $cols = array_values(array_unique(array_intersect($cols, $columnas)));
+                $sinDestino = array_diff($cols, $columnas);
+                if ($sinDestino !== []) {
+                    throw new RuntimeException("Exportación detenida en {$tabla}: faltan columnas compatibles para ".implode(', ', $sinDestino).'.');
+                }
+                $cols = array_unique($cols);
                 $asignar = implode(', ', array_map(fn ($c) => "\"{$c}\" = v.\"{$c}\"", $cols));
                 $n += DB::affectingStatement("update public.{$tabla} p set {$asignar} from anfeca_compat.{$tabla} v where v.id = p.id and p.id = ?", [$id]);
             }

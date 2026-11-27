@@ -29,11 +29,23 @@ class MigradorPdm
         $f = $plan->filas;
 
         $roles = [];
-        foreach ($f['rol'] ?? [] as $r) {
-            $datos = array_filter($r, fn ($v, $k) => !($k === 'rol_id_rol' && $v === null), ARRAY_FILTER_USE_BOTH);
-            $roles[$r['rol_nombre']] = DB::table(self::E.'rol')->insertGetId($datos, 'rol_id_rol');
-            $escritas['rol'] = ($escritas['rol'] ?? 0) + 1;
+        $rolesPlan = $f['rol'] ?? [];
+        foreach ($rolesPlan as $rol) {
+            if ($rol['rol_id_rol'] !== null) {
+                DB::table(self::E.'rol')->insert($rol);
+                $roles[$rol['rol_nombre']] = $rol['rol_id_rol'];
+            }
         }
+        // Antes de pedir IDs automáticos, avanzar sobre los IDs conservados de public.roles.
+        $this->alinearSecuencia('rol', self::SECUENCIAS['rol']);
+        foreach ($rolesPlan as $rol) {
+            if ($rol['rol_id_rol'] === null) {
+                $roles[$rol['rol_nombre']] = DB::table(self::E.'rol')->insertGetId(
+                    ['rol_nombre' => $rol['rol_nombre']], 'rol_id_rol'
+                );
+            }
+        }
+        $escritas['rol'] = count($rolesPlan);
 
         foreach (['privilegio', 'rol_privilegio', 'zona', 'institucion', 'sede', 'persona'] as $tabla) {
             $escritas[$tabla] = $this->insertar($tabla, $f[$tabla] ?? []);
@@ -86,12 +98,17 @@ class MigradorPdm
         $escritas['pago'] = $this->insertar('pago', $f['pago'] ?? []);
 
         foreach (self::SECUENCIAS as $tabla => $pk) {
-            DB::statement("select setval(pg_get_serial_sequence('anfeca_modelo.{$tabla}', '{$pk}'),
-                greatest(coalesce((select max({$pk}) from anfeca_modelo.{$tabla}), 0), 1),
-                (select count(*) > 0 from anfeca_modelo.{$tabla}))");
+            $this->alinearSecuencia($tabla, $pk);
         }
 
         return $escritas;
+    }
+
+    private function alinearSecuencia(string $tabla, string $pk): void
+    {
+        DB::statement("select setval(pg_get_serial_sequence('anfeca_modelo.{$tabla}', '{$pk}'),
+                greatest(coalesce((select max({$pk}) from anfeca_modelo.{$tabla}), 0), 1),
+                (select count(*) > 0 from anfeca_modelo.{$tabla}))");
     }
 
     private function insertar(string $tabla, array $filas): int
