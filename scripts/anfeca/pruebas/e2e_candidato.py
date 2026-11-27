@@ -19,7 +19,10 @@ import requests
 
 BASE, SALIDA, HUELLAS = sys.argv[1].rstrip('/'), sys.argv[2], sys.argv[3]
 u = urllib.parse.urlparse(BASE)
-if u.hostname not in ('127.0.0.1', '::1', 'localhost') or u.port in (8086, 8084, 8085, 8008):
+# Tras una conmutación autorizada puede ejecutarse sobre 8086 con ANFECA_E2E_PERMITIR_8086=si: solo crea registros
+# ficticios (e2e.*@example.test) y, sin E2E_CERT_REFRENDO, omite el refrendo (no inserta certificados históricos).
+POST_8086 = os.environ.get('ANFECA_E2E_PERMITIR_8086') == 'si' and u.port == 8086
+if not POST_8086 and (u.hostname not in ('127.0.0.1', '::1', 'localhost') or u.port in (8086, 8084, 8085, 8008)):
     sys.exit('DETENIDO: use la URL de loopback de la aplicación candidata (nunca un ambiente en servicio).')
 TC = 'Profesoras y profesores de Tiempo Completo'
 R = {'v': {}, 'detalle': {}}
@@ -113,19 +116,21 @@ ok('edicion_bloqueada_tras_autorizar', 'Calle Modificada' not in s1.h.get(BASE +
 R['detalle']['solicitud_primera_vez'] = sol1
 
 # ------------------------------------------------------------------ Solicitante 2: refrendo con posgrado
-correo2 = f'e2e.refrendo.{ts}@example.test'
-s2, c2, r = registrar(2, correo2); autorizar_datos(s2)
-r = s2.post('/registro/certificacion', {'certificacion': 'ANFECA', 'tipo_personal': TC, 'area_certificacion': 'Administración', 'numero_certificado_anterior': '9999998'})
-ok('refrendo_numero_inexistente_rechazado', 'refrendo' not in r.headers.get('location', ''), r.headers.get('location'))
-r = s2.post('/registro/certificacion', {'certificacion': 'ANFECA', 'tipo_personal': TC, 'area_certificacion': 'Administración', 'numero_certificado_anterior': os.environ['E2E_CERT_REFRENDO']})
-ok('refrendo_certificado_historico', 'refrendo' in r.headers.get('location', ''), r.headers.get('location'))
-r = s2.post('/registro/refrendo', {'aplica_articulo_14': '0'})
-ok('datos_refrendo', 'formacion-academica' in r.headers.get('location', ''), r.headers.get('location'))
-lic, rf, ra = formacion(s2, 'Administración', 'Administración', 'licenciatura en administracion', ('Maestría', 'Administración', 'administracion'))
-ok('formacion_con_posgrado', rf.status_code == 302 and ra.status_code == 302 and 'documentos' in ra.headers.get('location', ''), f'{rf.status_code} {ra.headers.get("location")}')
-r, c, e, sol2, acuse = hasta_acuse(s2, {'constancia_antiguedad_archivo': pdf('constancia'), 'comprobante_pago_archivo': pdf('pago')})
-ok('refrendo_enviado_acuse', acuse is not None and acuse.content[:4] == b'%PDF', acuse and acuse.status_code)
-R['detalle']['solicitud_refrendo'] = sol2
+sol2 = None
+if os.environ.get('E2E_CERT_REFRENDO'):
+  correo2 = f'e2e.refrendo.{ts}@example.test'
+  s2, c2, r = registrar(2, correo2); autorizar_datos(s2)
+  r = s2.post('/registro/certificacion', {'certificacion': 'ANFECA', 'tipo_personal': TC, 'area_certificacion': 'Administración', 'numero_certificado_anterior': '9999998'})
+  ok('refrendo_numero_inexistente_rechazado', 'refrendo' not in r.headers.get('location', ''), r.headers.get('location'))
+  r = s2.post('/registro/certificacion', {'certificacion': 'ANFECA', 'tipo_personal': TC, 'area_certificacion': 'Administración', 'numero_certificado_anterior': os.environ['E2E_CERT_REFRENDO']})
+  ok('refrendo_certificado_historico', 'refrendo' in r.headers.get('location', ''), r.headers.get('location'))
+  r = s2.post('/registro/refrendo', {'aplica_articulo_14': '0'})
+  ok('datos_refrendo', 'formacion-academica' in r.headers.get('location', ''), r.headers.get('location'))
+  lic, rf, ra = formacion(s2, 'Administración', 'Administración', 'licenciatura en administracion', ('Maestría', 'Administración', 'administracion'))
+  ok('formacion_con_posgrado', rf.status_code == 302 and ra.status_code == 302 and 'documentos' in ra.headers.get('location', ''), f'{rf.status_code} {ra.headers.get("location")}')
+  r, c, e, sol2, acuse = hasta_acuse(s2, {'constancia_antiguedad_archivo': pdf('constancia'), 'comprobante_pago_archivo': pdf('pago')})
+  ok('refrendo_enviado_acuse', acuse is not None and acuse.content[:4] == b'%PDF', acuse and acuse.status_code)
+  R['detalle']['solicitud_refrendo'] = sol2
 
 # ------------------------------------------------------------------ Coordinación
 cred = [l.rstrip('\n').split('\t') for l in open(os.path.expanduser('~/ANFECA_CREDENCIALES/coordinacion_ensayo_8086.tsv')) if '\t' in l]
@@ -135,13 +140,13 @@ ok('login_coordinacion', '/coordinacion' in loc, loc)
 ok('dashboard', cn.h.get(BASE + '/coordinacion').status_code == 200 and cn.h.get(BASE + '/coordinacion/api/indicadores', headers={'Accept': 'application/json'}).status_code == 200)
 api = cn.h.get(BASE + '/coordinacion/api/solicitudes?por_pagina=50', headers={'Accept': 'application/json'}).json()
 folios = [x['folio'] for x in api['datos']]
-ok('bandeja_incluye_nuevas_e_historicas', sol1 in folios and sol2 in folios and all(f in folios for f in (3, 4, 5)), folios)
+ok('bandeja_incluye_nuevas_e_historicas', sol1 in folios and (sol2 is None or sol2 in folios) and all(f in folios for f in (3, 4, 5)), folios)
 ok('filtro_zona_valido', cn.h.get(BASE + '/coordinacion/api/solicitudes?zona=z3', headers={'Accept': 'application/json'}).status_code == 200)
 ok('filtro_zona_manipulado_rechazado', cn.h.get(BASE + '/coordinacion/api/solicitudes?zona=x;drop', headers={'Accept': 'application/json'}).status_code == 422)
-for f in (sol1, sol2):
+for f in [x for x in (sol1, sol2) if x]:
     t = cn.h.get(BASE + f'/coordinacion/solicitudes/{f}').text
     ok(f'expediente_{f}_formacion', 'catálogo de licenciaturas' in t and 'Prueba' in t)
-ok('expediente_refrendo_posgrado', 'Maestr' in cn.h.get(BASE + f'/coordinacion/solicitudes/{sol2}').text)
+if sol2: ok('expediente_refrendo_posgrado', 'Maestr' in cn.h.get(BASE + f'/coordinacion/solicitudes/{sol2}').text)
 for f, campo, tipo in ((sol1, 'constancia_antiguedad_archivo', 'image/png'), (sol1, 'comprobante_pago_archivo', 'image/jpeg'), (sol1, 'titulo_origen_archivo', 'application/pdf')):
     r = cn.h.get(BASE + f'/coordinacion/solicitudes/{f}/documentos/{campo}')
     ok(f'visor_{tipo.split("/")[1]}', r.status_code == 200 and tipo in r.headers.get('content-type', ''), f'{r.status_code} {r.headers.get("content-type")}')
