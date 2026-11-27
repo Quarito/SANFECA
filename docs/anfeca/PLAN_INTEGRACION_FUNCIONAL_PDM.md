@@ -49,7 +49,7 @@
    - `HISTORICO_CERTIFICADO` es **una fila por certificado**, con año, tipo y folio.
 5. **Diferencia conceptual en el refrendo.**
    - `REFRENDO_CERTIFICADO` exige `RECE_ID_CERTIFICADO` → `CERTIFICADO` → `EVALUACION`: representa un refrendo **ya emitido tras la evaluación**.
-   - Los datos que se capturan al solicitar (art. 13/14, inciso) caben en `SOLICITUD` (`SOLO_ART13`, `SOLI_ART14`, `SOLI_ID_ARTICULO`).
+   - Los datos que se capturan al solicitar (art. 13/14, inciso) caben en `SOLICITUD` (`SOLI_ART13`, `SOLI_ART14`, `SOLI_ID_ARTICULO`).
 
 La integración funcional **no puede ser una copia directa**. Requiere transformar datos y, para los casos del punto 3, **extender el PDM** (D-2).
 
@@ -150,7 +150,7 @@ Leyenda de transformación:
 | `.estado`, `.fecha_envio` | `estado_solicitud` (bitácora) + `c_estado_solicitud` | T: un registro por evento, `Borrador (BO)` al crear y `Enviada (EN)` al enviar; `esso_motivo_rechazo` = null hasta el módulo de revisión (divergencia 5) |
 | `.compromiso_aceptado`, `.compromiso_aceptado_en` | evento `Compromiso aceptado (CA)` en `estado_solicitud` | T (**D-3**) |
 | `datos_refrendo.aplica_articulo_14` | `soli_art14` | = |
-| — | `solo_art13` | T: `refrendo AND NOT art14` (**D-8**) |
+| — | `soli_art13` | T: `refrendo AND NOT art14` (**D-8**) |
 | `datos_refrendo.refrendo_actual` | se recalcula desde `historico_certificado` | T |
 | `datos_refrendo.numero_refrendo_asignado` | `refrendo_certificado.rece_numero_refrendo` (cuando se emita) | Hoy siempre nulo en el flujo; no se migra a `REFRENDO_CERTIFICADO` (divergencia 7) |
 | `selecciones_certificacion` | Sus datos ya están en `solicitud` | — (legado; se sigue escribiendo en `espejo`) |
@@ -259,7 +259,7 @@ Leyenda de transformación:
 | **D-5** | Personas con CURP nula: excluirlas de `PERSONA` y reportarlas, o permitir nulo | Reportar y decidir caso por caso |
 | **D-6** | `COLONIA` y `ALCALDIA_MUNICIPIO` necesitan el catálogo SEPOMEX | Texto de extensión ahora; catálogo después |
 | **D-7** | ANFECA/CACSLA/CACECA. A: extensión `soli_certificacion`. B: `TIPO_CONVOCATORIA` con siglas y `CONVOCATORIA` obligatoria. | A ahora; B cuando existan convocatorias (D-12) |
-| **D-8** | `SOLO_ART13 = refrendo AND NOT art14` | Confirmar la regla con la normativa |
+| **D-8** | `SOLI_ART13 = refrendo AND NOT art14` | Confirmar la regla con la normativa |
 | **D-9** | Histórico: tabla de extensión con la copia fiel del Excel + `HISTORICO_CERTIFICADO` normalizado por evento | Autorizar |
 | **D-10** | «Otro» como fila de `ESTUDIO_PROFESIONAL` en revisión; capturar o no el número de cédula | Autorizar «Otro»; cédula fuera de alcance |
 | **D-11** | Facultad, zona y número de afiliación (máx. 7) de cada institución; zonas y coordinadores como texto o como tablas de extensión | Que proporciones el dato; tablas de extensión |

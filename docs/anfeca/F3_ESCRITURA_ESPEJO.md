@@ -45,7 +45,7 @@ Mientras verifica, bloquea en modo `SHARE` las tablas de dominio de `public`, pa
 | 2 | Edición de domicilio y teléfonos | `DatosSolicitanteController::update` | `DOMICILIO`, `COMUNICACION` (altas, cambios y bajas) |
 | 3 | Autorización de datos | `DatosSolicitanteController::autorizar` (ahora en transacción) | `PERS_DATOS_AUTORIZADOS`, `PERS_FECHA_AUTORIZACION` |
 | 4 | Certificación (inicial o refrendo) | `SeleccionCertificacionController::store` | `SOLICITUD` (área, tipo, trámite, certificación, antecedente validado) + evento `BO` |
-| 5 | Refrendo (art. 13/14) | `DatoRefrendoController::store` (ahora en transacción) | `SOLI_ART14`, `SOLO_ART13`, `SOLI_ID_ARTICULO` |
+| 5 | Refrendo (art. 13/14) | `DatoRefrendoController::store` (ahora en transacción) | `SOLI_ART14`, `SOLI_ART13`, `SOLI_ID_ARTICULO` |
 | 6 | Formación académica | `FormacionAcademicaController::store` | `PERSONA_ESTUDIO_PROFESIONAL` (origen y último grado; «Otro» → `REV`), documentos académicos, **historial**, institución de la persona |
 | 7 | Autorización de la formación | `FormacionAcademicaController::autorizar` | Evento `FA` |
 | 8 | Documentos probatorios | `DocumentoProbatorioController::store` | `SOLICITUD_DOCUMENTO` (vigentes y sustituidos, enlace), `PAGO` |

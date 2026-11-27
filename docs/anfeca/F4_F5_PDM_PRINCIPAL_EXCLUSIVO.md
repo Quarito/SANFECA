@@ -27,6 +27,7 @@ La aplicación (modelos Eloquent, validaciones `unique`/`exists`, Blade, Vue, PD
 
 | Pieza | Archivo | Función |
 |---|---|---|
+| Preparación | `anfeca_compat_esquema.sql` y `anfeca_compat_funciones_pdm.sql` | Esquema técnico, tablas de correspondencia y funciones compartidas por la instalación y la actualización. |
 | Vistas | `database/sql/anfeca_modelo/anfeca_compat_vistas.sql` | Nueve vistas con el **nombre y las columnas exactas** de las tablas de `public`: `datos_solicitantes`, `selecciones_certificacion`, `solicitudes_certificacion`, `datos_refrendo`, `formaciones_academicas_solicitud`, `documentos_probatorios_solicitud`, `historial_documentos_academicos`, `certificados_historicos` e `instituciones_afiliadas`. Cada una tiene una sola tabla base, así que `lockForUpdate()` sigue funcionando. Las fechas locales del PDM se devuelven en la zona de la aplicación. |
 | Disparadores | `database/sql/anfeca_modelo/anfeca_compat_escritura.sql` | `INSTEAD OF` con las **mismas reglas** que `PlanMigracionPdm` y `AplicadorPdm`: entidad INEGI, género, longitudes, eventos BO/FA/CA/EN, «Otro» → REV, documento vigente/Sustituido (el historial **nunca se borra**), pago, art. 13/14, N-6. En `principal` replican en `public` con el mismo ID. No se permite `DELETE`. |
 | Guardia de `public` | mismo archivo | En `principal` y `exclusivo`, las 9 tablas de dominio de `public` solo se escriben desde los disparadores o desde la exportación de reversión. Cualquier otra escritura, por ejemplo una consola o un proceso sin `search_path`, se rechaza. |

@@ -40,7 +40,7 @@ Las reglas son las de `PLAN_INTEGRACION_FUNCIONAL_PDM.md` §3 y `DECISIONES_DATO
 
 **Solicitud**
 - Área y tipo de personal se toman de la solicitud o de la selección del mismo usuario (N-6).
-- Refrendo: `SOLI_ART14`, el inciso en `ARTICULO_SUBINDICE`, y `SOLO_ART13` = refrendo con datos de refrendo y sin art. 14 (D-8).
+- Refrendo: `SOLI_ART14`, el inciso en `ARTICULO_SUBINDICE`, y `SOLI_ART13` = refrendo con datos de refrendo y sin art. 14 (D-8).
 - Antecedente: número y FK a la importación.
 
 **Eventos** (D-3)
