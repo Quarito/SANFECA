@@ -42,6 +42,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'pdm' => [
+            'driver' => 'session',
+            'provider' => 'usuarios_pdm',
+        ],
     ],
 
     /*
@@ -65,6 +70,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'usuarios_pdm' => [
+            'driver' => 'anfeca-pdm',
+            'model' => App\Models\Pdm\Usuario::class,
         ],
 
         // 'users' => [
