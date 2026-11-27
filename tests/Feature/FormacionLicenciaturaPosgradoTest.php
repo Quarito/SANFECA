@@ -337,6 +337,27 @@ class FormacionLicenciaturaPosgradoTest extends TestCase
         $this->actingAs($u)->getJson('/registro/catalogos/licenciaturas?q=ad')->assertUnprocessable();
     }
 
+    public function test_filtro_por_area_solo_acota_la_busqueda_y_no_sustituye_la_validacion(): void
+    {
+        [$u, $s] = $this->solicitante('Administración');
+        $catalogo = app(\App\Services\Catalogos\CatalogoLicenciaturas::class);
+        $todas = $this->actingAs($u)->getJson('/registro/catalogos/licenciaturas?q=ficticia')->assertOk()->json('total');
+        $porArea = 0;
+        foreach (['Administración', 'Contaduría', 'Informática', 'Negocios Internacionales', 'Otro'] as $area) {
+            $r = $this->actingAs($u)->getJson('/registro/catalogos/licenciaturas?q=ficticia&area='.urlencode($area))->assertOk();
+            $porArea += $r->json('total');
+            foreach ($r->json('titulos') as $t) {
+                $this->assertSame($area, $catalogo->porClave($t['clave'])['area'], 'Solo títulos del área solicitada.');
+            }
+        }
+        $this->assertSame($todas, $porArea, 'Las áreas reparten el catálogo completo: ningún título queda inaccesible.');
+        $this->actingAs($u)->getJson('/registro/catalogos/licenciaturas?q=ficticia&area=Inexistente')->assertUnprocessable();
+        // El filtro de la interfaz no habilita títulos de otra área: el servidor sigue aplicando D-LIC-1.
+        $this->guardar($u, $this->catLic('LIC-00000000000A') + ['cuenta_con_posgrado' => '0'], self::DOCS_ORIGEN)
+            ->assertSessionHasErrors('clave_licenciatura_catalogo');
+        $this->assertNull($this->fila($s));
+    }
+
     public function test_catalogo_ausente_o_danado_usa_formulario_anterior_sin_perder_datos(): void
     {
         [$u, $s] = $this->solicitante('Administración');
