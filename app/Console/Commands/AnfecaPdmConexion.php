@@ -20,6 +20,8 @@ class AnfecaPdmConexion extends Command
 
     protected $description = 'Muestra la conexión efectiva de Laravel y revisa las variables DB_* (solo lectura)';
 
+    private const SECRETAS = ['DB_PASSWORD', 'DB_URL'];
+
     private const CLAVES = ['DB_CONNECTION', 'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD', 'DB_URL'];
 
     public function handle(): int
@@ -111,7 +113,7 @@ class AnfecaPdmConexion extends Command
                 $vistas[$clave] = $numero;
 
                 $valor = trim(explode('=', $limpia, 2)[1] ?? '');
-                $mostrar = $clave === 'DB_PASSWORD' ? ($valor === '' ? '(vacía)' : '(definida)') : trim($valor, "\"' \r\n");
+                $mostrar = in_array($clave, self::SECRETAS, true) ? ($valor === '' ? '(vacía)' : '(definida)') : trim($valor, "\"' \r\n");
 
                 $filas[] = [$numero, $clave, $mostrar, $avisos === [] ? 'ok' : implode('; ', $avisos)];
             }
@@ -125,7 +127,7 @@ class AnfecaPdmConexion extends Command
         } else {
             foreach (self::CLAVES as $clave) {
                 if (array_key_exists($clave, $original)) {
-                    $filas[] = ['entorno', $clave, $clave === 'DB_PASSWORD' ? '(definida)' : $original[$clave],
+                    $filas[] = ['entorno', $clave, in_array($clave, self::SECRETAS, true) ? '(definida)' : $original[$clave],
                         'exportada en la sesión: tiene prioridad sobre .env'];
                 }
             }
