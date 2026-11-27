@@ -10,6 +10,7 @@ use App\Models\Pdm\EstudioProfesional;
 use App\Models\Pdm\NivelProfesional;
 use App\Models\Pdm\Persona;
 use App\Models\Pdm\Rol;
+use App\Models\Pdm\Solicitud;
 use App\Models\Pdm\TipoComunicacion;
 use App\Models\Pdm\TipoPersonalAcademico;
 use App\Models\Pdm\Usuario;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 
 class AutenticacionModeloOficialTest extends PdmTestCase
 {
@@ -206,6 +208,73 @@ class AutenticacionModeloOficialTest extends PdmTestCase
             'comu_id_tipo_comunicacion' => $tipo->getKey(),
             'comu_valor' => $usuario->email,
         ]);
+    }
+
+    public function test_panel_propio_y_coordinacion_nacional_usan_solicitudes_oficiales(): void
+    {
+        config(['auth.defaults.guard' => 'pdm']);
+        $this->withoutVite();
+        $solicitante = $this->crearUsuario('ana@example.test');
+        $otro = $this->crearUsuario('otro@example.test');
+        $nacional = $this->crearUsuario('nacional@example.test');
+        $nacional->rol()->associate(Rol::create(['rol_nombre' => 'coordinador_nacional']))->save();
+        $regional = $this->crearUsuario('regional@example.test');
+        $regional->rol()->associate(Rol::create(['rol_nombre' => 'coordinador_zona']))->save();
+
+        $enviada = $this->solicitudPdm($solicitante, 70001);
+        $borrador = $this->solicitudPdm($otro, 70002);
+        $enviada->estadoSolicitudes()->create([
+            'esso_siglas' => 'EN', 'esso_descripcion' => 'Enviada',
+            'esso_fecha' => '2026-11-27', 'esso_hora' => '12:00:00',
+        ]);
+        // Un evento importado después, pero ocurrido antes, no sustituye el efectivo.
+        $enviada->estadoSolicitudes()->create([
+            'esso_siglas' => 'CA', 'esso_descripcion' => 'Compromiso',
+            'esso_fecha' => '2026-11-27', 'esso_hora' => '11:59:00',
+        ]);
+        $disco = Storage::fake('local');
+        $ruta = 'anfeca/documentos/solicitudes/'.$enviada->getKey().'/pago.pdf';
+        $disco->put($ruta, "%PDF-1.4\n");
+        $enviada->pagos()->create(['pago_url_comprobante' => $ruta]);
+
+        $this->actingAs($solicitante, 'pdm')->get('/panel')->assertOk()
+            ->assertSee('Folio 70001')->assertDontSee('Folio 70002');
+        $this->get('/coordinacion/api/solicitudes')->assertForbidden();
+        $this->flushSession()->actingAs($regional, 'pdm')->get('/coordinacion/api/solicitudes')->assertForbidden();
+        $this->get('/coordinacion/solicitudes/'.$enviada->getKey().'/documentos/comprobante_pago_archivo')->assertForbidden();
+
+        $this->flushSession()->actingAs($nacional, 'pdm')->get('/coordinacion/solicitudes')->assertOk();
+        $this->getJson('/coordinacion/api/solicitudes?estado=enviado')->assertOk()
+            ->assertJsonCount(1, 'datos')->assertJsonPath('datos.0.folio', 70001)
+            ->assertJsonPath('datos.0.id', $enviada->getKey())->assertJsonPath('meta.por_estado.borrador', 1);
+        $this->getJson('/coordinacion/api/solicitudes?q=70002')->assertOk()
+            ->assertJsonCount(1, 'datos')->assertJsonPath('datos.0.folio', 70002);
+        $this->get('/coordinacion/solicitudes/'.$enviada->getKey())->assertOk()
+            ->assertSee('Solicitud 70001')->assertSee('Ver comprobante de pago');
+        $this->get('/coordinacion/solicitudes/'.$enviada->getKey().'/documentos/comprobante_pago_archivo')
+            ->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->get('/coordinacion/solicitudes/'.$borrador->getKey().'/documentos/comprobante_pago_archivo')->assertForbidden();
+        $this->get('/coordinacion/solicitudes/'.$enviada->getKey().'/documentos/titulo_origen_archivo')->assertNotFound();
+        $enviada->pagos()->update(['pago_url_comprobante' => 'anfeca/documentos/solicitudes/'.$borrador->getKey().'/otro.pdf']);
+        $this->get('/coordinacion/solicitudes/'.$enviada->getKey().'/documentos/comprobante_pago_archivo')->assertNotFound();
+    }
+
+    private function solicitudPdm(Usuario $usuario, int $folio): Solicitud
+    {
+        $area = AreaCertificacion::firstOrCreate(['area_descripcion' => 'Contaduría']);
+        $tipo = TipoPersonalAcademico::firstOrCreate(['tipa_descripcion' => 'Docente'], ['tipa_estado' => true]);
+        $solicitud = $usuario->persona->solicitudes()->create([
+            'soli_id_area_certificacion' => $area->getKey(),
+            'soli_id_tipo_personal_academico' => $tipo->getKey(),
+            'soli_fecha_registro_solicitud' => '2026-11-27', 'soli_folio_solicitud' => $folio,
+            'soli_art13' => false, 'soli_art14' => false,
+        ]);
+        $solicitud->estadoSolicitudes()->create([
+            'esso_siglas' => 'BO', 'esso_descripcion' => 'Borrador',
+            'esso_fecha' => '2026-11-27', 'esso_hora' => '09:00:00',
+        ]);
+
+        return $solicitud;
     }
 
     private function crearUsuario(string $correo): Usuario

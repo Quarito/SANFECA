@@ -35,7 +35,7 @@ class LoginController extends Controller
             $guard = Auth::guard('pdm');
             $request->session()->put('password_hash_pdm', $guard->hashPasswordForCookie($guard->user()->getAuthPassword()));
 
-            return redirect()->route('mis-datos.edit');
+            return redirect()->route($guard->user()->esCoordinadorNacional() ? 'coordinacion.solicitudes' : 'mis-datos.edit');
         }
 
         // Perfiles administrativos: módulo de coordinación (nunca el flujo de solicitantes).

@@ -4,6 +4,7 @@ namespace Tests\Pdm;
 
 use App\Models\Pdm\PdmModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Support\Facades\DB;
 use ReflectionClass;
@@ -139,7 +140,13 @@ class EsquemaPdmTest extends PdmTestCase
                 } elseif (is_a($tipo->getName(), HasOneOrMany::class, true)) {
                     $relacion = $metodo->invoke($modelo);
                     $hija = substr($relacion->getRelated()->getTable(), strlen('anfeca_modelo.'));
-                    $agrupa[] = [$hija, $relacion->getForeignKeyName(), $tabla, $relacion->getLocalKeyName()];
+                    $fk = [$hija, $relacion->getForeignKeyName(), $tabla, $relacion->getLocalKeyName()];
+                    if ($relacion instanceof HasOne && $relacion->isOneOfMany()) {
+                        // Una proyección del último evento reutiliza la FK del historial.
+                        $this->assertContains($fk, $this->fkDeclaradasEnSql());
+                    } else {
+                        $agrupa[] = $fk;
+                    }
                 }
             }
         }

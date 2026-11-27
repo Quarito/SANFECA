@@ -79,6 +79,11 @@ class Usuario extends PdmModel implements AuthenticatableContract, CanResetPassw
         return in_array($this->rol->rol_nombre, User::ROLES_COORDINACION, true);
     }
 
+    public function esCoordinadorNacional(): bool
+    {
+        return $this->rol->rol_nombre === User::ROL_COORDINADOR_NACIONAL;
+    }
+
     /** FK FK_USUARIO_TIENE_ROL_ROL: usuario.usua_id_rol → rol.rol_id_rol */
     public function rol(): BelongsTo
     {

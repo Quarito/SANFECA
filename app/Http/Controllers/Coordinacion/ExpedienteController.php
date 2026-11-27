@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Coordinacion;
 
 use App\Http\Controllers\Controller;
 use App\Models\SolicitudCertificacion;
+use App\Models\Pdm\Usuario;
 use App\Services\Coordinacion\ConsultaSolicitudes;
 use App\Services\Coordinacion\DocumentosAplicables;
 use App\Services\Coordinacion\RevisionDocumental;
@@ -43,6 +44,10 @@ class ExpedienteController extends Controller
 
     public function show(Request $request, int $solicitud)
     {
+        if ($request->user() instanceof Usuario) {
+            return app(ExpedientePdmController::class)->show($solicitud);
+        }
+
         $modelo = $this->solicitudAutorizada($request, $solicitud, 'consultarComoCoordinacion');
         $detalle = $this->consulta->detalle($request->user(), $modelo->id);
         abort_if($detalle === null, 404);
@@ -104,6 +109,9 @@ class ExpedienteController extends Controller
 
     public function documento(Request $request, int $solicitud, string $campo)
     {
+        if ($request->user() instanceof Usuario) {
+            return app(ExpedientePdmController::class)->documento($request, $solicitud, $campo);
+        }
         abort_unless(DocumentosAplicables::existe($campo), 404);
         $modelo = $this->solicitudAutorizada($request, $solicitud, 'descargarDocumentoComoCoordinacion');
 

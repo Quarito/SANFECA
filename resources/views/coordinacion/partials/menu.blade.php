@@ -4,6 +4,7 @@
 
     <nav aria-label="Módulo de coordinación">
         @foreach (config('anfeca_coordinacion.menu') as $opcion)
+            @continue(auth()->user() instanceof \App\Models\Pdm\Usuario && $opcion['ruta'] !== 'coordinacion.solicitudes')
             @if ($opcion['ruta'])
                 @php $activa = request()->routeIs($opcion['ruta'].'*'); @endphp
                 <a href="{{ route($opcion['ruta']) }}"
