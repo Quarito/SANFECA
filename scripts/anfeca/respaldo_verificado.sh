@@ -27,7 +27,11 @@ DISPONIBLE=$(df -Pm "$HOME" | awk 'NR==2 {print $4}')
 [ "$(git -C "$APP" rev-parse --short=7 HEAD)" = "${COMMIT_ESPERADO:0:7}" ] || { echo "DETENIDO: commit distinto de $COMMIT_ESPERADO" >&2; exit 1; }
 
 export PGHOST="$(valor DB_HOST)" PGPORT="$(valor DB_PORT)" PGUSER="$(valor DB_USERNAME)" PGPASSWORD="$(valor DB_PASSWORD)" PGDATABASE="$BASE_ESPERADA"
-anfeca_pg_preparar                     # herramientas cliente de la misma versión mayor que el servidor
+# Los parámetros proceden de la aplicación identificada. Evitar redirecciones de libpq heredadas.
+unset PGSERVICE PGHOSTADDR PGOPTIONS ANFECA_PG_INSTANTANEA
+anfeca_pg_preparar
+[ "$(psql -XAt -v ON_ERROR_STOP=1 -c 'select current_database()')" = "$BASE_ESPERADA" ] ||
+    { echo "DETENIDO: PostgreSQL reporta una base distinta del origen esperado." >&2; exit 1; }
 IMAGEN_PG=$(anfeca_pg_imagen)          # restauración desechable con la misma versión exacta
 DESTINO="${ANFECA_RESPALDOS_DIR:-$HOME/ANFECA_RESPALDOS}/respaldo_verificado_${BASE_ESPERADA}_$(date +%Y%m%d_%H%M%S)"
 umask 077; mkdir -p "$DESTINO"
@@ -36,14 +40,17 @@ registrar() { echo "$*" | tee -a "$INFORME"; }
 registrar "Respaldo verificado · base=$BASE_ESPERADA · rama=$RAMA_ESPERADA · commit=$(git -C "$APP" rev-parse --short HEAD) · $(date -Is)"
 registrar "Servidor: PostgreSQL ${ANFECA_PG_SERVIDOR} · cliente ${ANFECA_PG_BIN} · imagen ${IMAGEN_PG} · tamaño: $(psql -Atc "select pg_size_pretty(pg_database_size(current_database()))")"
 
-# --- 2. Respaldo completo -------------------------------------------------------------------
-pg_dump -Fc -f "$DESTINO/base.dump"
+# --- 2. Respaldo y huellas de una sola instantánea del origen -------------------------------
+respaldar_instantanea() {
+    pg_dump --snapshot="$ANFECA_PG_INSTANTANEA" -Fc -f "$DESTINO/base.dump" || return
+    huellas_bd_instantanea psql > "$DESTINO/huellas_origen.txt" || return
+    pg_dump --snapshot="$ANFECA_PG_INSTANTANEA" --schema-only --no-owner --no-privileges \
+        | sed -E '/^(--|\\restrict|\\unrestrict)/d' > "$DESTINO/estructura_origen.sql"
+}
+anfeca_con_instantanea respaldar_instantanea
 (cd "$DESTINO" && sha256sum base.dump > base.dump.sha256)
+registrar "Respaldo y huellas obtenidos de la misma instantánea de solo lectura."
 registrar "pg_dump -Fc: $(du -h "$DESTINO/base.dump" | cut -f1) · SHA-256 $(cut -c1-16 "$DESTINO/base.dump.sha256")…"
-
-# Huellas de origen: conteo y MD5 de todas las filas por tabla (orden determinista).
-huellas_bd_instantanea psql > "$DESTINO/huellas_origen.txt"
-pg_dump --schema-only --no-owner --no-privileges | grep -vE '^(--|\\restrict|\\unrestrict)' > "$DESTINO/estructura_origen.sql"
 
 # --- 3. Restauración real en base desechable ----------------------------------------------
 POD="anfeca-restauracion-$$"; CLAVE_PG=$(openssl rand -hex 16)
