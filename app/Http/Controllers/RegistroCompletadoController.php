@@ -7,6 +7,7 @@ use App\Models\DatosSolicitante;
 use App\Models\SeleccionCertificacion;
 use App\Models\SolicitudCertificacion;
 use App\Services\ConsultaAntecedentesService;
+use App\Services\Formacion\RequisitosFormacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -169,7 +170,7 @@ private function obtenerSolicitud(
 
         // Todos los trámites requieren datos académicos completos (centralizado: en el escenario «solo
         // licenciatura» el último grado es la licenciatura y no se exigen campos ni documentos duplicados).
-        $camposAcademicos = \App\Services\Formacion\RequisitosFormacion::campos($formacion);
+        $camposAcademicos = RequisitosFormacion::campos($formacion);
 
         foreach ($camposAcademicos as $campo) {
             $valor = $formacion?->{$campo};
@@ -179,9 +180,13 @@ private function obtenerSolicitud(
             }
         }
 
-        // Todos los trámites requieren los cuatro documentos
-        // académicos, incluidos los refrendos del artículo 14.
-	    foreach (\App\Services\Formacion\RequisitosFormacion::documentos($formacion) as $campo) {
+        // «Solo licenciatura» no basta si el área de certificación exige posgrado (p. ej., cambió después de guardar).
+        if (RequisitosFormacion::faltaPosgradoObligatorio($formacion, $solicitud->area_certificacion)) {
+            $resultado['formacion_academica'] = false;
+        }
+
+        // Documentos académicos aplicables (centralizado; incluidos los refrendos del artículo 14).
+	    foreach (RequisitosFormacion::documentos($formacion) as $campo) {
 	        $ruta = $formacion?->{$campo};
 
 	        if (

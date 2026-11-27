@@ -8,6 +8,11 @@ use App\Models\SolicitudCertificacion;
 use App\Models\SeleccionCertificacion;
 use App\Models\FormacionAcademicaSolicitud;
 use App\Services\ConsultaAntecedentesService;
+use App\Services\Catalogos\CatalogoLicenciaturas;
+use App\Services\Catalogos\CatalogoPosgrados;
+use App\Services\Catalogos\TituloOrigen;
+use App\Services\Catalogos\TituloUltimoGrado;
+use App\Services\Formacion\RequisitosFormacion;
 use App\Models\InstitucionAfiliada;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -113,17 +118,17 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
         
         $formacionBloqueada = $this->formacionEstaCompletada($formacion);
 
-        $catalogoPosgrados = app(\App\Services\Catalogos\CatalogoPosgrados::class)->estado();
+        $catalogoPosgrados = app(CatalogoPosgrados::class)->estado();
         // Catálogo de licenciaturas (bandera ANFECA_CATALOGO_LICENCIATURAS) y casilla de posgrado (ANFECA_DECLARACION_POSGRADO).
-        $tituloOrigen = app(\App\Services\Catalogos\TituloOrigen::class);
-        $catalogoLicenciaturas = app(\App\Services\Catalogos\CatalogoLicenciaturas::class)->estado();
+        $tituloOrigen = app(TituloOrigen::class);
+        $catalogoLicenciaturas = app(CatalogoLicenciaturas::class)->estado();
         $catalogoLicenciaturas['aplica'] = $catalogoLicenciaturas['estado'] === 'activo' && $tituloOrigen->usaCatalogo($solicitud, $formacion);
 
         return view('registro.formacion-academica', [
             'catalogoPosgrados' => $catalogoPosgrados,
             'catalogoLicenciaturas' => $catalogoLicenciaturas,
-            'declaracionPosgrado' => \App\Services\Formacion\RequisitosFormacion::declaracionActiva($formacion),
-            'posgradoObligatorio' => \App\Services\Formacion\RequisitosFormacion::exigePosgrado($solicitud->area_certificacion),
+            'declaracionPosgrado' => RequisitosFormacion::declaracionActiva($formacion),
+            'posgradoObligatorio' => RequisitosFormacion::exigePosgrado($solicitud->area_certificacion),
             'formacionBloqueada' => $formacionBloqueada,
             'solicitud' => $solicitud,
             'areaCertificacion' => $solicitud->area_certificacion,
@@ -162,18 +167,20 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
             $esRefrendo = $solicitud->tipo_tramite === 'refrendo';
 
             // Casilla «Cuento con estudios de posgrado concluidos»: escenario 1 (solo licenciatura) o 2 (con posgrado).
-            $declaracion = \App\Services\Formacion\RequisitosFormacion::declaracionActiva($formacion);
+            $declaracion = RequisitosFormacion::declaracionActiva($formacion);
             // Si el formulario no envía la casilla (p. ej., interfaz anterior tras una reversión de código), rige la
             // declaración ya guardada: nunca se reinterpreta ni se pierde.
-            $declarada = \App\Services\Formacion\RequisitosFormacion::declaracion($formacion);
+            $declarada = RequisitosFormacion::declaracion($formacion);
             $valorDeclaracion = $request->input('cuenta_con_posgrado', $declarada === null ? null : ($declarada ? '1' : '0'));
+            // Normalizado a texto (un 0 numérico no debe tomarse como escenario 2; un arreglo lo rechaza la validación).
+            $valorDeclaracion = is_scalar($valorDeclaracion) ? (string) $valorDeclaracion : null;
             $sinPosgrado = $declaracion && $valorDeclaracion === '0';
 
 	    // Documentos académicos aplicables (centralizado): en el escenario 1 solo los de licenciatura; nunca se
 	    // piden de nuevo ni se copian los mismos archivos como «último grado».
 		$documentos = $sinPosgrado
-		    ? \App\Services\Formacion\RequisitosFormacion::DOCUMENTOS_ORIGEN
-		    : [...\App\Services\Formacion\RequisitosFormacion::DOCUMENTOS_ORIGEN, ...\App\Services\Formacion\RequisitosFormacion::DOCUMENTOS_ULTIMO];
+		    ? RequisitosFormacion::DOCUMENTOS_ORIGEN
+		    : [...RequisitosFormacion::DOCUMENTOS_ORIGEN, ...RequisitosFormacion::DOCUMENTOS_ULTIMO];
 
 		// Durante un refrendo, los documentos de origen
 		// solo pueden cargarse cuando no existen físicamente.
@@ -283,38 +290,21 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
 		}
 
             // Catálogo de posgrados (bandera ANFECA_CATALOGO_POSGRADOS): reglas adicionales del último grado.
-            $tituloUltimoGrado = app(\App\Services\Catalogos\TituloUltimoGrado::class);
-            $tituloOrigen = app(\App\Services\Catalogos\TituloOrigen::class);
+            $tituloUltimoGrado = app(TituloUltimoGrado::class);
+            $tituloOrigen = app(TituloOrigen::class);
             if ($declaracion) {
-                // Las áreas que exigen posgrado (Disciplinas vinculadas: Reglamento arts. 1 y 13; Instrumento 1.1) no
-                // admiten el escenario «solo licenciatura».
-                $exigePosgrado = \App\Services\Formacion\RequisitosFormacion::exigePosgrado($solicitud->area_certificacion);
-                $reglas['cuenta_con_posgrado'] = [$declarada === null ? 'required' : 'nullable', Rule::in($exigePosgrado ? ['1'] : ['0', '1'])];
-                if ($sinPosgrado) {
-                    // Escenario 1: no se recibe ningún dato ni archivo de posgrado (los guardados antes se conservan).
-                    foreach (['nivel_ultimo_grado', 'titulo_ultimo_grado', 'titulo_ultimo_grado_otro', 'modo_titulo_ultimo_grado',
-                              'clave_posgrado_catalogo', 'titulo_ultimo_grado_manual', ...\App\Services\Formacion\RequisitosFormacion::DOCUMENTOS_ULTIMO] as $campo) {
-                        $reglas[$campo] = ['prohibited'];
-                    }
-                } else {
-                    // Escenario 2: el último grado SOLO puede ser un posgrado (nunca una segunda licenciatura).
-                    $reglas['nivel_ultimo_grado'] = ['required', Rule::in(\App\Services\Formacion\RequisitosFormacion::NIVELES_POSGRADO)];
-                }
+                // Escenario 1 o 2 (y áreas que exigen posgrado): reglas centralizadas en RequisitosFormacion.
+                $reglas = array_merge($reglas, RequisitosFormacion::reglasDeclaracion($sinPosgrado, $declarada, $solicitud->area_certificacion));
             }
             if (!$sinPosgrado) {
                 $reglas = array_merge($reglas, $tituloUltimoGrado->reglas($request));
             }
             $reglas = array_merge($reglas, $tituloOrigen->reglas($solicitud, $formacion));
-            $datos = $request->validate($reglas, array_merge($tituloUltimoGrado->mensajes(), $tituloOrigen->mensajes(), [
-                'cuenta_con_posgrado.required' => 'Indique si cuenta con estudios de posgrado concluidos.',
-                'cuenta_con_posgrado.in' => 'Para la certificación en '.$solicitud->area_certificacion.' es requisito contar con estudios de posgrado '
-                    .'(Reglamento para la Certificación Académica, arts. 1 y 13; Instrumento de evaluación, factor 1.1). '
-                    .'Marque «Cuento con estudios de posgrado concluidos» y registre su último grado.',
-                'nivel_ultimo_grado.in' => 'El último grado debe ser Especialidad, Maestría o Doctorado. Si solo cuenta con licenciatura, desmarque la casilla «Cuento con estudios de posgrado concluidos».',
-                'nivel_ultimo_grado.prohibited' => 'No se reciben datos de posgrado si indicó que solo cuenta con licenciatura.',
-                'titulo_ultimo_grado_archivo.prohibited' => 'No se reciben documentos de posgrado si indicó que solo cuenta con licenciatura.',
-                'cedula_ultimo_grado_archivo.prohibited' => 'No se reciben documentos de posgrado si indicó que solo cuenta con licenciatura.',
-            ]));
+            $datos = $request->validate($reglas, array_merge(
+                $tituloUltimoGrado->mensajes(),
+                $tituloOrigen->mensajes(),
+                RequisitosFormacion::mensajesDeclaracion($solicitud->area_certificacion)
+            ));
 
             if ($esRefrendo && !empty($formacion?->titulo_origen)) {
                 // Conservar ambos valores históricos del título.
@@ -529,7 +519,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                 return redirect()->route('registro.documentos');
             }
 
-            foreach (\App\Services\Formacion\RequisitosFormacion::campos($formacion) as $campo) {
+            foreach (RequisitosFormacion::campos($formacion) as $campo) {
                 if (blank($formacion->{$campo})) {
                     return redirect()
                         ->route('registro.formacion')
@@ -540,7 +530,14 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                 }
             }
 
-            foreach (\App\Services\Formacion\RequisitosFormacion::documentos($formacion) as $campo) {
+            if (RequisitosFormacion::faltaPosgradoObligatorio($formacion, $solicitud->area_certificacion)) {
+                // El área de certificación cambió después de guardar «solo licenciatura».
+                return redirect()
+                    ->route('registro.formacion')
+                    ->with('error', RequisitosFormacion::mensajePosgradoObligatorio($solicitud->area_certificacion));
+            }
+
+            foreach (RequisitosFormacion::documentos($formacion) as $campo) {
                 $ruta = $formacion->{$campo};
 
                 if (
@@ -551,7 +548,7 @@ public function create(Request $request, ConsultaAntecedentesService $servicio)
                         ->route('registro.formacion')
                         ->with(
                             'error',
-                            \App\Services\Formacion\RequisitosFormacion::soloLicenciatura($formacion)
+                            RequisitosFormacion::soloLicenciatura($formacion)
                                 ? 'Debes contar con el título y la cédula de licenciatura antes de autorizar.'
                                 : 'Debes contar con los cuatro documentos académicos antes de autorizar.'
                         );
