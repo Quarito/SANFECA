@@ -204,6 +204,19 @@ Aplica a toda lista de más de ≈ 30 opciones (primer uso: títulos de posgrado
 - **Mensajes en español.** Las reglas propias llevan mensajes explícitos. El sitio debe ejecutarse con `APP_LOCALE=es` y traducciones completas: los mensajes genéricos en inglés no son aceptables para el solicitante.
 - **Los errores de sesión deben verse.** Toda pantalla destino de una redirección con `with('error', …)` debe mostrar `session('error')` con el aviso homologado. Un bloqueo sin explicación visible es un defecto.
 
+### 7 bis.9 Catálogos muy extensos y declaraciones que evitan duplicar información (2026-11-26)
+- **Búsqueda en el servidor.** Con miles de denominaciones (licenciaturas: 9 386), `SelectorBuscable` usa el modo remoto (prop `buscar`):
+  - mínimo de 3 letras;
+  - resultados acotados con el **total** de coincidencias («Se muestran 60 de N; escriba más palabras para afinar»), de modo que ningún título queda inaccesible;
+  - el catálogo completo **nunca** se envía al navegador.
+- **Mismo espacio, sin campos nuevos.** Un catálogo nuevo sustituye el contenido del campo existente (p. ej., «Nombre del Título») en lugar de agregar desplegables. Los datos internos (área, clave, versión) los deriva el servidor.
+- **Declaraciones que evitan duplicar.** Cuando un dato puede coincidir con otro ya capturado (último grado = licenciatura), se usa **una** casilla explícita:
+  - al desmarcarla se ocultan los campos y documentos que dejarían de aplicar y se muestra un aviso breve de dos líneas;
+  - **nunca** se piden de nuevo los mismos archivos ni se copian;
+  - si hay información guardada que dejaría de ser vigente, se pide confirmación y se **conserva** (no se borra).
+- **Requisitos normativos visibles.** Si una opción no procede para el trámite (p. ej., «solo licenciatura» en Disciplinas vinculadas, que exige posgrado), la pantalla lo avisa **antes** de guardar y el servidor lo rechaza con el fundamento.
+- **Protección de cambios.** El detector de cambios pendientes se inicializa con un campo que siempre existe (`nivel_origen`), no con uno que puede ocultarse.
+
 ## 8. Accesibilidad mínima
 - Etiquetas `<label>` en todos los campos, `role="search"` en la barra de filtros y `aria-live="polite"` en resúmenes que cambian.
 - Las acciones deshabilitadas usan `aria-disabled`. Los enlaces que abren pestaña nueva usan `rel="noopener"`.
