@@ -32,15 +32,16 @@ case "$(pwd -P)" in
 esac
 [[ "$MODO" =~ ^(plan|simular|completo)$ ]] || falla "Modo no válido: $MODO"
 [[ -n "$DUMP" && -s "$DUMP" ]] || falla "Indique un respaldo existente: $0 /ruta/respaldo.dump"
-[[ "$TRABAJO" != "$COPIA" ]] || falla "La base de origen nunca puede ser la copia."
-[[ "$(psql -d "$TRABAJO" -At -v ON_ERROR_STOP=1 -c 'select current_database()')" == "$TRABAJO" ]] \
-    || falla "No se confirmó el acceso de solo lectura a la base de origen $TRABAJO."
 
 mkdir -p "$SALIDA" && chmod 700 "$HOME/ANFECA_RESPALDOS" "$HOME/ANFECA_RESPALDOS/ensayo_f2" "$SALIDA"
 exec > >(tee -a "$SALIDA/ensayo.log") 2>&1
 
 read -r -s -p "Contraseña de $PGUSER: " PGPASSWORD; echo; export PGPASSWORD
 trap 'unset PGPASSWORD' EXIT
+
+[[ "$TRABAJO" != "$COPIA" ]] || falla "La base de origen nunca puede ser la copia."
+[[ "$(psql -d "$TRABAJO" -At -v ON_ERROR_STOP=1 -c 'select current_database()')" == "$TRABAJO" ]] \
+    || falla "No se confirmó el acceso de solo lectura a la base de origen $TRABAJO."
 
 paso "1. Respaldo identificado y verificado"
 echo "Archivo:   $DUMP"
