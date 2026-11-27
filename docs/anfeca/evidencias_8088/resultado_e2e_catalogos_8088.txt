@@ -1,0 +1,6 @@
+APROBADA [9] Catálogos activos · escenario 2: títulos del catálogo en ESTUDIO_PROFESIONAL (CAL/CAU) y recuperados con su clave — [['Licenciatura Ficticia en Administración', 'Licenciatura', 'CAL'], ['Maestría Ficticia en Dirección de Empresas', 'Maestría', 'CAU']] http://127.0.0.1:8088/registro/formacion-academica
+APROBADA [9] Catálogos activos · escenario 2 autorizado (4 documentos académicos)
+APROBADA [9] Catálogos activos · escenario 1 (solo licenciatura, captura manual): MCL, sin último grado, autorizada con 2 documentos — [['Licenciatura Ficticia en Contaduría y Finanzas', 'Licenciatura', 'MCL']] http://127.0.0.1:8088/registro/documentos-probatorios
+APROBADA [9] Área que exige posgrado: se rechaza «solo licenciatura» y no se guarda nada
+
+Resultado: 4/4 verificaciones aprobadas.

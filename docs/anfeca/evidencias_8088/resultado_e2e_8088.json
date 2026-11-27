@@ -1,0 +1,170 @@
+[
+ {
+  "prueba": 1,
+  "nombre": "Registro desde cero crea PERSONA, USUARIO (rol solicitante) y DOMICILIO en una transacción",
+  "aprobada": true,
+  "detalle": "persona=4 usuario=[['4', 'ACTIVO', 'solicitante']] domicilio=[['Calle Ficticia', '12', '3', 'Ciudad de México']]"
+ },
+ {
+  "prueba": 1,
+  "nombre": "Autenticación con USUARIO (hash bcrypt) y rechazo de contraseña incorrecta",
+  "aprobada": true,
+  "detalle": "http://127.0.0.1:8088/mis-datos"
+ },
+ {
+  "prueba": 3,
+  "nombre": "Datos personales, correo, teléfonos, colonia, municipio y CP persistidos y recuperados en pantalla",
+  "aprobada": true,
+  "detalle": "{\"Código postal del domicilio\": \"04510\", \"Colonia del domicilio\": \"Colonia Ficticia\", \"Alcaldía o municipio del domicilio\": \"Coyoacán\", \"Correo electrónico\": \"ana.ficticia@example.test\", \"Teléfono particular\": \"5511112222\"}"
+ },
+ {
+  "prueba": 4,
+  "nombre": "Antes de autorizar solo cambian domicilio y teléfonos; identidad y correo bloqueados; se exige al menos un teléfono",
+  "aprobada": true,
+  "detalle": "domicilio=['Avenida Nueva', '99', '', 'Jalisco'] identidad=['FICT950315MDFCTA68', 'Ana Prueba']"
+ },
+ {
+  "prueba": 5,
+  "nombre": "Autorización registrada (USUA_ESTATUS = DATOS_AUTORIZADOS) y sin modificaciones posteriores",
+  "aprobada": true,
+  "detalle": "estatus=DATOS_AUTORIZADOS calle=Avenida Nueva"
+ },
+ {
+  "prueba": 6,
+  "nombre": "Selección de certificación, tipo de personal y área (catálogos FK)",
+  "aprobada": true,
+  "detalle": "[['1', '1', 'Administración', 'Profesoras y profesores de Tiempo Completo', 'ANFECA', '']]"
+ },
+ {
+  "prueba": 7,
+  "nombre": "Solicitud inicial persistida en SOLICITUD (folio = id, sin certificado) con evento «Borrador»",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 9,
+  "nombre": "Formación (licenciatura + maestría) en ESTUDIO_PROFESIONAL/PERSONA_ESTUDIO_PROFESIONAL, institución en PERSONA y autorización",
+  "aprobada": true,
+  "detalle": "[['Administración', 'Licenciatura', 'GAL', 't', 't'], ['Administración', 'Maestría', 'GAU', 't', 't']]"
+ },
+ {
+  "prueba": 9,
+  "nombre": "La formación autorizada ya no admite cambios",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 10,
+  "nombre": "Carga de documentos: SOLICITUD_DOCUMENTO + estado «Cargado», PAGO y enlace de evidencias",
+  "aprobada": true,
+  "detalle": "7 documentos, pago=anfeca/expedientes/1/6.png"
+ },
+ {
+  "prueba": 11,
+  "nombre": "Consulta documental del propio expediente (PDF íntegro) y acceso denegado sin sesión",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 10,
+  "nombre": "Los documentos guardados quedan en solo consulta",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 12,
+  "nombre": "Casilla obligatoria validada en el servidor, texto definitivo y evento «Compromiso de entrega aceptado»",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 13,
+  "nombre": "Envío: evento «Enviada», mensaje «Su solicitud fue registrada correctamente.» y bloqueo posterior",
+  "aprobada": true,
+  "detalle": "eventos=[['BO'], ['CA'], ['DP'], ['EN'], ['FA']]"
+ },
+ {
+  "prueba": 14,
+  "nombre": "Acuse PDF generado para la solicitud enviada (y 404 para solicitudes ajenas)",
+  "aprobada": true,
+  "detalle": "1076385 bytes"
+ },
+ {
+  "prueba": 15,
+  "nombre": "Seguimiento: panel y finalización muestran el folio y el estado enviado",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 2,
+  "nombre": "Recuperación por CURP + correo: token en caché de archivos, nueva contraseña en USUARIO",
+  "aprobada": true,
+  "detalle": "/restablecer/493f716a36223d84e9635d5f54999f9aaf57dae83d2c100f84a45f746b4edf2a?email=ana.ficticia.809180%40example.test"
+ },
+ {
+  "prueba": 8,
+  "nombre": "Refrendo: consulta propia válida, certificado ajeno rechazado, vigencia de 3 años (1002), sin selección automática",
+  "aprobada": true,
+  "detalle": "{\"encontrado\":true,\"mensaje\":\"Certificado verificado correctamente.\",\"historial\":{\"certificacion\":\"ANFECA\",\"primera_vez\""
+ },
+ {
+  "prueba": 8,
+  "nombre": "Refrendo del certificado 1001: SOLI_NUMERO_CERTIFICADO, refrendo n.º 2 calculado, art. 14.1, formación y 4 documentos",
+  "aprobada": true,
+  "detalle": "art=[['t', 'f', '14.1']]"
+ },
+ {
+  "prueba": 8,
+  "nombre": "Refrendo enviado conservando el antecedente histórico (sin modificar HISTORICO_CERTIFICADO) y acuse PDF",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 8,
+  "nombre": "Se impide un segundo refrendo del mismo certificado en el periodo vigente",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 16,
+  "nombre": "Coordinación nacional: bandeja con ambas solicitudes, expediente real y visor de documentos",
+  "aprobada": true,
+  "detalle": "folios=['2', '1']"
+ },
+ {
+  "prueba": 16,
+  "nombre": "Dashboard (indicadores) y seguimiento de registros responden con datos de las 36 tablas",
+  "aprobada": true,
+  "detalle": "indicadores=200 seguimiento=200"
+ },
+ {
+  "prueba": 17,
+  "nombre": "Coordinación regional limitada a su zona (Z7 ve solo la de CDMX; Z6 solo la del Sur) y 404 fuera de alcance",
+  "aprobada": true,
+  "detalle": "z7=['1'] z6=['2']"
+ },
+ {
+  "prueba": 17,
+  "nombre": "Un solicitante no accede a Coordinación y la coordinación no usa el flujo de solicitantes",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 19,
+  "nombre": "Pantallas existentes responden con su contenido (15 rutas, sin errores del servidor)",
+  "aprobada": true,
+  "detalle": ""
+ },
+ {
+  "prueba": 18,
+  "nombre": "Integridad: 35 FK validadas y sin registros huérfanos",
+  "aprobada": true,
+  "detalle": "fk=35 huerfanos=0"
+ },
+ {
+  "prueba": 20,
+  "nombre": "Solo 36 tablas en el esquema public (sin sessions, cache, jobs, users, migrations ni esquemas extra)",
+  "aprobada": true,
+  "detalle": "tablas=36 esquemas=public"
+ }
+]

@@ -1,0 +1,15 @@
+[Unit]
+Description=PHP-FPM 8.5.12 EXCLUSIVO de ANFECA 8088 (no comparte proceso ni socket con 8086)
+After=network.target
+
+[Service]
+Type=simple
+RuntimeDirectory=anfeca8088
+RuntimeDirectoryMode=0755
+Environment=PHP_INI_SCAN_DIR=/etc/php.d:/etc/anfeca8088
+ExecStart=PHP_FPM_BIN --nodaemonize --fpm-config /etc/anfeca8088/php-fpm.conf
+ExecReload=/bin/kill -USR2 $MAINPID
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

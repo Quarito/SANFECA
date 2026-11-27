@@ -1,0 +1,28 @@
+{
+    "sql_oficial": "anfeca_modelo_powerdesigner_certificacion_anfeca_sin_esquema.sql",
+    "sha256": "5798ce839af01339018536155ab17698c7cb953c7f150e2b9c6b268aab978285",
+    "base": "certificacion_anfeca",
+    "servidor": {
+        "h": "127.0.0.1\/32",
+        "p": 55488,
+        "v": "18.6"
+    },
+    "tablas": {
+        "oficial": 36,
+        "fisicas": 36
+    },
+    "atributos": {
+        "oficial": 173
+    },
+    "fk": {
+        "oficial": 35,
+        "fisicas": 35
+    },
+    "indices": {
+        "oficial_explicitos": 60,
+        "fisicos": 96,
+        "de_pk": 36
+    },
+    "secuencias": 36,
+    "diferencias": []
+}
