@@ -73,6 +73,9 @@ jobs:
           psql -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE bd_anfeca_pruebas_pg'
           psql -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE bd_anfeca_desechable_pruebas_pg'
 
+      - name: Respaldo y huellas con escritura concurrente
+        run: bash scripts/anfeca/pruebas/probar_instantanea_respaldo.sh
+
       - name: Pruebas generales SQLite
         run: php vendor/bin/phpunit -c phpunit.xml
 
