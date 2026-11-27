@@ -1,5 +1,7 @@
 # Integración de certificacion_anfeca en 8086 · PHP 8.5.12, PostgreSQL 18 y modelo PowerDesigner · 2026-11-27
 
+> **Actualización:** la conmutación de 8086 **se ejecutó** el 2026-11-27 (≈10:38 CST) y está aprobada para revisión institucional (`ACEPTACION_TECNICA_8086.md`). 8086 opera con PHP-FPM 8.5.12, PostgreSQL 18.6 (5433) y `certificacion_anfeca`, con PDM apagado. Las menciones de «sin conmutar» que siguen describen el estado previo. Los pendientes de PowerDesigner (§2 y §4) siguen vigentes.
+
 Este documento continúa el PR #17 y registra lo **ejecutado realmente en el servidor**. Lo que falta para la conmutación de 8086 son **intervenciones con privilegios de administrador y dos decisiones del responsable** (§10). Mientras no se cumplan, 8086 sigue en servicio con su configuración anterior:
 - PHP-FPM 8.4.27, pool `www`;
 - base `bd_anfeca_ensayo_pruebas_pg`;

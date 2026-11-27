@@ -111,7 +111,10 @@ Diferencias del **entorno de prueba**, no del candidato (corregidas en el labora
 
 Ninguno pendiente. Los dos encontrados (§5, 1 y 2) se corrigieron y se volvieron a probar.
 
-## 9. Etapa C (después de conmutar)
+## 9. Etapa C (después de conmutar) · EJECUTADA el 2026-11-27
+
+**Resultado:** 40/40 pantallas de 8086 en vivo idénticas a la línea base `visual_actual`. Pruebas con escritura sobre una copia aislada de la base activa (`postconmutacion_pruebas`, mismo release): 96/97 pasos iguales a la etapa A y 21/21 reglas de negocio iguales al sistema anterior. Detalle en `ACEPTACION_TECNICA_8086.md`.
+
 
 `02_conmutar_root.sh` imprime los comandos. Repetir `regresion_visual.js` sobre 8086 y compararlo con `visual_actual` usando `comparar_regresion_visual.js`. Además, ejecutar `e2e_candidato.py` con `ANFECA_E2E_PERMITIR_8086=si` (solo registros ficticios). Si alguna página difiere de la línea base, salvo fechas, se ejecuta `03_revertir_root.sh`.
 
