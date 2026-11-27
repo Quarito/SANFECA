@@ -139,7 +139,13 @@ class EsquemaPdmTest extends PdmTestCase
                 } elseif (is_a($tipo->getName(), HasOneOrMany::class, true)) {
                     $relacion = $metodo->invoke($modelo);
                     $hija = substr($relacion->getRelated()->getTable(), strlen('anfeca_modelo.'));
-                    $agrupa[] = [$hija, $relacion->getForeignKeyName(), $tabla, $relacion->getLocalKeyName()];
+                    $fk = [$hija, $relacion->getForeignKeyName(), $tabla, $relacion->getLocalKeyName()];
+                    if ($relacion->isOneOfMany()) {
+                        // Una proyección del último evento reutiliza la FK del historial.
+                        $this->assertContains($fk, $this->fkDeclaradasEnSql());
+                    } else {
+                        $agrupa[] = $fk;
+                    }
                 }
             }
         }
