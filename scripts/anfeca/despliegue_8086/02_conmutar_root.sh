@@ -4,6 +4,8 @@
 #
 #   sudo ANFECA_AUTORIZO_CONMUTACION=si bash scripts/anfeca/despliegue_8086/02_conmutar_root.sh
 #
+# Mantenimiento: «artisan down/up» se ejecuta como root porque storage/framework es root:root 755 (el archivo
+# «down» queda 644, legible por Apache y por ambos pools); no se cambian permisos.
 # Recuperación automática DESDE EL INICIO DEL MANTENIMIENTO (trap ERR/INT/TERM):
 #   - falla antes de cambiar el VirtualHost (respaldo, sincronización, caché) → se reabre 8086 con su configuración
 #     anterior (PHP 8.4.27 + bd_anfeca_ensayo_pruebas_pg, que no se modificó) y el pool exclusivo vuelve a iniciar;
@@ -31,7 +33,7 @@ recuperar() {
         bash "$DIR/03_revertir_root.sh" "$R"
     else
         systemctl is-active --quiet anfeca8086-fpm || systemctl start anfeca8086-fpm
-        SW php "$APP/artisan" up >/dev/null 2>&1
+        php "$APP/artisan" up >/dev/null 2>&1
         echo "8086 reabierto con su configuración anterior (VirtualHost sin cambios; base de origen intacta)." | tee -a "$R/bitacora.txt" >&2
     fi
     exit 1
@@ -52,7 +54,7 @@ echo "$R" > "$EVID/anfeca8086_ultima_conmutacion"
 
 trap recuperar ERR INT TERM
 FASE=mantenimiento; paso "1. Mantenimiento: se detienen las escrituras de 8086"
-SW php "$APP/artisan" down --retry=60 >/dev/null
+php "$APP/artisan" down --retry=60 >/dev/null
 ORIGEN_ENV() { grep -E "^$1=" "$APP/.env" | tail -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
 for i in $(seq 30); do   # sin transacciones en curso en el origen (aparte de esta consulta)
     N=$(PGPASSWORD="$(ORIGEN_ENV DB_PASSWORD)" ${ANFECA_PSQL:-/usr/pgsql-18/bin/psql} -XAt -h "$(ORIGEN_ENV DB_HOST)" -p "$(ORIGEN_ENV DB_PORT)" -U "$(ORIGEN_ENV DB_USERNAME)" -d bd_anfeca_ensayo_pruebas_pg \
@@ -99,7 +101,7 @@ cat "$R/identidad_fastcgi.txt"; echo
 grep -qE '^8\.5\.12 fpm-fcgi 13\.42\.0 certificacion_anfeca cert8086_app 5433 18\.6 apagado$' "$R/identidad_fastcgi.txt"
 SONDA="$REL/public/__identidad_$(openssl rand -hex 8).php"     # sonda HTTP efímera: solo versiones, sin datos
 printf '<?php echo PHP_VERSION," ",PHP_SAPI;\n' > "$SONDA"; chmod 644 "$SONDA"
-SW php "$APP/artisan" up >/dev/null 2>&1 || podman exec anfeca8086-fpm php "$REL/artisan" up >/dev/null
+php "$APP/artisan" up >/dev/null
 curl -s "http://192.168.7.130:8086/$(basename "$SONDA")" > "$R/identidad_http.txt"; rm -f "$SONDA"; SONDA=""
 grep -qx '8.5.12 fpm-fcgi' "$R/identidad_http.txt"
 [ "$(curl -s -o /dev/null -w '%{http_code}' http://192.168.7.130:8086/login)" = 200 ]

@@ -18,7 +18,7 @@ ANTERIOR="$ORIGINAL/anfeca-ensayo.conf"; [ -s "$ANTERIOR" ] || ANTERIOR="$R/anfe
 grep -q 'ANFECA_8086' "$ANTERIOR" && fallo "la copia $ANTERIOR ya apunta al release: no es la original"
 
 echo "== 1. Mantenimiento y VirtualHost original"
-SW php "$APP/artisan" down --retry=60 >/dev/null 2>&1 || true
+php "$APP/artisan" down --retry=60 >/dev/null 2>&1 || true
 if vhost_conmutado || ! cmp -s "$ANTERIOR" "$VH"; then cp -a "$ANTERIOR" "$VH"; fi
 apachectl configtest 2>&1 | grep -q "Syntax OK" || fallo "configtest falló con el VirtualHost original: revisar $VH (8086 en mantenimiento)"
 systemctl reload httpd; sleep 2
@@ -32,10 +32,10 @@ if [ -s "$R/huellas_al_conmutar.txt" ]; then
     if ! cmp -s "$R/huellas_al_conmutar.txt" "$R/huellas_al_revertir.txt"; then
         diff "$R/huellas_al_conmutar.txt" "$R/huellas_al_revertir.txt" | grep '^>' | cut -d'|' -f1-2 | tee "$R/tablas_con_escrituras_nuevas.txt"
         echo "ATENCIÓN: hay escrituras nuevas en certificacion_anfeca. 8086 queda en MANTENIMIENTO con el VirtualHost original." >&2
-        echo "Conciliarlas hacia bd_anfeca_ensayo_pruebas_pg y después: sudo -u servidorweb php $APP/artisan up" >&2
+        echo "Conciliarlas hacia bd_anfeca_ensayo_pruebas_pg y después: sudo php $APP/artisan up" >&2
         exit 2
     fi
 fi
-SW php "$APP/artisan" up >/dev/null
+php "$APP/artisan" up >/dev/null
 echo "✔ 8086 revertido: /login → $(curl -s -o /dev/null -w '%{http_code}' http://192.168.7.130:8086/login) con el pool www (PHP 8.4.27) y la base de origen."
 echo "  Servicios exclusivos (anfeca-pg8086, anfeca8086-fpm) y release conservados para un nuevo intento."

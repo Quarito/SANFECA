@@ -29,6 +29,20 @@ ID_CLUSTER=7712865409902226718; RELV=$REL_RAIZ/releases/$COMMIT
 CONF=/etc/anfeca8086; SOCKDIR=$(dirname "$SOCK"); CAND=18087; EV=$EVID/anfeca8086_preparacion; mkdir -m 700 -p "$EV"
 paso() { echo; echo "== $*" | tee -a "$EV/bitacora.txt"; }
 id_home() { SW $PGBIN/psql -h $PG_HOME/run -p 5433 -XAtc 'select system_identifier from pg_control_system()' postgres 2>/dev/null; }
+# Huella LÓGICA del clúster (estable ante reinicios): identificador, bases, roles y, por base, conteo y MD5 del
+# contenido de cada tabla en una instantánea. Sustituye la suma de pg_database_size, que incluye los archivos
+# volátiles pg_internal.init (se borran al arrancar y se recrean al primer acceso a cada base).
+huella_cluster() {
+    "$@" -d postgres -XAt -c "select system_identifier from pg_control_system()" \
+         -c "select string_agg(datname||':'||pg_get_userbyid(datdba)||':'||pg_encoding_to_char(encoding)||':'||datcollate, ',' order by datname) from pg_database" \
+         -c "select string_agg(rolname||':'||rolsuper||':'||rolcreatedb||':'||rolcanlogin, ',' order by rolname) from pg_roles where rolname !~ '^pg_'"
+    local db
+    for db in $("$@" -d postgres -XAt -c "select datname from pg_database where datallowconn and datname <> 'template1' order by 1"); do
+        echo "## $db"; huellas_bd_instantanea "$@" -d "$db"
+    done
+}
+source "$DIR/../huellas_bd.inc.sh"
+home_activo() { SW $PGBIN/pg_ctl -D $PG_HOME/data status >/dev/null 2>&1; }
 id_serv() { sudo -u postgres $PGBIN/psql -h /run/anfeca-pg8086 -p 5433 -U servidorweb -XAtc 'select system_identifier from pg_control_system()' postgres 2>/dev/null; }
 
 paso "Comprobaciones previas ($ACCION)"
@@ -40,7 +54,13 @@ for d in / /var; do [ "$(df -Pm $d | awk 'NR==2{print $4}')" -ge 3072 ] || fallo
 ss -ltn | grep -q "127.0.0.1:$CAND " && ! [ -f /etc/httpd/conf.d/anfeca-8086-candidato.conf ] && fallo "puerto $CAND ocupado por otro servicio"
 ESTADO_PG=nuevo
 if systemctl is-active --quiet anfeca-pg8086 && [ "$(id_serv)" = $ID_CLUSTER ]; then ESTADO_PG=servicio
-elif [ "$(id_home)" = $ID_CLUSTER ]; then [ ! -e "$PG_DEST" ] || fallo "$PG_DEST existe sin servicio activo: traslado previo incompleto (revisar antes de continuar)"; ESTADO_PG=home
+elif [ "$(id_home)" = $ID_CLUSTER ]; then
+    ESTADO_PG=home
+    if [ -e "$PG_DEST" ]; then   # traslado previo incompleto: el clúster de /home sigue siendo el vigente
+        systemctl is-active --quiet anfeca-pg8086 && fallo "anfeca-pg8086 activo y clúster de /home activo: dos instancias; detener una manualmente"
+        [ "$ACCION" = --verificar ] && echo "  traslado previo incompleto en $PG_DEST: --ejecutar lo conservará como $PG_DEST.parcial_<fecha> y repetirá la copia"
+        ESTADO_PG=reanudar
+    fi
 else fallo "el clúster 5433 no responde con el identificador $ID_CLUSTER"; fi
 echo "  clúster 5433: $ESTADO_PG"
 SW podman image exists localhost/anfeca-php-fpm:8.5.12 || fallo "falta la imagen PHP 8.5.12 de servidorweb"
@@ -51,12 +71,20 @@ protegidos > "$EV/protegidos_antes.txt"; cat "$EV/protegidos_antes.txt" | sed 's
 echo "  Comprobaciones previas correctas."; [ "$ACCION" = --ejecutar ] || exit 0
 
 paso "A. Clúster exclusivo como servicio del sistema"
+if [ $ESTADO_PG = reanudar ]; then
+    systemctl disable --now anfeca-pg8086 2>/dev/null || true
+    mv "$PG_DEST" "$PG_DEST.parcial_$(date +%Y%m%d_%H%M%S)"; echo "  copia parcial anterior conservada como $PG_DEST.parcial_*"; ESTADO_PG=home
+fi
 if [ $ESTADO_PG = home ]; then
-    H_ANTES=$(SW $PGBIN/psql -h $PG_HOME/run -p 5433 -XAtc "select md5(string_agg(datname||':'||pg_database_size(datname),',' order by datname)) from pg_database" postgres)
-    reiniciar_home() { echo "FALLA en el traslado: se reinicia el clúster original" >&2; systemctl disable --now anfeca-pg8086 2>/dev/null; SW $PGBIN/pg_ctl -D $PG_HOME/data -l $PG_HOME/logs/arranque.log -w start; }
+    huella_cluster SW $PGBIN/psql -h $PG_HOME/run -p 5433 > "$EV/huella_logica_antes.txt"
+    [ "$(head -1 "$EV/huella_logica_antes.txt")" = $ID_CLUSTER ]
+    reiniciar_home() { echo "FALLA en el traslado: se reinicia el clúster original (copia conservada en $PG_DEST)" >&2; systemctl disable --now anfeca-pg8086 2>/dev/null; systemctl is-active --quiet anfeca-pg8086 || home_activo || SW $PGBIN/pg_ctl -D $PG_HOME/data -l $PG_HOME/logs/arranque.log -w start; }
     trap 'reiniciar_home; exit 1' ERR INT TERM
     SW $PGBIN/pg_ctl -D $PG_HOME/data -m fast -w stop
+    ! home_activo                                                    # nunca dos instancias sobre los mismos datos
     mkdir -p "$PG_DEST"; cp -a "$PG_HOME/data" "$PG_DEST/data"; chown -R postgres:postgres "$PG_DEST"; chmod 700 "$PG_DEST" "$PG_DEST/data"
+    rm -f "$PG_DEST/data/postmaster.pid"
+    sudo -u postgres $PGBIN/pg_checksums --check -D "$PG_DEST/data" > "$EV/pg_checksums.txt" 2>&1   # integridad física de la copia (detenida)
     sed -i -e "s|^unix_socket_directories = .*|unix_socket_directories = '/run/anfeca-pg8086'|" \
            -e "s|^log_directory = .*|log_directory = 'log'|" -e "s|^unix_socket_permissions = .*|unix_socket_permissions = 0770|" "$PG_DEST/data/postgresql.conf"
     printf '%s\n' '# ANFECA 8086 · socket propio (peer: postgres y servidorweb → superusuario servidorweb) y loopback con SCRAM.' \
@@ -87,8 +115,8 @@ EOF
     systemctl daemon-reload; systemctl enable --now anfeca-pg8086.service
     for i in $(seq 30); do $PGBIN/pg_isready -q -h 127.0.0.1 -p 5433 && break; sleep 1; done
     [ "$(id_serv)" = $ID_CLUSTER ]
-    H_DESPUES=$(sudo -u postgres $PGBIN/psql -h /run/anfeca-pg8086 -p 5433 -U servidorweb -XAtc "select md5(string_agg(datname||':'||pg_database_size(datname),',' order by datname)) from pg_database" postgres)
-    [ "$H_ANTES" = "$H_DESPUES" ]
+    huella_cluster sudo -u postgres $PGBIN/psql -h /run/anfeca-pg8086 -p 5433 -U servidorweb > "$EV/huella_logica_despues.txt"
+    diff "$EV/huella_logica_antes.txt" "$EV/huella_logica_despues.txt" > "$EV/huella_logica_diferencias.txt"   # cualquier diferencia → recuperación
     trap - ERR INT TERM
 fi
 echo "  ✔ anfeca-pg8086 activo, identificador $(id_serv). Copia anterior conservada en $PG_HOME."
