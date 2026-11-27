@@ -37,22 +37,14 @@ class LoginController extends Controller
         }
 
         // Priorizar cualquier solicitud pendiente del usuario.
-        $tieneBorrador = \App\Models\SolicitudCertificacion::query()
-            ->where('user_id', $request->user()->id)
-            ->where('estado', 'borrador')
-            ->exists();
+        $estado = app(\App\Services\Solicitantes\EstadoSolicitante::class);
 
-        if ($tieneBorrador) {
+        if ($estado->tieneBorrador($request->user()->id)) {
             return redirect()->route('mis-datos.edit');
         }
 
         // Si solamente tiene trámites enviados, mostrar su conclusión.
-        $tieneSolicitudEnviada = \App\Models\SolicitudCertificacion::query()
-            ->where('user_id', $request->user()->id)
-            ->where('estado', 'enviado')
-            ->exists();
-
-        if ($tieneSolicitudEnviada) {
+        if ($estado->tieneEnviada($request->user()->id)) {
             return redirect()->route('registro.completado');
         }
 

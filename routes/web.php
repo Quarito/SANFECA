@@ -29,21 +29,13 @@ Route::get('/', function () {
 
     $userId = auth()->id();
 
-    $tieneBorrador = \App\Models\SolicitudCertificacion::query()
-        ->where('user_id', $userId)
-        ->where('estado', 'borrador')
-        ->exists();
+    $estado = app(\App\Services\Solicitantes\EstadoSolicitante::class);
 
-    if ($tieneBorrador) {
+    if ($estado->tieneBorrador($userId)) {
         return redirect()->route('mis-datos.edit');
     }
 
-    $tieneEnviada = \App\Models\SolicitudCertificacion::query()
-        ->where('user_id', $userId)
-        ->where('estado', 'enviado')
-        ->exists();
-
-    if ($tieneEnviada) {
+    if ($estado->tieneEnviada($userId)) {
         return redirect()->route('registro.completado');
     }
 

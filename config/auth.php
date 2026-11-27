@@ -62,10 +62,9 @@ return [
     */
 
     'providers' => [
-        'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
-        ],
+        'users' => env('ANFECA_PDM36', false)
+            ? ['driver' => 'pdm36', 'model' => \App\Auth\UsuarioPdm36::class]   // modelo aprobado de 36 tablas
+            : ['driver' => 'eloquent', 'model' => env('AUTH_MODEL', User::class)],
 
         // 'users' => [
         //     'driver' => 'database',

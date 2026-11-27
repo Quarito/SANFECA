@@ -16,6 +16,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(\App\Services\Solicitantes\EstadoSolicitante::class, fn () => config('anfeca_pdm36.activo')
+            ? new \App\Services\Solicitantes\EstadoSolicitantePdm36() : new \App\Services\Solicitantes\EstadoSolicitantePublic());
         //
     }
 
@@ -39,7 +41,9 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         // Módulo de coordinación: solo perfiles administrativos (users.rol).
-        Gate::define('acceder-coordinacion', fn (User $u) => $u->esCoordinador());
+        // Sin tipo concreto: el usuario puede ser App\Models\User o App\Auth\UsuarioPdm36 (modelo de 36 tablas).
+        Gate::define('acceder-coordinacion', fn ($u) => $u->esCoordinador());
+        \Illuminate\Support\Facades\Auth::provider('pdm36', fn ($app, array $c) => new \App\Auth\ProveedorUsuarioPdm36($app['hash'], \App\Auth\UsuarioPdm36::class));
 
         RateLimiter::for('restablecer', fn (Request $r) => [
             Limit::perMinute(5)->by('restablecer-ip:'.$r->ip()),
