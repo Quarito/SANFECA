@@ -2,7 +2,7 @@
 
 namespace App\Services\Coordinacion;
 
-use App\Models\SolicitudCertificacion;
+use App\Services\Anfeca\SolicitudVista as SolicitudCertificacion;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -68,7 +68,7 @@ class DocumentosAplicables
     {
         return match (true) {
             $ruta === null => VersionDocumento::NO_CARGADO,
-            $this->rutaSegura($ruta) && Storage::disk('local')->exists($ruta) => VersionDocumento::CARGADO,
+            $this->rutaSegura($ruta) && app(\App\Services\Anfeca\DocumentosPdm::class)->disco()->exists($ruta) => VersionDocumento::CARGADO,
             default => VersionDocumento::NO_LOCALIZADO,
         };
     }
@@ -81,7 +81,7 @@ class DocumentosAplicables
             return new VersionDocumento(VersionDocumento::NO_CARGADO, null, null, null);
         }
 
-        $disco = Storage::disk('local');
+        $disco = app(\App\Services\Anfeca\DocumentosPdm::class)->disco();
         if (!$this->rutaSegura($ruta) || !$disco->exists($ruta)) {
             return new VersionDocumento(VersionDocumento::NO_LOCALIZADO, $ruta, null, null);
         }

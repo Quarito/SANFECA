@@ -2,7 +2,7 @@
 
 namespace App\Services\Coordinacion;
 
-use App\Models\User;
+use App\Models\Cuenta as User;
 use App\Services\Zonas\ZonasAnfeca;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -73,22 +73,17 @@ class SeguimientoRegistros
         // Solicitudes visibles: las mismas que la bandeja (zona_id + coordinador_zona para regionales).
         $visibles = $this->consulta->base($usuario)->pluck('s.id')->map(fn ($id) => (int) $id)->flip();
 
-        $usuarios = DB::table('users')
-            ->where(fn ($q) => $q->whereNull('rol')->orWhereNotIn('rol', User::ROLES_COORDINACION))
-            ->orderBy('id')->get(['id', 'name', 'email', 'created_at']);
-        $ids = $usuarios->pluck('id');
-        $datos = DB::table('datos_solicitantes')->whereIn('user_id', $ids)->get()->keyBy('user_id');
-        $solicitudes = DB::table('solicitudes_certificacion as s')->leftJoin('certificados_historicos as h', 'h.id', '=', 's.certificado_historico_id')
-            ->whereIn('s.user_id', $ids)->orderBy('s.id')->get(['s.*', 'h.numero_certificado'])->groupBy('user_id');
-        $sids = $solicitudes->flatten(1)->pluck('id');
-        $formaciones = DB::table('formaciones_academicas_solicitud')->whereIn('solicitud_id', $sids)->get()->keyBy('solicitud_id');
-        $documentos = DB::table('documentos_probatorios_solicitud')->whereIn('solicitud_id', $sids)->get()->keyBy('solicitud_id');
-        $refrendos = DB::table('datos_refrendo')->whereIn('solicitud_id', $sids)->get()->keyBy('solicitud_id');
-        $instituciones = DB::table('instituciones_afiliadas')->get(['id', 'nombre'])->keyBy('id');
+        // Cuentas de solicitante (USUARIO con ROL «solicitante») y sus solicitudes en las 36 tablas oficiales.
+        $usuarios = DB::table('usuario as u')->join('rol as r', 'r.rol_id_rol', '=', 'u.usua_id_rol')
+            ->where('r.rol_nombre', User::ROL_SOLICITANTE)->orderBy('u.usua_id_usuario')
+            ->get(['u.usua_id_usuario as id', 'u.usua_nombre as email', 'u.usua_id_persona as persona_id']);
+        $expediente = app(\App\Services\Anfeca\ExpedienteSolicitante::class);
+        $tramites = app(\App\Services\Anfeca\Tramites::class);
+        $instituciones = app(\App\Services\Anfeca\Instituciones::class)->lista()->keyBy('id');
 
         $filas = collect();
         foreach ($usuarios as $u) {
-            $propias = collect($solicitudes->get($u->id, []));
+            $propias = $tramites->dePersona((int) $u->persona_id);
             $actual = $propias->where('estado', 'borrador')->sortByDesc('id')->first() ?? $propias->sortByDesc('id')->first();
 
             // Alcance: sin trámite (o trámite fuera de sus zonas) → solo la coordinación nacional.
@@ -96,18 +91,19 @@ class SeguimientoRegistros
                 continue;
             }
 
-            $fila = $this->evaluar($u, $datos->get($u->id), $actual,
-                $actual ? $formaciones->get($actual->id) : null,
-                $actual ? $documentos->get($actual->id) : null,
-                $actual ? $refrendos->get($actual->id) : null);
+            $datos = $expediente->datos((int) $u->id);
+            $formacion = $actual?->formacionAcademica;
+            $fila = $this->evaluar($u, $datos, $actual, $formacion, $actual?->documentosProbatorios, $actual?->datosRefrendo);
 
-            $institucionId = $actual ? $formaciones->get($actual->id)?->institucion_afiliada_id : null;
+            $institucionId = $datos?->institucion_id;
             $zona = $this->zonas->deInstitucion($institucionId !== null ? (int) $institucionId : null);
-            $nombre = trim(collect([$datos->get($u->id)?->nombres, $datos->get($u->id)?->apellido_paterno, $datos->get($u->id)?->apellido_materno])->filter()->implode(' '));
+            $nombre = trim(collect([$datos?->nombres, $datos?->apellido_paterno, $datos?->apellido_materno])->filter()->implode(' '));
+            // USUARIO no registra la fecha de creación de la cuenta: se usa la del primer trámite (INC-06).
+            $primera = $propias->sortBy('id')->first()?->created_at;
 
             $filas->push($fila + [
                 'usuario_id' => (int) $u->id,
-                'solicitante' => $nombre !== '' ? $nombre : $u->name,
+                'solicitante' => $nombre !== '' ? $nombre : $u->email,
                 'correo' => $u->email,
                 'folio' => $actual?->id,
                 'institucion_id' => $institucionId !== null ? (int) $institucionId : null,
@@ -117,7 +113,7 @@ class SeguimientoRegistros
                 'zona_clasificada' => $zona->clasificada(),
                 'tipo_tramite' => $actual?->tipo_tramite,
                 'certificacion' => $actual?->certificacion,
-                'fecha_registro' => Carbon::parse($u->created_at),
+                'fecha_registro' => $primera,
                 'tramites' => $propias->count(),
                 'historial' => $propias->reject(fn ($s) => $actual && $s->id === $actual->id)->sortByDesc('id')->values()
                     ->map(fn ($s) => ['folio' => (int) $s->id, 'tipo_tramite' => $s->tipo_tramite, 'certificacion' => $s->certificacion,
@@ -134,7 +130,7 @@ class SeguimientoRegistros
         $refrendoTramite = $solicitud?->tipo_tramite === 'refrendo';
         $articulo = $refrendoTramite && $refrendo !== null && (int) $refrendo->aplica_articulo_14 === 1
             && in_array((string) $refrendo->inciso_articulo_14, self::INCISOS_SISTEMA, true);
-        $existe = fn (?object $r, string $campo) => $r !== null && filled($r->{$campo} ?? null) && Storage::disk('local')->exists($r->{$campo});
+        $existe = fn (?object $r, string $campo) => $r !== null && filled($r->{$campo} ?? null) && app(\App\Services\Anfeca\DocumentosPdm::class)->disco()->exists($r->{$campo});
         $estado = fn (bool $completa, bool $iniciada = false) => $completa ? self::COMPLETADA : ($iniciada ? self::EN_PROCESO : self::PENDIENTE);
 
         // Requisitos centralizados (RequisitosFormacion): con «solo licenciatura» no se exigen datos ni documentos del último grado.
@@ -146,7 +142,7 @@ class SeguimientoRegistros
             'cuenta' => self::COMPLETADA,
             'datos' => $estado($datos !== null),
             'autorizacion' => $estado($datos !== null && (bool) $datos->datos_autorizados),
-            'certificacion' => $estado($solicitud !== null && in_array($solicitud->certificacion, ['ANFECA', 'CACSLA', 'CACECA'], true)
+            'certificacion' => $estado($solicitud !== null && in_array($solicitud->certificacion, array_keys((array) config('anfeca_8088.certificaciones')), true)
                 && filled($solicitud->tipo_personal) && filled($solicitud->area_certificacion), $solicitud !== null),
             'certificado' => $refrendoTramite ? $estado($solicitud->certificado_historico_id !== null) : self::NO_APLICA,
             'refrendo' => $refrendoTramite ? $estado($refrendo !== null) : self::NO_APLICA,
@@ -208,8 +204,8 @@ class SeguimientoRegistros
             ->when(filled($f['certificacion'] ?? null), fn ($c) => $c->where('certificacion', $f['certificacion']))
             ->when(filled($f['estado'] ?? null), fn ($c) => $c->where('clasificacion', $f['estado']))
             ->when(filled($f['etapa'] ?? null), fn ($c) => $c->where('etapa_actual', $f['etapa']))
-            ->when(filled($f['registro_desde'] ?? null), fn ($c) => $c->filter(fn ($r) => $r['fecha_registro']->toDateString() >= $f['registro_desde']))
-            ->when(filled($f['registro_hasta'] ?? null), fn ($c) => $c->filter(fn ($r) => $r['fecha_registro']->toDateString() <= $f['registro_hasta']))
+            ->when(filled($f['registro_desde'] ?? null), fn ($c) => $c->filter(fn ($r) => $r['fecha_registro'] && $r['fecha_registro']->toDateString() >= $f['registro_desde']))
+            ->when(filled($f['registro_hasta'] ?? null), fn ($c) => $c->filter(fn ($r) => $r['fecha_registro'] && $r['fecha_registro']->toDateString() <= $f['registro_hasta']))
             ->when(filled($f['avance_desde'] ?? null), fn ($c) => $c->filter(fn ($r) => $r['ultimo_avance'] && $r['ultimo_avance']->toDateString() >= $f['avance_desde']))
             ->when(filled($f['avance_hasta'] ?? null), fn ($c) => $c->filter(fn ($r) => $r['ultimo_avance'] && $r['ultimo_avance']->toDateString() <= $f['avance_hasta']))
             // Días sin avance: SOLO con fecha confiable; no implica abandono.

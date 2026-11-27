@@ -16,7 +16,8 @@ return [
 
     // Revisión documental funcional (fase 6.3.1). DESACTIVADA por omisión: requiere la tabla
     // revisiones_documentales (database/migrations/2026_11_26_000000_…; se aplica solo con --path).
-    'revision_documental' => (bool) env('ANFECA_COORDINACION_REVISION', false),
+    // Pendiente sobre ESTADO_SOLICITUD_DOCUMENTO (DEF-02): permanece desactivada en el modelo de 36 tablas.
+    'revision_documental' => false,
 
     // Límite homologado de observaciones y motivo de cambio (Vue, Laravel, PostgreSQL y PDM futuro).
     'revision_texto_maximo' => 1000,

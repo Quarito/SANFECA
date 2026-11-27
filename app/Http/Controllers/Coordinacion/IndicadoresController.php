@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Coordinacion;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Cuenta as User;
 use App\Services\Coordinacion\AlcanceZona;
 use App\Services\Coordinacion\ConsultaSolicitudes;
 use Illuminate\Http\JsonResponse;
@@ -53,7 +53,7 @@ class IndicadoresController extends Controller
         // Usuarios registrados: cuentas de solicitantes (nunca cuentas de coordinación).
         // La coordinación de zona solo puede atribuir usuarios a su zona a través de sus solicitudes.
         $usuarios = $nacional
-            ? DB::table('users')->where(fn ($q) => $q->whereNull('rol')->orWhereNotIn('rol', User::ROLES_COORDINACION))->count()
+            ? DB::table('usuario as u')->join('rol as r', 'r.rol_id_rol', '=', 'u.usua_id_rol')->where('r.rol_nombre', User::ROL_SOLICITANTE)->count()
             : (int) $totales->solicitantes_con_solicitud;
 
         return response()->json([

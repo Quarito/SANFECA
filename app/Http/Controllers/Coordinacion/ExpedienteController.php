@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Coordinacion;
 
 use App\Http\Controllers\Controller;
-use App\Models\SolicitudCertificacion;
-use App\Models\Pdm\Usuario;
+use App\Services\Anfeca\SolicitudVista as SolicitudCertificacion;
 use App\Services\Coordinacion\ConsultaSolicitudes;
 use App\Services\Coordinacion\DocumentosAplicables;
-use App\Services\Coordinacion\RevisionDocumental;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -32,7 +30,7 @@ class ExpedienteController extends Controller
 
     private function solicitudAutorizada(Request $request, int $id, string $habilidad): SolicitudCertificacion
     {
-        $solicitud = SolicitudCertificacion::find($id);
+        $solicitud = app(\App\Services\Anfeca\Tramites::class)->porId($id);
 
         abort_if(
             $solicitud === null || Gate::forUser($request->user())->denies($habilidad, $solicitud),
@@ -44,16 +42,13 @@ class ExpedienteController extends Controller
 
     public function show(Request $request, int $solicitud)
     {
-        if ($request->user() instanceof Usuario) {
-            return app(ExpedientePdmController::class)->show($solicitud);
-        }
 
         $modelo = $this->solicitudAutorizada($request, $solicitud, 'consultarComoCoordinacion');
         $detalle = $this->consulta->detalle($request->user(), $modelo->id);
         abort_if($detalle === null, 404);
 
-        $revisionActiva = config('anfeca_coordinacion.revision_documental') === true;
-        $revision = $revisionActiva ? app(RevisionDocumental::class)->resumen($modelo) : null;
+        // Revisión documental desactivada (DEF-02): ver RevisionDocumentalController.
+        $revision = null;
         $aplicaArticulo = $this->documentos->aplicaArticulo13o14($modelo);
 
         // Documentos aplicables al trámite (orden de la cuadrícula) y los que no aplican.
@@ -109,9 +104,6 @@ class ExpedienteController extends Controller
 
     public function documento(Request $request, int $solicitud, string $campo)
     {
-        if ($request->user() instanceof Usuario) {
-            return app(ExpedientePdmController::class)->documento($request, $solicitud, $campo);
-        }
         abort_unless(DocumentosAplicables::existe($campo), 404);
         $modelo = $this->solicitudAutorizada($request, $solicitud, 'descargarDocumentoComoCoordinacion');
 
@@ -122,7 +114,7 @@ class ExpedienteController extends Controller
         abort_if(
             $ruta === null
             || !$this->documentos->rutaSegura($ruta)
-            || !Storage::disk('local')->exists($ruta),
+            || !app(\App\Services\Anfeca\DocumentosPdm::class)->disco()->exists($ruta),
             404
         );
 
@@ -141,10 +133,10 @@ class ExpedienteController extends Controller
             'pdf' => 'application/pdf',
             'jpg', 'jpeg' => 'image/jpeg',
             'png' => 'image/png',
-            default => Storage::disk('local')->mimeType($ruta) ?: 'application/octet-stream',
+            default => app(\App\Services\Anfeca\DocumentosPdm::class)->disco()->mimeType($ruta) ?: 'application/octet-stream',
         };
 
-        return Storage::disk('local')->response($ruta, $nombre, [
+        return app(\App\Services\Anfeca\DocumentosPdm::class)->disco()->response($ruta, $nombre, [
             'Content-Type' => $tipo,
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store, max-age=0',

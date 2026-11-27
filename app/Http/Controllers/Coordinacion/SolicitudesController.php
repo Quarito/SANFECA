@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Coordinacion;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pdm\Usuario;
 use App\Services\Coordinacion\AlcanceZona;
 use App\Services\Coordinacion\ConsultaSolicitudes;
 use Illuminate\Database\Query\Builder;
@@ -53,9 +52,6 @@ class SolicitudesController extends Controller
     public function index(Request $request)
     {
         $usuario = $request->user();
-        if ($usuario instanceof Usuario) {
-            return app(BandejaPdmController::class)->index();
-        }
         $nacional = $this->alcance->esNacional($usuario);
         $zonas = $this->alcance->zonasAutorizadas($usuario);
 
@@ -77,9 +73,6 @@ class SolicitudesController extends Controller
     public function api(Request $request): JsonResponse
     {
         $usuario = $request->user();
-        if ($usuario instanceof Usuario) {
-            return app(BandejaPdmController::class)->api($request);
-        }
         $f = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'estado' => ['nullable', Rule::in(['borrador', 'enviado'])],

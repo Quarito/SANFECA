@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\SolicitudCertificacion;
-use App\Models\User;
+use App\Services\Anfeca\SolicitudVista as SolicitudCertificacion;
+use App\Models\Cuenta as User;
 use App\Services\Coordinacion\ConsultaSolicitudes;
 
 /**
@@ -18,7 +18,8 @@ class SolicitudCertificacionPolicy
 
     public function consultarComoCoordinacion(User $usuario, SolicitudCertificacion $solicitud): bool
     {
-        return $usuario->esCoordinador() && $this->consulta->permite($usuario, (int) $solicitud->id);
+        return $usuario->esCoordinador() && $usuario->tienePrivilegio('consultar_expedientes')
+            && $this->consulta->permite($usuario, (int) $solicitud->id);
     }
 
     /** Revisión documental: mismo alcance que la consulta (el estado «enviado» lo valida el servicio → 409). */

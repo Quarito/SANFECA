@@ -16,8 +16,8 @@ use Illuminate\Support\Str;
  * Contradicciones (zona_id ≠ zona_anfeca, número ≠ nombre) se marcan y se reportan.
  * Además se advierte si la entidad de la institución pertenece a otra zona oficial.
  *
- * IMPORTANTE: es CLASIFICACIÓN VISUAL. La autorización regional NO usa este servicio: sigue
- * dependiendo de zona_id y coordinador_zona (AlcanceZona). Un dato textual nunca concede acceso.
+ * La autorización regional depende del ROL de la cuenta (privilegio alcance_zona_N, ver AlcanceZona);
+ * este servicio solo ubica cada institución en su zona.
  */
 class ZonasAnfeca
 {
@@ -137,11 +137,10 @@ class ZonasAnfeca
     /** Todas las instituciones resueltas (una consulta por petición). @return array<int, ResolucionZona> */
     public function instituciones(): array
     {
-        return $this->mapa ??= DB::table('instituciones_afiliadas as i')
-            ->leftJoin('zonas as z', 'z.id', '=', 'i.zona_id')
-            ->get(['i.id', 'i.zona_id', 'z.id as zona_existe', 'z.siglas', 'z.descripcion', 'i.zona_anfeca', 'i.sede'])
-            ->mapWithKeys(fn ($i) => [(int) $i->id => $this->resolver(
-                $i->zona_existe !== null ? (int) $i->zona_id : null, $i->siglas, $i->descripcion, $i->zona_anfeca, $i->sede)])
+        // INSTITUCION.INST_ZONA (modelo oficial): «Zona 6 - Sur», «Z6», «zona vi sur»… interpretados contra las 7 zonas.
+        return $this->mapa ??= DB::table('institucion')
+            ->get(['inst_id_institucion as id', 'inst_zona as zona_anfeca'])
+            ->mapWithKeys(fn ($i) => [(int) $i->id => $this->resolver(null, null, null, $i->zona_anfeca)])
             ->all();
     }
 
@@ -185,7 +184,7 @@ class ZonasAnfeca
             return [];
         }
 
-        return DB::table('zonas')->whereIn('id', $zonaIds)->get(['id', 'siglas', 'descripcion'])
-            ->map(fn ($z) => $this->resolver((int) $z->id, $z->siglas, $z->descripcion, null)->clave)->unique()->values()->all();
+        // Los números de zona (1 a 7) provienen del privilegio alcance_zona_N.
+        return collect($zonaIds)->filter(fn ($n) => isset($this->oficiales()[(int) $n]))->map(fn ($n) => 'z'.(int) $n)->unique()->values()->all();
     }
 }

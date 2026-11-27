@@ -77,7 +77,7 @@ class SeguimientoController extends Controller
 
         $filas = $this->seguimiento->filtrar($this->seguimiento->filas($usuario), $f);
         $clave = [
-            'registro' => fn ($r) => $r['fecha_registro']->timestamp,
+            'registro' => fn ($r) => $r['fecha_registro']?->timestamp ?? 0,
             'avance_registrado' => fn ($r) => $r['ultimo_avance']?->timestamp ?? 0,
             'avance' => fn ($r) => $r['avance'],
             'solicitante' => fn ($r) => mb_strtolower($r['solicitante']),

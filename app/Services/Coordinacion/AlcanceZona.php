@@ -2,81 +2,60 @@
 
 namespace App\Services\Coordinacion;
 
-use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use App\Models\Cuenta;
 
 /**
- * Alcance territorial de una cuenta de coordinación, resuelto SOLO en el servidor:
- *
- *  - coordinador_nacional: todas las zonas, incluidas las solicitudes sin zona
- *    determinable («pendientes de clasificación»).
- *  - coordinador_zona: únicamente las zonas asignadas en coordinador_zona.
- *    Sin asignación → ningún registro. Nunca ve solicitudes sin zona.
- *  - cualquier otro perfil: ningún registro.
- *
- * La zona de una solicitud se deriva de la institución de su formación académica:
- * solicitud → formaciones_academicas_solicitud.institucion_afiliada_id
- *           → instituciones_afiliadas.zona_id → zonas.
- * Ningún parámetro de la petición puede ampliar este alcance.
+ * Alcance de la coordinación según ROL → ROL_PRIVILEGIO → PRIVILEGIO del modelo oficial:
+ *  - alcance_nacional: todas las zonas (incluidas las solicitudes sin zona determinable).
+ *  - alcance_zona_N:   solo la zona N (1 a 7). La zona de cada solicitud es la de la institución de la persona.
+ * El alcance lo concede únicamente el rol asignado a la cuenta; un dato capturado nunca lo amplía.
  */
 class AlcanceZona
 {
     /** @var array<int, list<int>> caché por petición */
     private array $zonas = [];
 
-    public function esNacional(?User $usuario): bool
+    public function esNacional(?Cuenta $usuario): bool
     {
-        return $usuario?->esCoordinadorNacional() === true;
+        return $usuario?->esCoordinadorNacional() === true && $usuario->tienePrivilegio('alcance_nacional');
     }
 
-    /**
-     * IDs de zona autorizados. null = todas (coordinación nacional).
-     *
-     * @return list<int>|null
-     */
-    public function zonasAutorizadas(?User $usuario): ?array
+    /** @return list<int>|null números de zona autorizados; null = todas */
+    public function zonasAutorizadas(?Cuenta $usuario): ?array
     {
         if ($this->esNacional($usuario)) {
             return null;
         }
-
         if ($usuario === null || !$usuario->esCoordinadorZona()) {
             return [];
         }
 
-        return $this->zonas[$usuario->id] ??= DB::table('coordinador_zona')
-            ->where('user_id', $usuario->id)
-            ->orderBy('zona_id')
-            ->pluck('zona_id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
+        return $this->zonas[$usuario->id] ??= collect($usuario->privilegios())
+            ->map(fn ($p) => preg_match('/^alcance_zona_([1-7])$/', $p, $m) ? (int) $m[1] : null)
+            ->filter()->unique()->sort()->values()->all();
     }
 
-    /** ¿Puede consultar la zona indicada? (null = solicitud sin zona determinable) */
-    public function permiteZona(?User $usuario, ?int $zonaId): bool
+    public function permiteZona(?Cuenta $usuario, ?int $zona): bool
     {
         $zonas = $this->zonasAutorizadas($usuario);
-
         if ($zonas === null) {
             return $this->esNacional($usuario);
         }
 
-        return $zonaId !== null && in_array($zonaId, $zonas, true);
+        return $zona !== null && in_array($zona, $zonas, true);
     }
 
-    /** Texto para la barra de usuario. */
-    public function descripcion(?User $usuario): string
+    public function descripcion(?Cuenta $usuario): string
     {
         $zonas = $this->zonasAutorizadas($usuario);
-
         if ($zonas === null) {
             return 'Todas las zonas';
         }
-
         if ($zonas === []) {
             return 'Sin zona asignada';
         }
+        $z = app(\App\Services\Zonas\ZonasAnfeca::class);
 
-        return DB::table('zonas')->whereIn('id', $zonas)->orderBy('siglas')->pluck('siglas')->implode(', ');
+        return collect($zonas)->map(fn ($n) => $z->etiquetaOficial($n))->implode(', ');
     }
 }

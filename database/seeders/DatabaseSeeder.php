@@ -2,24 +2,17 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 
+/**
+ * ANFECA sobre las 36 tablas oficiales: los catálogos se cargan con «php artisan anfeca:catalogos».
+ * No se crean usuarios de prueba ni estructuras.
+ */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        Artisan::call('anfeca:catalogos', [], $this->command?->getOutput());
     }
 }
