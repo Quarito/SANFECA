@@ -25,6 +25,15 @@ class FormacionSolicitud extends PdmModel
         'fosc_id_institucion',
         'fosc_creado_en',
         'fosc_actualizado_en',
+        'titulo_origen_especifico',
+        'origen_titulo_origen',
+        'clave_licenciatura_catalogo',
+        'version_catalogo_licenciaturas',
+        'titulo_ultimo_grado_especifico',
+        'origen_titulo_ultimo_grado',
+        'clave_posgrado_catalogo',
+        'version_catalogo_posgrados',
+        'cuenta_con_posgrado',
     ];
 
     protected $casts = [
@@ -33,6 +42,7 @@ class FormacionSolicitud extends PdmModel
         'fosc_id_institucion' => 'integer',
         'fosc_creado_en' => 'datetime',
         'fosc_actualizado_en' => 'datetime',
+        'cuenta_con_posgrado' => 'boolean',
     ];
 
     /** FK FK_FOSC_SOLICITUD: formacion_solicitud.fosc_id_solicitud → solicitud.soli_id_solicitud */

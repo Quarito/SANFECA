@@ -2,6 +2,7 @@
 
 namespace App\Services\Pdm\Migracion;
 
+use App\Services\Pdm\Compat\FormacionCatalogoPdm;
 use App\Services\Pdm\NormalizadorCatalogos;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -711,10 +712,12 @@ class PlanMigracionPdm
         if ($institucion !== null && !isset($this->incluidos['institucion'][$institucion])) {
             $institucion = null; // la incidencia D-11 ya se reporta en la persona
         }
+        $columnasCatalogo = array_fill_keys(array_keys(FormacionCatalogoPdm::COLUMNAS), null);
+        $catalogo = array_intersect_key((array) $f, $columnasCatalogo) + $columnasCatalogo;
         $this->agregar('formacion_solicitud', [
             'fosc_id_formacion' => $f->id, 'fosc_id_solicitud' => $s->id, 'fosc_id_institucion' => $institucion,
             'fosc_creado_en' => $f->created_at, 'fosc_actualizado_en' => $f->updated_at,
-        ]);
+        ] + $catalogo);
 
         foreach (['ORIGEN' => ['nivel_origen', 'titulo_origen', 'titulo_origen_otro', 'titulo_origen_archivo', 'cedula_origen_archivo'],
                   'ULTIMO' => ['nivel_ultimo_grado', 'titulo_ultimo_grado', 'titulo_ultimo_grado_otro', 'titulo_ultimo_grado_archivo', 'cedula_ultimo_grado_archivo']]
@@ -733,7 +736,12 @@ class PlanMigracionPdm
             $nombre = $f->{$cTitulo};
             $estado = 'ACT';
             if ($nombre === 'Otro') {
+                $columnaEspecifica = $tipo === 'ORIGEN' ? 'titulo_origen_especifico' : 'titulo_ultimo_grado_especifico';
+                $especifico = $catalogo[$columnaEspecifica];
                 $nombre = trim((string) $f->{$cOtro});
+                if ($especifico !== null && mb_strlen($nombre) > 150 && $nombre === mb_substr($especifico, 0, 200)) {
+                    $nombre = 'Otro'; // El nombre íntegro vive en la extensión de formación.
+                }
                 $estado = 'REV';
                 if ($nombre === '') {
                     // Registro histórico incompleto: se conserva literalmente el
