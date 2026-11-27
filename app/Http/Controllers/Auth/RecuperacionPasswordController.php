@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Services\Pdm\Espejo\EspejoPdm;
+use App\Services\Pdm\Autenticacion\RecuperacionPdm;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\DatosSolicitante;
 use App\Models\User;
@@ -29,6 +31,12 @@ class RecuperacionPasswordController extends Controller
 
         $curp = Str::upper(trim($datos['curp']));
         $email = Str::lower(trim($datos['email']));
+
+        if (Auth::getDefaultDriver() === 'pdm') {
+            app(RecuperacionPdm::class)->enviar($curp, $email);
+
+            return redirect()->route('password.sent');
+        }
 
         // Consultar únicamente al usuario vinculado a ambos datos.
         $solicitante = DatosSolicitante::query()
@@ -62,7 +70,7 @@ class RecuperacionPasswordController extends Controller
 
     public function guardarNuevaPassword(Request $request)
     {
-        $request->validate([
+        $datos = $request->validate([
             'token' => ['required', 'string'],
             'email' => ['required', 'email'],
             'password' => [
@@ -71,6 +79,10 @@ class RecuperacionPasswordController extends Controller
                 PasswordRule::min(12),
             ],
         ]);
+
+        if (Auth::getDefaultDriver() === 'pdm') {
+            return $this->resultado(app(RecuperacionPdm::class)->restablecer($datos));
+        }
 
         $resultado = Password::broker()->reset(
             $request->only(
@@ -92,7 +104,12 @@ class RecuperacionPasswordController extends Controller
             }
         );
 
-        if ($resultado !== Password::PASSWORD_RESET) {
+        return $this->resultado($resultado === Password::PASSWORD_RESET);
+    }
+
+    private function resultado(bool $restablecida)
+    {
+        if (! $restablecida) {
             return back()
                 ->withErrors([
                     'email' => 'El enlace es inválido o ha expirado.',

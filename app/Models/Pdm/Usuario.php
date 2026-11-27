@@ -2,18 +2,22 @@
 
 namespace App\Models\Pdm;
 
+use App\Models\User;
 use Illuminate\Auth\Authenticatable;
+use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notifiable;
 
 /**
  * Tabla anfeca_modelo.usuario del modelo PowerDesigner.
  * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
  */
-class Usuario extends PdmModel implements AuthenticatableContract
+class Usuario extends PdmModel implements AuthenticatableContract, CanResetPasswordContract
 {
-    use Authenticatable;
+    use Authenticatable, CanResetPassword, Notifiable;
 
     public const ESTATUS_ACTIVO = 'ACTIVO';
 
@@ -51,6 +55,28 @@ class Usuario extends PdmModel implements AuthenticatableContract
     {
         // El modelo aprobado solo admite sesión, sin token persistente.
         return '';
+    }
+
+    public function getEmailAttribute(): string
+    {
+        return $this->usua_nombre;
+    }
+
+    public function getEmailForPasswordReset()
+    {
+        return mb_strtolower($this->email);
+    }
+
+    public function getNameAttribute(): string
+    {
+        $persona = $this->persona;
+
+        return implode(' ', array_filter([$persona->pers_nombre, $persona->pers_apellido_paterno, $persona->pers_apellido_materno]));
+    }
+
+    public function esCoordinador(): bool
+    {
+        return in_array($this->rol->rol_nombre, User::ROLES_COORDINACION, true);
     }
 
     /** FK FK_USUARIO_TIENE_ROL_ROL: usuario.usua_id_rol → rol.rol_id_rol */

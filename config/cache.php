@@ -33,6 +33,10 @@ return [
     */
 
     'stores' => [
+        'pdm_recuperacion' => [
+            'driver' => 'file',
+            'path' => storage_path('framework/cache/pdm-recuperacion'),
+        ],
 
         'array' => [
             'driver' => 'array',

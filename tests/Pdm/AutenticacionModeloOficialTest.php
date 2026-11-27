@@ -4,6 +4,7 @@ namespace Tests\Pdm;
 
 use App\Models\Pdm\AreaCertificacion;
 use App\Models\Pdm\Documento;
+use App\Models\Pdm\EntidadFederativa;
 use App\Models\Pdm\EstadoDocumento;
 use App\Models\Pdm\EstudioProfesional;
 use App\Models\Pdm\NivelProfesional;
@@ -12,9 +13,11 @@ use App\Models\Pdm\Rol;
 use App\Models\Pdm\TipoComunicacion;
 use App\Models\Pdm\TipoPersonalAcademico;
 use App\Models\Pdm\Usuario;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 
 class AutenticacionModeloOficialTest extends PdmTestCase
 {
@@ -108,6 +111,101 @@ class AutenticacionModeloOficialTest extends PdmTestCase
         $this->assertSame('Licenciatura', $formacion->fresh()->estudioProfesional->nivelProfesional->nipr_nivel_profesional);
         $this->assertSame('1234567', $formacion->fresh()->pees_cedula);
         $this->assertSame('Recibido', $cargada->estadoSolicitudDocumentos()->sole()->estadoDocumento->esdo_estado_documento);
+    }
+
+    public function test_http_login_consulta_cierre_y_alta_bloqueada_sin_perder_datos(): void
+    {
+        config(['auth.defaults.guard' => 'pdm']);
+        $usuario = $this->crearUsuario('ana@example.test');
+        $this->agregarCorreo($usuario);
+        $entidad = EntidadFederativa::create(['enfe_nombre' => 'Ciudad de México']);
+        $usuario->persona->domicilios()->create([
+            'domi_id_entidad_federativa' => $entidad->getKey(),
+            'domi_calle' => 'Calle ficticia', 'domi_numero_ext' => '7',
+        ]);
+
+        $this->withoutVite();
+        $this->get('/registro/datos-personales')->assertOk();
+        $this->postJson('/registro/datos-personales', ['colonia' => 'Colonia ficticia'])
+            ->assertUnprocessable()->assertJsonValidationErrors('colonia');
+        $this->assertSame(1, Usuario::count());
+        $this->assertSame(1, Persona::count());
+
+        $this->post('/login', ['email' => 'ana@example.test', 'password' => 'clave-ficticia'])
+            ->assertRedirect('/mis-datos');
+        $this->get('/mis-datos')->assertOk()->assertSee('Calle ficticia')->assertSee('ana@example.test')
+            ->assertSee('data-solo-consulta="1"', false);
+        $this->get('/registro/certificacion')->assertServiceUnavailable();
+        $this->post('/logout')->assertRedirect('/login');
+        $this->get('/mis-datos')->assertRedirect('/login');
+    }
+
+    public function test_http_recuperacion_verifica_contacto_y_consumo_unico(): void
+    {
+        config([
+            'auth.defaults.guard' => 'pdm',
+            'cache.stores.pdm_recuperacion' => ['driver' => 'array'],
+        ]);
+        Notification::fake();
+        $usuario = $this->crearUsuario('ana@example.test');
+
+        $solicitud = ['email' => $usuario->email, 'curp' => $usuario->persona->pers_curp];
+        $this->post('/recuperar', $solicitud)->assertRedirect('/recuperacion-enviada');
+        Notification::assertNothingSent();
+        $this->agregarCorreo($usuario);
+        $this->post('/recuperar', array_replace($solicitud, ['curp' => 'BBBB010101MDFBBB09']))
+            ->assertRedirect('/recuperacion-enviada');
+        Notification::assertNothingSent();
+        $this->post('/recuperar', $solicitud)->assertRedirect('/recuperacion-enviada');
+
+        $notificacion = Notification::sent($usuario, ResetPassword::class)->sole();
+        $datos = [
+            'email' => 'ANA@example.test',
+            'token' => $notificacion->token,
+            'password' => 'nueva-clave-ficticia',
+            'password_confirmation' => 'nueva-clave-ficticia',
+        ];
+        $this->post('/restablecer', $datos)->assertRedirect('/login')->assertSessionHas('status');
+        $this->assertTrue(Hash::check($datos['password'], $usuario->fresh()->usua_contrasenia));
+
+        $this->post('/restablecer', $datos)->assertSessionHasErrors('email');
+        $this->post('/login', ['email' => $datos['email'], 'password' => 'clave-ficticia'])->assertSessionHasErrors('email');
+        $this->post('/login', ['email' => $datos['email'], 'password' => $datos['password']])->assertRedirect('/mis-datos');
+    }
+
+    public function test_http_recuperacion_no_admite_un_token_vencido(): void
+    {
+        config([
+            'auth.defaults.guard' => 'pdm',
+            'cache.stores.pdm_recuperacion' => ['driver' => 'array'],
+        ]);
+        Notification::fake();
+        $usuario = $this->crearUsuario('ana@example.test');
+        $this->agregarCorreo($usuario);
+        $this->post('/recuperar', ['email' => $usuario->email, 'curp' => $usuario->persona->pers_curp]);
+        $notificacion = Notification::sent($usuario, ResetPassword::class)->sole();
+
+        $this->travel(61)->minutes();
+        $this->post('/restablecer', [
+            'email' => $usuario->email,
+            'token' => $notificacion->token,
+            'password' => 'nueva-clave-ficticia',
+            'password_confirmation' => 'nueva-clave-ficticia',
+        ])->assertSessionHasErrors('email');
+        $this->assertTrue(Hash::check('clave-ficticia', $usuario->fresh()->usua_contrasenia));
+        $this->travelBack();
+    }
+
+    private function agregarCorreo(Usuario $usuario): void
+    {
+        $tipo = TipoComunicacion::create([
+            'tico_tipo_comunicacion' => config('anfeca_pdm.catalogos.tipos_comunicacion.CORREO'),
+            'tico_estado' => 'ACT',
+        ]);
+        $usuario->persona->comunicaciones()->create([
+            'comu_id_tipo_comunicacion' => $tipo->getKey(),
+            'comu_valor' => $usuario->email,
+        ]);
     }
 
     private function crearUsuario(string $correo): Usuario

@@ -104,6 +104,13 @@ return [
     */
 
     'passwords' => [
+        'pdm' => [
+            'driver' => 'cache',
+            'provider' => 'usuarios_pdm',
+            'store' => 'pdm_recuperacion',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),

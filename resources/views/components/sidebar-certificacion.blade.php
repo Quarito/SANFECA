@@ -3,7 +3,9 @@
     $tieneDatos = false;
     $esRefrendo = false;
     $tramiteEnviado = false;
-    if (!$esPreview && auth()->check()) {
+    if (!$esPreview && auth()->getDefaultDriver() === 'pdm') {
+        $tieneDatos = auth()->check();
+    } elseif (!$esPreview && auth()->check()) {
         $tieneDatos = \App\Models\DatosSolicitante::where(
             'user_id', auth()->id()
         )->exists();

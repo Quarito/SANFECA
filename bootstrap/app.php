@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ]);
         // F4/F5: en modo principal/exclusivo la petición opera sobre las vistas anfeca_compat.
         $middleware->append(\App\Http\Middleware\AplicarModoPdm::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\LimitarFlujoPdmOficial::class);
 })
         ->withExceptions(function (Exceptions $exceptions): void {
         // F4/F5: los disparadores del PDM informan datos no registrables como
