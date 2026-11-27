@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.tipo_comunicacion del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.tipo_comunicacion del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class TipoComunicacion extends PdmModel
 {
-    protected $table = 'anfeca_modelo.tipo_comunicacion';
+    protected $table = 'tipo_comunicacion';
 
     protected $primaryKey = 'tico_id_tipo_comunicacion';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'tico_id_tipo_comunicacion',
@@ -29,7 +24,7 @@ class TipoComunicacion extends PdmModel
         'tico_id_tipo_comunicacion' => 'integer',
     ];
 
-    /** FK FK_COMUNICA_CLASIFICA_TIPO_COM: comunicacion.comu_id_tipo_comunicacion → tipo_comunicacion.tico_id_tipo_comunicacion */
+    /** fk_comunica_clasifica_tipo_com: comunicacion.comu_id_tipo_comunicacion → tipo_comunicacion.tico_id_tipo_comunicacion */
     public function comunicaciones(): HasMany
     {
         return $this->hasMany(Comunicacion::class, 'comu_id_tipo_comunicacion', 'tico_id_tipo_comunicacion');

@@ -3,24 +3,19 @@
 namespace App\Models\Pdm;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.comunicacion del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
- * La PK compuesta se aplica al recargar y guardar la instancia.
+ * Tabla public.comunicacion del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class Comunicacion extends PdmModel
 {
-    protected $table = 'anfeca_modelo.comunicacion';
+    protected $table = 'comunicacion';
 
     protected $primaryKey = 'comu_id_comunicacion';
 
+    /** PK compuesta del modelo oficial. */
     protected array $columnasClaveCompuesta = ['comu_id_persona', 'comu_id_tipo_comunicacion'];
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'comu_id_comunicacion',
@@ -37,13 +32,13 @@ class Comunicacion extends PdmModel
         'comu_visible' => 'boolean',
     ];
 
-    /** FK FK_COMUNICA_CLASIFICA_TIPO_COM: comunicacion.comu_id_tipo_comunicacion → tipo_comunicacion.tico_id_tipo_comunicacion */
+    /** fk_comunica_clasifica_tipo_com: comunicacion.comu_id_tipo_comunicacion → tipo_comunicacion.tico_id_tipo_comunicacion */
     public function tipoComunicacion(): BelongsTo
     {
         return $this->belongsTo(TipoComunicacion::class, 'comu_id_tipo_comunicacion', 'tico_id_tipo_comunicacion');
     }
 
-    /** FK FK_COMUNICA_TIENE_CON_PERSONA: comunicacion.comu_id_persona → persona.pers_id_persona */
+    /** fk_comunica_tiene_con_persona: comunicacion.comu_id_persona → persona.pers_id_persona */
     public function persona(): BelongsTo
     {
         return $this->belongsTo(Persona::class, 'comu_id_persona', 'pers_id_persona');

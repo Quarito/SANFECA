@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.nivel_profesional del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.nivel_profesional del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class NivelProfesional extends PdmModel
 {
-    protected $table = 'anfeca_modelo.nivel_profesional';
+    protected $table = 'nivel_profesional';
 
     protected $primaryKey = 'nipr_id_nivel_profesional';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'nipr_id_nivel_profesional',
@@ -28,7 +23,7 @@ class NivelProfesional extends PdmModel
         'nipr_id_nivel_profesional' => 'integer',
     ];
 
-    /** FK FK_ESTUDIO__REFERENCE_NIVEL_PR: estudio_profesional.espr_id_nivel_profesional → nivel_profesional.nipr_id_nivel_profesional */
+    /** fk_estudio__reference_nivel_pr: estudio_profesional.espr_id_nivel_profesional → nivel_profesional.nipr_id_nivel_profesional */
     public function estudioProfesionales(): HasMany
     {
         return $this->hasMany(EstudioProfesional::class, 'espr_id_nivel_profesional', 'nipr_id_nivel_profesional');

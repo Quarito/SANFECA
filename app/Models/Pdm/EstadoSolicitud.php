@@ -3,21 +3,16 @@
 namespace App\Models\Pdm;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.estado_solicitud del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.estado_solicitud del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class EstadoSolicitud extends PdmModel
 {
-    protected $table = 'anfeca_modelo.estado_solicitud';
+    protected $table = 'estado_solicitud';
 
     protected $primaryKey = 'esso_id__estado_solicitud';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'esso_id__estado_solicitud',
@@ -34,16 +29,15 @@ class EstadoSolicitud extends PdmModel
         'esso_id__estado_solicitud' => 'integer',
         'esso_id_c_estado_solicitud' => 'integer',
         'esso_id_solicitud' => 'integer',
-        'esso_fecha' => 'date',
     ];
 
-    /** FK FK_ESTADO_S_REFERENCE_SOLICITU: estado_solicitud.esso_id_solicitud → solicitud.soli_id_solicitud */
+    /** fk_estado_s_reference_solicitu: estado_solicitud.esso_id_solicitud → solicitud.soli_id_solicitud */
     public function solicitud(): BelongsTo
     {
         return $this->belongsTo(Solicitud::class, 'esso_id_solicitud', 'soli_id_solicitud');
     }
 
-    /** FK FK_ESTADO_S_RELATIONS_C_ESTADO: estado_solicitud.esso_id_c_estado_solicitud → c_estado_solicitud.ceso_id_c_estado_solicitud */
+    /** fk_estado_s_relations_c_estado: estado_solicitud.esso_id_c_estado_solicitud → c_estado_solicitud.ceso_id_c_estado_solicitud */
     public function cEstadoSolicitud(): BelongsTo
     {
         return $this->belongsTo(CEstadoSolicitud::class, 'esso_id_c_estado_solicitud', 'ceso_id_c_estado_solicitud');

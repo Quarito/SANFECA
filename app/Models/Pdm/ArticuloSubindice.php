@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.articulo_subindice del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.articulo_subindice del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class ArticuloSubindice extends PdmModel
 {
-    protected $table = 'anfeca_modelo.articulo_subindice';
+    protected $table = 'articulo_subindice';
 
     protected $primaryKey = 'arce_id_articulo';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'arce_id_articulo',
@@ -29,7 +24,7 @@ class ArticuloSubindice extends PdmModel
         'arce_id_articulo' => 'integer',
     ];
 
-    /** FK FK_SOLICITU_TIENE_ART_ARTICULO: solicitud.soli_id_articulo → articulo_subindice.arce_id_articulo */
+    /** fk_solicitu_tiene_art_articulo: solicitud.soli_id_articulo → articulo_subindice.arce_id_articulo */
     public function solicitudes(): HasMany
     {
         return $this->hasMany(Solicitud::class, 'soli_id_articulo', 'arce_id_articulo');

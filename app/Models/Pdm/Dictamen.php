@@ -3,21 +3,16 @@
 namespace App\Models\Pdm;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.dictamen del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.dictamen del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class Dictamen extends PdmModel
 {
-    protected $table = 'anfeca_modelo.dictamen';
+    protected $table = 'dictamen';
 
     protected $primaryKey = 'dict_id_dictamen';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'dict_id_dictamen',
@@ -34,17 +29,15 @@ class Dictamen extends PdmModel
         'dict_id_dictamen' => 'integer',
         'dict_id_tipo_dictamen' => 'integer',
         'dict_id_evaluacion' => 'integer',
-        'dict_fecha_dictamen_creacion' => 'date',
-        'dict_fecha_dictamen_ultima_impr' => 'date',
     ];
 
-    /** FK FK_DICTAMEN_REFERENCE_TIPO_DIC: dictamen.dict_id_tipo_dictamen → tipo_dictamen.tidi_id_tipo_dictamen */
+    /** fk_dictamen_reference_tipo_dic: dictamen.dict_id_tipo_dictamen → tipo_dictamen.tidi_id_tipo_dictamen */
     public function tipoDictamen(): BelongsTo
     {
         return $this->belongsTo(TipoDictamen::class, 'dict_id_tipo_dictamen', 'tidi_id_tipo_dictamen');
     }
 
-    /** FK FK_DICTAMEN_REFERENCE_EVALUACI: dictamen.dict_id_evaluacion → evaluacion.eval_id_evaluacion */
+    /** fk_dictamen_reference_evaluaci: dictamen.dict_id_evaluacion → evaluacion.eval_id_evaluacion */
     public function evaluacion(): BelongsTo
     {
         return $this->belongsTo(Evaluacion::class, 'dict_id_evaluacion', 'eval_id_evaluacion');

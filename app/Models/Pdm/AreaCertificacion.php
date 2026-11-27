@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.area_certificacion del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.area_certificacion del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class AreaCertificacion extends PdmModel
 {
-    protected $table = 'anfeca_modelo.area_certificacion';
+    protected $table = 'area_certificacion';
 
     protected $primaryKey = 'area_id_area_certificacion';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'area_id_area_certificacion',
@@ -28,7 +23,7 @@ class AreaCertificacion extends PdmModel
         'area_id_area_certificacion' => 'integer',
     ];
 
-    /** FK FK_SOLICITU_PERTENECE_AREA_CER: solicitud.soli_id_area_certificacion → area_certificacion.area_id_area_certificacion */
+    /** fk_solicitu_pertenece_area_cer: solicitud.soli_id_area_certificacion → area_certificacion.area_id_area_certificacion */
     public function solicitudes(): HasMany
     {
         return $this->hasMany(Solicitud::class, 'soli_id_area_certificacion', 'area_id_area_certificacion');

@@ -6,18 +6,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.estudio_profesional del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.estudio_profesional del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class EstudioProfesional extends PdmModel
 {
-    protected $table = 'anfeca_modelo.estudio_profesional';
+    protected $table = 'estudio_profesional';
 
     protected $primaryKey = 'espr_id_estudio_profesional';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'espr_id_estudio_profesional',
@@ -31,13 +27,13 @@ class EstudioProfesional extends PdmModel
         'espr_id_nivel_profesional' => 'integer',
     ];
 
-    /** FK FK_ESTUDIO__REFERENCE_NIVEL_PR: estudio_profesional.espr_id_nivel_profesional → nivel_profesional.nipr_id_nivel_profesional */
+    /** fk_estudio__reference_nivel_pr: estudio_profesional.espr_id_nivel_profesional → nivel_profesional.nipr_id_nivel_profesional */
     public function nivelProfesional(): BelongsTo
     {
         return $this->belongsTo(NivelProfesional::class, 'espr_id_nivel_profesional', 'nipr_id_nivel_profesional');
     }
 
-    /** FK FK_PERSONA__RELATIONS_ESTUDIO_: persona_estudio_profesional.pees_id_estuido_profesional → estudio_profesional.espr_id_estudio_profesional */
+    /** fk_persona__relations_estudio_: persona_estudio_profesional.pees_id_estuido_profesional → estudio_profesional.espr_id_estudio_profesional */
     public function personaEstudioProfesionales(): HasMany
     {
         return $this->hasMany(PersonaEstudioProfesional::class, 'pees_id_estuido_profesional', 'espr_id_estudio_profesional');

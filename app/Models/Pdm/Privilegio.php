@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.privilegio del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.privilegio del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class Privilegio extends PdmModel
 {
-    protected $table = 'anfeca_modelo.privilegio';
+    protected $table = 'privilegio';
 
     protected $primaryKey = 'priv_id_privilegio';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'priv_id_privilegio',
@@ -29,7 +24,7 @@ class Privilegio extends PdmModel
         'priv_id_privilegio' => 'integer',
     ];
 
-    /** FK FK_ROL_PRIV_ROL_PRIVI_PRIVILEG: rol_privilegio.ropr_id_privilegio → privilegio.priv_id_privilegio */
+    /** fk_rol_priv_rol_privi_privileg: rol_privilegio.ropr_id_privilegio → privilegio.priv_id_privilegio */
     public function rolPrivilegios(): HasMany
     {
         return $this->hasMany(RolPrivilegio::class, 'ropr_id_privilegio', 'priv_id_privilegio');

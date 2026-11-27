@@ -6,18 +6,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.convocatoria del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.convocatoria del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class Convocatoria extends PdmModel
 {
-    protected $table = 'anfeca_modelo.convocatoria';
+    protected $table = 'convocatoria';
 
     protected $primaryKey = 'conv_id_convocatoria';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'conv_id_convocatoria',
@@ -37,21 +33,17 @@ class Convocatoria extends PdmModel
     protected $casts = [
         'conv_id_convocatoria' => 'integer',
         'conv_id_tipo_convocatoria' => 'integer',
-        'conv_fecha_inicio_registro' => 'date',
-        'conv_fecha_fin_registro' => 'date',
-        'conv_fecha_resultado' => 'date',
-        'conv_fecha_entrega_certificados' => 'date',
         'conv_puntuacion_max' => 'integer',
         'conv_puntuacion_min' => 'integer',
     ];
 
-    /** FK FK_CONVOCAT_RELATIONS_TIPO_CON: convocatoria.conv_id_tipo_convocatoria → tipo_convocatoria.tico_id_tipo_convocatoria */
+    /** fk_convocat_relations_tipo_con: convocatoria.conv_id_tipo_convocatoria → tipo_convocatoria.tico_id_tipo_convocatoria */
     public function tipoConvocatoria(): BelongsTo
     {
         return $this->belongsTo(TipoConvocatoria::class, 'conv_id_tipo_convocatoria', 'tico_id_tipo_convocatoria');
     }
 
-    /** FK FK_SOLICITU_RELATIONS_CONVOCAT: solicitud.soli_id_convocatoria → convocatoria.conv_id_convocatoria */
+    /** fk_solicitu_relations_convocat: solicitud.soli_id_convocatoria → convocatoria.conv_id_convocatoria */
     public function solicitudes(): HasMany
     {
         return $this->hasMany(Solicitud::class, 'soli_id_convocatoria', 'conv_id_convocatoria');

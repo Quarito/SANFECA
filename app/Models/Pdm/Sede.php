@@ -3,21 +3,16 @@
 namespace App\Models\Pdm;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.sede del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.sede del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class Sede extends PdmModel
 {
-    protected $table = 'anfeca_modelo.sede';
+    protected $table = 'sede';
 
     protected $primaryKey = 'sede_id_sede';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'sede_id_sede',
@@ -30,7 +25,7 @@ class Sede extends PdmModel
         'inst_id_institucion' => 'integer',
     ];
 
-    /** FK FK_SEDE_TIENE_SED_INSTITUC: sede.inst_id_institucion → institucion.inst_id_institucion */
+    /** fk_sede_tiene_sed_instituc: sede.inst_id_institucion → institucion.inst_id_institucion */
     public function institucion(): BelongsTo
     {
         return $this->belongsTo(Institucion::class, 'inst_id_institucion', 'inst_id_institucion');

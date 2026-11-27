@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.documento del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.documento del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class Documento extends PdmModel
 {
-    protected $table = 'anfeca_modelo.documento';
+    protected $table = 'documento';
 
     protected $primaryKey = 'docu_id_documento';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'docu_id_documento',
@@ -29,7 +24,7 @@ class Documento extends PdmModel
         'docu_id_documento' => 'integer',
     ];
 
-    /** FK FK_SOLICITU_RELATIONS_DOCUMENT: solicitud_documento.socu_id_documento → documento.docu_id_documento */
+    /** fk_solicitu_relations_document: solicitud_documento.socu_id_documento → documento.docu_id_documento */
     public function solicitudDocumentos(): HasMany
     {
         return $this->hasMany(SolicitudDocumento::class, 'socu_id_documento', 'docu_id_documento');

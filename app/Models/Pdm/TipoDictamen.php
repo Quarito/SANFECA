@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.tipo_dictamen del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.tipo_dictamen del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class TipoDictamen extends PdmModel
 {
-    protected $table = 'anfeca_modelo.tipo_dictamen';
+    protected $table = 'tipo_dictamen';
 
     protected $primaryKey = 'tidi_id_tipo_dictamen';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'tidi_id_tipo_dictamen',
@@ -30,7 +25,7 @@ class TipoDictamen extends PdmModel
         'tidi_tipo_dictamen_estado' => 'boolean',
     ];
 
-    /** FK FK_DICTAMEN_REFERENCE_TIPO_DIC: dictamen.dict_id_tipo_dictamen → tipo_dictamen.tidi_id_tipo_dictamen */
+    /** fk_dictamen_reference_tipo_dic: dictamen.dict_id_tipo_dictamen → tipo_dictamen.tidi_id_tipo_dictamen */
     public function dictamenes(): HasMany
     {
         return $this->hasMany(Dictamen::class, 'dict_id_tipo_dictamen', 'tidi_id_tipo_dictamen');

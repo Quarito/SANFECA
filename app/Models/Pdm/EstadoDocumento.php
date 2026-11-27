@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.estado_documento del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.estado_documento del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class EstadoDocumento extends PdmModel
 {
-    protected $table = 'anfeca_modelo.estado_documento';
+    protected $table = 'estado_documento';
 
     protected $primaryKey = 'esdo_id_estado_documento';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'esdo_id_estado_documento',
@@ -29,7 +24,7 @@ class EstadoDocumento extends PdmModel
         'esdo_id_estado_documento' => 'integer',
     ];
 
-    /** FK FK_ESTADO_S_RELATIONS_ESTADO_D: estado_solicitud_documento.esdo_id_estado_documento → estado_documento.esdo_id_estado_documento */
+    /** fk_estado_s_relations_estado_d: estado_solicitud_documento.esdo_id_estado_documento → estado_documento.esdo_id_estado_documento */
     public function estadoSolicitudDocumentos(): HasMany
     {
         return $this->hasMany(EstadoSolicitudDocumento::class, 'esdo_id_estado_documento', 'esdo_id_estado_documento');

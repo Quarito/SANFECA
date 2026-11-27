@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.entidad_federativa del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.entidad_federativa del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class EntidadFederativa extends PdmModel
 {
-    protected $table = 'anfeca_modelo.entidad_federativa';
+    protected $table = 'entidad_federativa';
 
     protected $primaryKey = 'enfe_id_entidad_federativa';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'enfe_id_entidad_federativa',
@@ -28,13 +23,13 @@ class EntidadFederativa extends PdmModel
         'enfe_id_entidad_federativa' => 'integer',
     ];
 
-    /** FK FK_ALCALDIA_CONTIENE_ENTIDAD_: alcaldia_municipio.almu_id_entidad_federativa → entidad_federativa.enfe_id_entidad_federativa */
+    /** fk_alcaldia_contiene_entidad_: alcaldia_municipio.almu_id_entidad_federativa → entidad_federativa.enfe_id_entidad_federativa */
     public function alcaldiaMunicipios(): HasMany
     {
         return $this->hasMany(AlcaldiaMunicipio::class, 'almu_id_entidad_federativa', 'enfe_id_entidad_federativa');
     }
 
-    /** FK FK_DOMICILI_SE_ENCUEN_ENTIDAD_: domicilio.domi_id_entidad_federativa → entidad_federativa.enfe_id_entidad_federativa */
+    /** fk_domicili_se_encuen_entidad_: domicilio.domi_id_entidad_federativa → entidad_federativa.enfe_id_entidad_federativa */
     public function domicilios(): HasMany
     {
         return $this->hasMany(Domicilio::class, 'domi_id_entidad_federativa', 'enfe_id_entidad_federativa');

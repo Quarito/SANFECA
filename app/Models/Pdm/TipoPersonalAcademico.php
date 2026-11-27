@@ -2,22 +2,17 @@
 
 namespace App\Models\Pdm;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Tabla anfeca_modelo.tipo_personal_academico del modelo PowerDesigner.
- * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
+ * Tabla public.tipo_personal_academico del modelo oficial PowerDesigner (36 tablas).
+ * Generado por scripts/anfeca_8088/generar_modelos.php: no agregar columnas que no existan en el SQL aprobado.
  */
 class TipoPersonalAcademico extends PdmModel
 {
-    protected $table = 'anfeca_modelo.tipo_personal_academico';
+    protected $table = 'tipo_personal_academico';
 
     protected $primaryKey = 'tipa_id_tipo_personal_academico';
-
-    public $incrementing = true;
-
-    protected $keyType = 'int';
 
     protected $fillable = [
         'tipa_id_tipo_personal_academico',
@@ -30,7 +25,7 @@ class TipoPersonalAcademico extends PdmModel
         'tipa_estado' => 'boolean',
     ];
 
-    /** FK FK_SOLICITU_ESTA_ASOC_TIPO_PER: solicitud.soli_id_tipo_personal_academico → tipo_personal_academico.tipa_id_tipo_personal_academico */
+    /** fk_solicitu_esta_asoc_tipo_per: solicitud.soli_id_tipo_personal_academico → tipo_personal_academico.tipa_id_tipo_personal_academico */
     public function solicitudes(): HasMany
     {
         return $this->hasMany(Solicitud::class, 'soli_id_tipo_personal_academico', 'tipa_id_tipo_personal_academico');
