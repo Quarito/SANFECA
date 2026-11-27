@@ -86,7 +86,13 @@ jobs:
           echo "pid=$PID" >> "$GITHUB_OUTPUT"
 
       - name: Pruebas PDM PostgreSQL 18 (loopback del contenedor)
-        run: sudo -E nsenter --target "${{ steps.pgnet.outputs.pid }}" --net -- php vendor/bin/phpunit -c phpunit.pgsql.xml
+        run: >-
+          sudo nsenter --target "${{ steps.pgnet.outputs.pid }}" --net --
+          env DB_HOST=127.0.0.1 DB_PORT=5432 DB_USERNAME=postgres DB_PASSWORD=postgres DB_URL=''
+          php vendor/bin/phpunit -c phpunit.pgsql.xml
 
       - name: Pruebas revisión documental PostgreSQL 18 (loopback del contenedor)
-        run: sudo -E nsenter --target "${{ steps.pgnet.outputs.pid }}" --net -- php vendor/bin/phpunit -c phpunit.revision-pg.xml
+        run: >-
+          sudo nsenter --target "${{ steps.pgnet.outputs.pid }}" --net --
+          env DB_HOST=127.0.0.1 DB_PORT=5432 DB_USERNAME=postgres DB_PASSWORD=postgres DB_URL=''
+          php vendor/bin/phpunit -c phpunit.revision-pg.xml
