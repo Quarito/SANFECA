@@ -8,9 +8,8 @@
 |   php artisan anfeca:modelo-instalar   (crea el esquema; en seco por defecto)
 |   php artisan anfeca:modelo-verificar  (solo lectura: inventario y mapeo)
 |
-| El esquema del PDM es de CONSULTA y COMPARACIÓN. Ningún controlador ni
-| modelo Eloquent lo usa todavía; la aplicación sigue trabajando con las
-| tablas Laravel de "public".
+| Este archivo describe el esquema base y el diagnóstico de mapeo.
+| Los modos de integración y sus extensiones se configuran en anfeca_pdm.
 */
 
 return [
@@ -25,7 +24,7 @@ return [
     // Script versionado (aislado, sin DROP, calificado con el esquema).
     'script' => database_path('sql/anfeca_modelo/anfeca_modelo.sql'),
 
-    // Totales esperados tras la instalación (fuente: anfeca_certifica_1.sql).
+    // Totales esperados tras la instalación (fuente: SQL corregido de PowerDesigner).
     'esperado' => [
         'tablas' => 36,
         'llaves_foraneas' => 35,
@@ -82,6 +81,7 @@ return [
             'laravel' => 'datos_solicitantes',
             'origen' => 'vigente',
             'campos' => [
+                'comu_id_persona' => 'id',
                 'comu_valor' => 'telefono_particular',
             ],
         ],

@@ -2,6 +2,7 @@
 
 namespace App\Models\Pdm;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -15,4 +16,26 @@ use Illuminate\Database\Eloquent\Model;
 abstract class PdmModel extends Model
 {
     public $timestamps = false;
+
+    /** @var list<string> Columnas adicionales de la PK compuesta. */
+    protected array $columnasClaveCompuesta = [];
+
+    protected function setKeysForSelectQuery($query): Builder
+    {
+        return $this->agregarClaveCompuesta(parent::setKeysForSelectQuery($query));
+    }
+
+    protected function setKeysForSaveQuery($query): Builder
+    {
+        return $this->agregarClaveCompuesta(parent::setKeysForSaveQuery($query));
+    }
+
+    private function agregarClaveCompuesta(Builder $query): Builder
+    {
+        foreach ($this->columnasClaveCompuesta as $columna) {
+            $query->where($columna, $this->getRawOriginal($columna, $this->getAttribute($columna)));
+        }
+
+        return $query;
+    }
 }

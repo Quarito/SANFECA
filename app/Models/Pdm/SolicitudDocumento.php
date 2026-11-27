@@ -22,7 +22,7 @@ class SolicitudDocumento extends PdmModel
     protected $fillable = [
         'socu_id_documentacion',
         'socu_id_solicitud',
-        'docu_id_documento',
+        'socu_id_documento',
         'socu_fecha',
         'socu_hora',
         'socu_url_archivo',
@@ -31,14 +31,14 @@ class SolicitudDocumento extends PdmModel
     protected $casts = [
         'socu_id_documentacion' => 'integer',
         'socu_id_solicitud' => 'integer',
-        'docu_id_documento' => 'integer',
+        'socu_id_documento' => 'integer',
         'socu_fecha' => 'date',
     ];
 
-    /** FK FK_SOLICITU_RELATIONS_DOCUMENT: solicitud_documento.docu_id_documento → documento.docu_id_documento */
+    /** FK FK_SOLICITU_RELATIONS_DOCUMENT: solicitud_documento.socu_id_documento → documento.docu_id_documento */
     public function documento(): BelongsTo
     {
-        return $this->belongsTo(Documento::class, 'docu_id_documento', 'docu_id_documento');
+        return $this->belongsTo(Documento::class, 'socu_id_documento', 'docu_id_documento');
     }
 
     /** FK FK_SOLICITU_TIENE_AS_SOLICITU: solicitud_documento.socu_id_solicitud → solicitud.soli_id_solicitud */

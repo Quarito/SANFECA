@@ -90,6 +90,23 @@ class ModelosPdmTest extends PdmTestCase
         $this->assertSame('Calle Nueva', DB::table('anfeca_modelo.domicilio')->where('domi_id_persona', $p->pers_id_persona)->value('domi_calle'));
     }
 
+    public function test_contactos_con_el_mismo_serial_usan_la_llave_primaria_completa(): void
+    {
+        ['persona' => $persona] = $this->expediente();
+        [$primero, $segundo] = $persona->comunicaciones()->orderBy('comu_id_comunicacion')->get()->all();
+        $valorPrimero = $primero->comu_valor;
+
+        $segundo->update(['comu_id_comunicacion' => $primero->comu_id_comunicacion]);
+        $segundo->update(['comu_valor' => 'Contacto actualizado']);
+
+        $this->assertSame('Contacto actualizado', $segundo->fresh()->comu_valor);
+        $this->assertSame($valorPrimero, $primero->fresh()->comu_valor);
+
+        $segundo->delete();
+        $this->assertSame($valorPrimero, $primero->fresh()->comu_valor);
+        $this->assertNull($segundo->fresh());
+    }
+
     public function test_cadena_de_etapa_2_lista_para_el_modulo_administrativo(): void
     {
         ['solicitud' => $s] = $this->expediente();

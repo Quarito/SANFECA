@@ -137,7 +137,7 @@ class MigracionPdmTest extends PdmTestCase
         $s2 = DB::table('anfeca_modelo.solicitud')->where('soli_id_solicitud', 2)->first();
         $this->assertSame('refrendo', $s2->soli_tipo_tramite);
         $this->assertTrue($s2->soli_art14);
-        $this->assertFalse($s2->solo_art13);
+        $this->assertFalse($s2->soli_art13);
         $this->assertSame('14.1', DB::table('anfeca_modelo.articulo_subindice')->where('arce_id_articulo', $s2->soli_id_articulo)->value('arce_subindice'));
         $this->assertSame('Informática Administrativa', DB::table('anfeca_modelo.area_certificacion')->where('area_id_area_certificacion', $s2->soli_id_area_certificacion)->value('area_descripcion'));
         $this->assertSame('1000022', $s2->soli_numero_certificado);
@@ -197,7 +197,7 @@ class MigracionPdmTest extends PdmTestCase
         $this->migrar(['--ejecutar' => true, '--confirmar' => true])->assertExitCode(0);
 
         DB::table('anfeca_modelo.domicilio')->where('domi_id_persona', 1)->update(['domi_calle' => 'Calle Alterada']);
-        DB::table('anfeca_modelo.comunicacion')->where('cumu_id_persona', 4)->delete();
+        DB::table('anfeca_modelo.comunicacion')->where('comu_id_persona', 4)->delete();
 
         $this->artisan('anfeca:pdm-conciliar')
             ->expectsOutputToContain('Calle Alterada')

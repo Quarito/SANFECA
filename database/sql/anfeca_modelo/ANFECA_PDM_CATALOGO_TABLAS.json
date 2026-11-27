@@ -1,5 +1,5 @@
 {
-  "fuente": "anfeca_certifica_1.sql",
+  "fuente": "anfeca_modelo_powerdesigner_corregido_claude.sql",
   "tablas": [
     {
       "name": "ACTA",
@@ -133,7 +133,7 @@
           "definition": "SERIAL               not null"
         },
         {
-          "column": "CUMU_ID_PERSONA",
+          "column": "COMU_ID_PERSONA",
           "definition": "INT4                 not null"
         },
         {
@@ -149,7 +149,7 @@
           "definition": "BOOL                 null"
         }
       ],
-      "pk": "constraint PK_COMUNICACION primary key (COMU_ID_COMUNICACION, CUMU_ID_PERSONA, COMU_ID_TIPO_COMUNICACION)"
+      "pk": "constraint PK_COMUNICACION primary key (COMU_ID_COMUNICACION, COMU_ID_PERSONA, COMU_ID_TIPO_COMUNICACION)"
     },
     {
       "name": "CONVOCATORIA",
@@ -195,11 +195,11 @@
           "definition": "INT4                 not null"
         },
         {
-          "column": "CON_LUGAR_ENTREGA",
+          "column": "CONV_LUGAR_ENTREGA",
           "definition": "VARCHAR(300)         null"
         },
         {
-          "column": "CON_EVENTO_ENTREGA",
+          "column": "CONV_EVENTO_ENTREGA",
           "definition": "VARCHAR(300)         null"
         }
       ],
@@ -767,7 +767,7 @@
           "definition": "INT4                 not null"
         },
         {
-          "column": "SOLO_ART13",
+          "column": "SOLI_ART13",
           "definition": "BOOL                 not null"
         },
         {
@@ -789,7 +789,7 @@
           "definition": "INT4                 not null"
         },
         {
-          "column": "DOCU_ID_DOCUMENTO",
+          "column": "SOCU_ID_DOCUMENTO",
           "definition": "INT4                 not null"
         },
         {
@@ -949,7 +949,7 @@
     {
       "origen": "COMUNICACION",
       "restriccion": "FK_COMUNICA_TIENE_CON_PERSONA",
-      "columna_origen": "CUMU_ID_PERSONA",
+      "columna_origen": "COMU_ID_PERSONA",
       "destino": "PERSONA",
       "columna_destino": "PERS_ID_PERSONA"
     },
@@ -1131,7 +1131,7 @@
     {
       "origen": "SOLICITUD_DOCUMENTO",
       "restriccion": "FK_SOLICITU_RELATIONS_DOCUMENT",
-      "columna_origen": "DOCU_ID_DOCUMENTO",
+      "columna_origen": "SOCU_ID_DOCUMENTO",
       "destino": "DOCUMENTO",
       "columna_destino": "DOCU_ID_DOCUMENTO"
     },

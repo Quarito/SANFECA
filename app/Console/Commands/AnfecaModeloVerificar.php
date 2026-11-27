@@ -54,11 +54,19 @@ class AnfecaModeloVerificar extends Command
         if (!$instalado) {
             $this->warn("El esquema {$esquema} no existe. Se compara solo el lado Laravel.");
         } else {
-            $tablas = count($inspector->tablas($esquema));
-            $llaves = $inspector->totalLlavesForaneas($esquema);
+            $catalogo = json_decode(file_get_contents(database_path('sql/anfeca_modelo/ANFECA_PDM_CATALOGO_TABLAS.json')), true, flags: JSON_THROW_ON_ERROR);
+            $tablasBase = array_map('strtolower', array_column($catalogo['tablas'], 'name'));
+            $llavesBase = array_map('strtolower', array_column($catalogo['relaciones_foraneas'], 'restriccion'));
+            $tablasInstaladas = $inspector->tablas($esquema);
+            $tablas = count(array_intersect($tablasBase, $tablasInstaladas));
+            $llaves = $inspector->totalLlavesForaneas($esquema, $llavesBase);
             $filas = array_filter($inspector->filasPorTabla($esquema));
 
-            $this->line("Esquema {$esquema}: {$tablas}/{$esperado['tablas']} tablas, {$llaves}/{$esperado['llaves_foraneas']} FK.");
+            $this->line("Esquema base {$esquema}: {$tablas}/{$esperado['tablas']} tablas, {$llaves}/{$esperado['llaves_foraneas']} FK.");
+            $extensiones = array_diff($tablasInstaladas, $tablasBase);
+            if ($extensiones !== []) {
+                $this->line('Tablas de extensión y control: '.implode(', ', $extensiones));
+            }
             $this->line($filas === []
                 ? 'Todas las tablas del PDM están vacías.'
                 : 'Tablas con datos: '.collect($filas)->map(fn ($n, $t) => "{$t}={$n}")->implode(', '));

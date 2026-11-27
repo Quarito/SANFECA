@@ -1,25 +1,8 @@
--- =====================================================================
--- ANFECA — Modelo físico PowerDesigner (PDM) en esquema AISLADO
--- Esquema destino: anfeca_modelo   (NUNCA public)
--- Fuente exacta: anfeca_certifica_1.original.sql (PowerDesigner, 17/11/2026)
--- Derivado de: anfeca_modelo_pruebas_seguro.sql (revisión 17/11/2026)
---
--- Cambios respecto a la fuente PDM (documentados en docs/anfeca/MAPEO_PDM_LARAVEL.md):
---   * Sin DROP INDEX / DROP TABLE.
---   * Todas las tablas, índices, FK y comentarios calificados con "anfeca_modelo.";
---     no depende de search_path, por lo que no puede crear objetos en public.
---   * Índice TIENE_ARTICULO_FK omitido: apuntaba a EVALUACION.SOLI_ID_ARTICULO,
---     columna que no existe en EVALUACION (pertenece a SOLICITUD).
---   * RELATIONSHIP_27_FK creado como índice NO único (en el PDM era UNIQUE e
---     impedía que dos personas registraran el mismo estudio profesional).
---   * Nombres de tablas/columnas SIN corregir (p.ej. CUMU_ID_PERSONA,
---     PEES_ID_ESTUIDO_PROFESIONAL, SOLO_ART13): se conservan tal cual el PDM.
---
--- Uso: SOLO mediante  php artisan anfeca:modelo-instalar --ejecutar
---      o manualmente:  psql -1 -v ON_ERROR_STOP=1 -f anfeca_modelo.sql
---      (-1 = una sola transacción: ante cualquier error no queda nada a medias).
--- CREATE SCHEMA sin IF NOT EXISTS: si el esquema ya existe, falla y no toca nada.
--- =====================================================================
+-- ANFECA — Modelo físico PowerDesigner en el esquema aislado anfeca_modelo.
+-- Fuente estructural: anfeca_modelo_powerdesigner_corregido_claude.sql
+-- SHA-256 de la fuente: 0963a389842f77f62a42c3ce40ca20a0f7f2b779cfb4881f2b0f7d4c04a37a8d
+-- Los objetos se califican explícitamente. La transacción pertenece al instalador.
+-- Uso manual en una base aislada nueva: psql -1 -v ON_ERROR_STOP=1 -f anfeca_modelo.sql
 
 create schema anfeca_modelo;
 
@@ -162,11 +145,11 @@ COLO_ID_ALCALDIA
 /*==============================================================*/
 create table anfeca_modelo.COMUNICACION (
    COMU_ID_COMUNICACION SERIAL               not null,
-   CUMU_ID_PERSONA      INT4                 not null,
+   COMU_ID_PERSONA      INT4                 not null,
    COMU_ID_TIPO_COMUNICACION INT4                 not null,
    COMU_VALOR           VARCHAR(150)         not null,
    COMU_VISIBLE         BOOL                 null,
-   constraint PK_COMUNICACION primary key (COMU_ID_COMUNICACION, CUMU_ID_PERSONA, COMU_ID_TIPO_COMUNICACION)
+   constraint PK_COMUNICACION primary key (COMU_ID_COMUNICACION, COMU_ID_PERSONA, COMU_ID_TIPO_COMUNICACION)
 );
 
 /*==============================================================*/
@@ -174,7 +157,7 @@ create table anfeca_modelo.COMUNICACION (
 /*==============================================================*/
 create unique index CONTACTO_PK on anfeca_modelo.COMUNICACION (
 COMU_ID_COMUNICACION,
-CUMU_ID_PERSONA,
+COMU_ID_PERSONA,
 COMU_ID_TIPO_COMUNICACION
 );
 
@@ -182,7 +165,7 @@ COMU_ID_TIPO_COMUNICACION
 /* Index: TIENE_CONTACTO_FK                                     */
 /*==============================================================*/
 create  index TIENE_CONTACTO_FK on anfeca_modelo.COMUNICACION (
-CUMU_ID_PERSONA
+COMU_ID_PERSONA
 );
 
 /*==============================================================*/
@@ -206,8 +189,8 @@ create table anfeca_modelo.CONVOCATORIA (
    CONV_FECHA_ENTREGA_CERTIFICADOS DATE                 not null,
    CONV_PUNTUACION_MAX  INT4                 not null,
    CONV_PUNTUACION_MIN  INT4                 not null,
-   CON_LUGAR_ENTREGA    VARCHAR(300)         null,
-   CON_EVENTO_ENTREGA   VARCHAR(300)         null,
+   CONV_LUGAR_ENTREGA    VARCHAR(300)         null,
+   CONV_EVENTO_ENTREGA   VARCHAR(300)         null,
    constraint PK_CONVOCATORIA primary key (CONV_ID_CONVOCATORIA)
 );
 
@@ -711,7 +694,7 @@ create table anfeca_modelo.SOLICITUD (
    SOLI_NUMERO_CERTIFICADO VARCHAR(10)          null,
    SOLI_FECHA_REGISTRO_SOLICITUD DATE                 not null,
    SOLI_FOLIO_SOLICITUD INT4                 not null,
-   SOLO_ART13           BOOL                 not null,
+   SOLI_ART13           BOOL                 not null,
    SOLI_ART14           BOOL                 not null,
    constraint PK_SOLICITUD primary key (SOLI_ID_SOLICITUD)
 );
@@ -757,7 +740,7 @@ SOLI_ID_CONVOCATORIA
 create table anfeca_modelo.SOLICITUD_DOCUMENTO (
    SOCU_ID_DOCUMENTACION SERIAL               not null,
    SOCU_ID_SOLICITUD    INT4                 not null,
-   DOCU_ID_DOCUMENTO    INT4                 not null,
+   SOCU_ID_DOCUMENTO    INT4                 not null,
    SOCU_FECHA           DATE                 not null,
    SOCU_HORA            TIME                 not null,
    constraint PK_SOLICITUD_DOCUMENTO primary key (SOCU_ID_DOCUMENTACION)
@@ -781,7 +764,7 @@ SOCU_ID_SOLICITUD
 /* Index: RELATIONSHIP_39_FK                                    */
 /*==============================================================*/
 create  index RELATIONSHIP_39_FK on anfeca_modelo.SOLICITUD_DOCUMENTO (
-DOCU_ID_DOCUMENTO
+SOCU_ID_DOCUMENTO
 );
 
 /*==============================================================*/
@@ -906,7 +889,7 @@ alter table anfeca_modelo.COMUNICACION
       on delete restrict on update restrict;
 
 alter table anfeca_modelo.COMUNICACION
-   add constraint FK_COMUNICA_TIENE_CON_PERSONA foreign key (CUMU_ID_PERSONA)
+   add constraint FK_COMUNICA_TIENE_CON_PERSONA foreign key (COMU_ID_PERSONA)
       references anfeca_modelo.PERSONA (PERS_ID_PERSONA)
       on delete restrict on update restrict;
 
@@ -1036,7 +1019,7 @@ alter table anfeca_modelo.SOLICITUD
       on delete restrict on update restrict;
 
 alter table anfeca_modelo.SOLICITUD_DOCUMENTO
-   add constraint FK_SOLICITU_RELATIONS_DOCUMENT foreign key (DOCU_ID_DOCUMENTO)
+   add constraint FK_SOLICITU_RELATIONS_DOCUMENT foreign key (SOCU_ID_DOCUMENTO)
       references anfeca_modelo.DOCUMENTO (DOCU_ID_DOCUMENTO)
       on delete restrict on update restrict;
 

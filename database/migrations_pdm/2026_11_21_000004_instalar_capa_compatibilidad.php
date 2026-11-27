@@ -31,8 +31,9 @@ return new class extends Migration
             throw new RuntimeException("La base {$bd} es la de pruebas en uso. Defina ANFECA_PDM_AUTORIZAR_EXTENSIONES=si solo en ese comando, tras un respaldo verificado.");
         }
 
-        DB::unprepared((string) file_get_contents(database_path('sql/anfeca_modelo/anfeca_compat_vistas.sql')));
-        DB::unprepared((string) file_get_contents(database_path('sql/anfeca_modelo/anfeca_compat_escritura.sql')));
+        foreach (['esquema', 'funciones_pdm', 'vistas', 'escritura'] as $archivo) {
+            DB::unprepared((string) file_get_contents(database_path("sql/anfeca_modelo/anfeca_compat_{$archivo}.sql")));
+        }
 
         // Correspondencias desde config/anfeca_pdm.php (la misma fuente que F2 y F3).
         $cat = (array) config('anfeca_pdm.catalogos');

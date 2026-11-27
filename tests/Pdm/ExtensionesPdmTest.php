@@ -81,7 +81,7 @@ class ExtensionesPdmTest extends PdmTestCase
             'soli_id_persona' => $p->pers_id_persona, 'soli_id_area_certificacion' => $s->soli_id_area_certificacion,
             'soli_id_tipo_personal_academico' => $s->soli_id_tipo_personal_academico,
             'soli_fecha_registro_solicitud' => now()->toDateString(), 'soli_folio_solicitud' => $s->soli_folio_solicitud,
-            'solo_art13' => false, 'soli_art14' => false, 'soli_tipo_tramite' => 'inicial', 'soli_certificacion' => 'ANFECA',
+            'soli_art13' => false, 'soli_art14' => false, 'soli_tipo_tramite' => 'inicial', 'soli_certificacion' => 'ANFECA',
         ]), 'folio de solicitud duplicado');
 
         $this->esperarError('23514', fn () => DB::table('anfeca_modelo.historico_certificado_importacion')->insert([

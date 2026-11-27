@@ -2,14 +2,14 @@
 
 > **Nota (20/11/2026):** en la rama de integración, las tablas marcadas como «servidor» ya están en las migraciones de `desarrollo/anfeca-pruebas`. El mapeo ejecutable actualizado está en `config/anfeca_modelo.php`; el diagnóstico real se obtiene con `php artisan anfeca:modelo-verificar`.
 
-> Rama `ANFECA_BD_final` · 20/11/2026 · Fuente PDM: `database/sql/anfeca_modelo/anfeca_certifica_1.original.sql`
+> Fuente estructural vigente: `anfeca_modelo_powerdesigner_corregido_claude.sql`. El export anterior se conserva como antecedente en `database/sql/anfeca_modelo/anfeca_certifica_1.original.sql`.
 > Inventario completo de columnas y FK del PDM: `database/sql/anfeca_modelo/ANFECA_PDM_CATALOGO_TABLAS.json`.
 > El mapeo ejecutable está en `config/anfeca_modelo.php` y se contrasta contra la BD con `php artisan anfeca:modelo-verificar`.
 
 ## Principios
 
-1. **Laravel sigue siendo la fuente de verdad** de la aplicación (`public`). El PDM vive en el esquema aislado `anfeca_modelo` solo para consulta y comparación.
-2. **No se renombran** tablas ni columnas Laravel para parecerse al PDM. Tampoco se corrigen las erratas del PDM: se documentan.
+1. **Laravel sigue siendo la fuente de verdad** de la aplicación (`public`). El PDM vive en el esquema aislado `anfeca_modelo`. El modo activo en Laravel se determina por la configuración y el control de integración.
+2. Los identificadores de Laravel se conservan. Los identificadores del esquema base PDM siguen el SQL corregido adjunto.
 3. Cualquier convergencia futura se hace con **migraciones Laravel aditivas y reversibles**, una por iteración, con `migrate --pretend` y respaldo previo.
 4. La identidad se mantiene en `user_id` y el trámite en `solicitud_id`. La autenticación sigue en `users.password`, con hash.
 
@@ -61,27 +61,24 @@ Orígenes:
 
 | Problema en la fuente | Tratamiento |
 |---|---|
-| 97 `DROP INDEX`/`DROP TABLE` al inicio | Eliminados |
+| `DROP INDEX` y `DROP TABLE` en el export histórico | El SQL corregido adjunto ya prescinde de estas sentencias |
 | Objetos sin esquema, que caían en `public` | Todos calificados con `anfeca_modelo.`; no depende de `search_path` |
-| Índice `TIENE_ARTICULO_FK` sobre `EVALUACION.SOLI_ID_ARTICULO`, columna inexistente | Omitido |
-| `RELATIONSHIP_27_FK` UNIQUE: impedía que dos personas tuvieran el mismo estudio | Índice no único |
+| Índice `TIENE_ARTICULO_FK` sobre `EVALUACION.SOLI_ID_ARTICULO`, columna inexistente | El SQL corregido adjunto ya omite este índice |
+| `RELATIONSHIP_27_FK` UNIQUE: impedía que dos personas tuvieran el mismo estudio | El SQL corregido adjunto ya lo define sin unicidad |
 | `CREATE SCHEMA IF NOT EXISTS` | `CREATE SCHEMA` sin `IF NOT EXISTS`: si el esquema existe, falla sin tocar nada |
 | `BEGIN/COMMIT` dentro del script | Quitados: la transacción la abre el comando o `psql -1` |
 
 ## Observaciones del PDM que conviene llevar a PowerDesigner (no aplicadas)
 
 - **Erratas en nombres**:
-  - `CUMU_ID_PERSONA`
   - `PEES_ID_ESTUIDO_PROFESIONAL`
   - `ESSO_ID__ESTADO_SOLICITUD`
-  - `SOLO_ART13`
   - `INS_COORD_REGIONAL_CERT_ACADEMI`
-  - `CON_LUGAR_ENTREGA` / `CON_EVENTO_ENTREGA`
   - `TICO_` usado como prefijo en dos tablas distintas.
 - **Índices `*_PK` duplicados** de las PK: el script final tiene 96 índices, de los cuales 31 son redundantes. No causan error, pero ocupan espacio y hacen más lentas las escrituras.
 - **Tipo de `CONV_MONTO_RECUPERACION`**: es `MONEY`, que depende del locale. Se recomienda `NUMERIC(12,2)`.
 - **Fechas y horas**: `DATE` y `TIME` van separados. Se recomienda `TIMESTAMP WITH TIME ZONE`.
-- **PK compuestas** con `SERIAL` (`COMUNICACION`, `PERSONA_ESTUDIO_PROFESIONAL`, `HISTORICO_CERTIFICADO`): no encajan con Eloquent; basta la PK simple.
+- **PK compuestas** con `SERIAL` (`COMUNICACION`, `PERSONA_ESTUDIO_PROFESIONAL`, `HISTORICO_CERTIFICADO`): se conservan en PostgreSQL. Eloquent usa la llave completa al operar sobre una instancia cargada.
 - **Unicidad faltante**: no hay restricción única en CURP, RFC, `USUA_NOMBRE` ni folios.
 - **Tablas sin FK** hacia el resto: `DOCUMENTO`, `NIVEL_PROFESIONAL`, `TIPO_DICTAMEN` e `HISTORICO_CERTIFICADO` no tienen FK hacia `PERSONA`.
 - **Índice faltante en `PAGO`**: no hay índice sobre `PAGO_ID_SOLICITUD`.

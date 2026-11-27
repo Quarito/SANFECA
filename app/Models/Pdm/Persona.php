@@ -53,10 +53,10 @@ class Persona extends PdmModel
         return $this->belongsTo(Institucion::class, 'pers_id_institucion', 'inst_id_institucion');
     }
 
-    /** FK FK_COMUNICA_TIENE_CON_PERSONA: comunicacion.cumu_id_persona → persona.pers_id_persona */
+    /** FK FK_COMUNICA_TIENE_CON_PERSONA: comunicacion.comu_id_persona → persona.pers_id_persona */
     public function comunicaciones(): HasMany
     {
-        return $this->hasMany(Comunicacion::class, 'cumu_id_persona', 'pers_id_persona');
+        return $this->hasMany(Comunicacion::class, 'comu_id_persona', 'pers_id_persona');
     }
 
     /** FK FK_DOMICILI_TIENE_DOM_PERSONA: domicilio.domi_id_persona → persona.pers_id_persona */

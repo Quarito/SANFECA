@@ -64,7 +64,7 @@ trait ExpedienteFicticio
         ]);
         foreach (['Teléfono celular' => '5500000000', 'Correo electrónico' => 'ficticio1@example.test'] as $tipo => $valor) {
             Comunicacion::create([
-                'cumu_id_persona' => $persona->pers_id_persona,
+                'comu_id_persona' => $persona->pers_id_persona,
                 'comu_id_tipo_comunicacion' => $this->idCatalogo('tipo_comunicacion', 'tico_tipo_comunicacion', $tipo),
                 'comu_valor' => $valor, 'comu_visible' => true,
             ]);
@@ -92,7 +92,7 @@ trait ExpedienteFicticio
             'soli_id_articulo' => $this->idCatalogo('articulo_subindice', 'arce_subindice', '14.1'),
             'soli_numero_certificado' => '1000022', 'soli_id_historico_importacion' => $importacion->hcim_id_importacion,
             'soli_fecha_registro_solicitud' => now()->toDateString(),
-            'solo_art13' => false, 'soli_art14' => true,
+            'soli_art13' => false, 'soli_art14' => true,
             'soli_tipo_tramite' => 'refrendo', 'soli_certificacion' => 'ANFECA',
         ]);
 
@@ -125,7 +125,7 @@ trait ExpedienteFicticio
         $versiones = [];
         foreach (['anfeca/documentos/solicitudes/21/titulo_v1.pdf', 'anfeca/documentos/solicitudes/21/titulo_v2.pdf'] as $i => $ruta) {
             $versiones[] = $doc = SolicitudDocumento::create([
-                'socu_id_solicitud' => $solicitud->soli_id_solicitud, 'docu_id_documento' => $tituloUltimo,
+                'socu_id_solicitud' => $solicitud->soli_id_solicitud, 'socu_id_documento' => $tituloUltimo,
                 'socu_fecha' => now()->toDateString(), 'socu_hora' => now()->format('H:i:s'), 'socu_url_archivo' => $ruta,
             ]);
             EstadoSolicitudDocumento::create([

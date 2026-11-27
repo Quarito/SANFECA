@@ -447,7 +447,7 @@ class PlanMigracionPdm
         foreach (['TEL_PARTICULAR' => 'telefono_particular', 'TEL_CELULAR' => 'telefono_celular', 'CORREO' => 'correo_electronico'] as $clave => $columna) {
             if (filled($d->{$columna})) {
                 $this->agregar('comunicacion', [
-                    'cumu_id_persona' => $d->id,
+                    'comu_id_persona' => $d->id,
                     'comu_id_tipo_comunicacion' => (int) $this->cat['tipos_comunicacion'][$tipos[$clave]],
                     'comu_valor' => $d->{$columna}, 'comu_visible' => null,
                 ]);
@@ -656,7 +656,7 @@ class PlanMigracionPdm
                 'soli_numero_certificado' => $numero,
                 'soli_fecha_registro_solicitud' => $this->local($s->created_at)?->toDateString(),
                 'soli_folio_solicitud' => $s->id,
-                'solo_art13' => $s->tipo_tramite === 'refrendo' && $refrendo !== null && !$art14,
+                'soli_art13' => $s->tipo_tramite === 'refrendo' && $refrendo !== null && !$art14,
                 'soli_art14' => $art14,
                 'soli_tipo_tramite' => $s->tipo_tramite, 'soli_certificacion' => $s->certificacion,
                 'soli_id_historico_importacion' => $s->certificado_historico_id,
@@ -811,7 +811,7 @@ class PlanMigracionPdm
             }
             $local = $this->local($marca ?? $s->created_at);
             $this->agregar('solicitud_documento', [
-                'socu_id_solicitud' => $s->id, 'docu_id_documento' => (int) $this->cat['documentos'][$catalogo[$campo]],
+                'socu_id_solicitud' => $s->id, 'socu_id_documento' => (int) $this->cat['documentos'][$catalogo[$campo]],
                 'socu_url_archivo' => $ruta, 'socu_fecha' => $local->toDateString(), 'socu_hora' => $local->format('H:i:s'),
                 'esdo_id_estado_documento' => $estado, 'esdo_observacion' => $observacion,
             ]);

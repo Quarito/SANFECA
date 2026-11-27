@@ -109,7 +109,7 @@ trait FlujosAnfeca
         $this->assertGreaterThan(0, $personaId, 'el registro crea el USUARIO técnico con el mismo ID de users');
         $this->assertSame($user->password, $this->pdm('usuario')->where('usua_id_usuario', $user->id)->value('usua_contrasenia'));
         $this->assertSame(9, $this->pdm('domicilio')->where('domi_id_persona', $personaId)->value('domi_id_entidad_federativa'), 'CDMX → 09');
-        $this->assertSame(2, $this->pdm('comunicacion')->where('cumu_id_persona', $personaId)->count());
+        $this->assertSame(2, $this->pdm('comunicacion')->where('comu_id_persona', $personaId)->count());
         $verificar('registro');
 
         // 2. Edición de domicilio y teléfonos antes de autorizar.
@@ -119,7 +119,7 @@ trait FlujosAnfeca
         ])->assertRedirect(route('mis-datos.edit'));
         $this->assertSame('Calle Nueva', $this->pdm('domicilio')->where('domi_id_persona', $personaId)->value('domi_calle'));
         $this->assertSame(29, $this->pdm('domicilio')->where('domi_id_persona', $personaId)->value('domi_id_entidad_federativa'));
-        $this->assertSame(3, $this->pdm('comunicacion')->where('cumu_id_persona', $personaId)->count());
+        $this->assertSame(3, $this->pdm('comunicacion')->where('comu_id_persona', $personaId)->count());
         $verificar('edicion');
 
         // 3. Autorización de datos personales.
@@ -219,7 +219,7 @@ trait FlujosAnfeca
             ->assertRedirect(route('registro.formacion'));
         $s = $this->pdm('solicitud')->where('soli_id_solicitud', $s->soli_id_solicitud)->first();
         $this->assertTrue($s->soli_art14);
-        $this->assertFalse($s->solo_art13);
+        $this->assertFalse($s->soli_art13);
         $this->assertSame('14.1', $this->pdm('articulo_subindice')->where('arce_id_articulo', $s->soli_id_articulo)->value('arce_subindice'));
         $this->assertSame(1, $this->pdm('solicitud_refrendo')->where('sore_id_solicitud', $s->soli_id_solicitud)->count());
         $verificar('refrendo');

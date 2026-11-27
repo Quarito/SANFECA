@@ -65,14 +65,19 @@ class AnfecaModeloInspector
         );
     }
 
-    public function totalLlavesForaneas(string $esquema): int
+    /** @param list<string>|null $nombres */
+    public function totalLlavesForaneas(string $esquema, ?array $nombres = null): int
     {
-        return (int) $this->db->selectOne(
-            "select count(*) as total from pg_constraint c
-             join pg_namespace n on n.oid = c.connamespace
-             where c.contype = 'f' and n.nspname = ?",
-            [$esquema]
-        )->total;
+        $consulta = $this->db->table('pg_constraint as c')
+            ->join('pg_namespace as n', 'n.oid', '=', 'c.connamespace')
+            ->where('c.contype', 'f')
+            ->where('n.nspname', $esquema);
+
+        if ($nombres !== null) {
+            $consulta->whereIn('c.conname', $nombres);
+        }
+
+        return $consulta->count();
     }
 
     /**
@@ -128,6 +133,7 @@ class AnfecaModeloInspector
         $patrones = [
             'create table' => '/create\s+table\s+(\S+)/',
             'create index' => '/create\s+(?:unique\s+)?index\s+\w+\s+on\s+(\S+)/',
+            'comment on table' => '/comment\s+on\s+table\s+(\S+)/',
             'alter table' => '/alter\s+table\s+(\S+)/',
             'references' => '/references\s+(\S+)/',
         ];

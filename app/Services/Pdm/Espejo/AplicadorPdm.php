@@ -38,7 +38,7 @@ class AplicadorPdm
         $this->sincronizar('seleccion_certificacion', $f['seleccion_certificacion'] ?? [], ['secc_id_seleccion'], 'secc_id_usuario',
             array_column($usuarios, 'usua_id_usuario'), true);
         $this->sincronizar('domicilio', $f['domicilio'] ?? [], ['domi_id_persona'], 'domi_id_persona', $personas, true);
-        $this->sincronizar('comunicacion', $f['comunicacion'] ?? [], ['cumu_id_persona', 'comu_id_tipo_comunicacion'], 'cumu_id_persona', $personas, true);
+        $this->sincronizar('comunicacion', $f['comunicacion'] ?? [], ['comu_id_persona', 'comu_id_tipo_comunicacion'], 'comu_id_persona', $personas, true);
 
         // --- Solicitud y su expediente ---------------------------------------------------
         $solicitudes = $alcance['solicitudes'] ?? [];
@@ -120,7 +120,7 @@ class AplicadorPdm
         $actuales = collect(DB::table(self::E.'solicitud_documento as d')
             ->join(self::E.'estado_solicitud_documento as e', 'e.esdo_id_documentacion', '=', 'd.socu_id_documentacion')
             ->whereIn('d.socu_id_solicitud', $solicitudes)
-            ->get(['d.socu_id_documentacion', 'd.socu_id_solicitud', 'd.docu_id_documento', 'd.socu_url_archivo', 'e.esdo_id_estado_solicitud_docume', 'e.esdo_id_estado_documento']));
+            ->get(['d.socu_id_documentacion', 'd.socu_id_solicitud', 'd.socu_id_documento', 'd.socu_url_archivo', 'e.esdo_id_estado_solicitud_docume', 'e.esdo_id_estado_documento']));
 
         $marcar = function (object $doc, int $estado, string $observacion) use ($ahora) {
             DB::table(self::E.'estado_solicitud_documento')
@@ -142,7 +142,7 @@ class AplicadorPdm
         $vigentesPlan = [];
         foreach ($filas as $fila) {
             $mismo = $actuales->first(fn ($d) => $d->socu_id_solicitud == $fila['socu_id_solicitud']
-                && $d->docu_id_documento == $fila['docu_id_documento'] && $d->socu_url_archivo === $fila['socu_url_archivo']);
+                && $d->socu_id_documento == $fila['socu_id_documento'] && $d->socu_url_archivo === $fila['socu_url_archivo']);
 
             if ((int) $fila['esdo_id_estado_documento'] === $cargado) {
                 $vigentesPlan[] = $fila;
@@ -150,7 +150,7 @@ class AplicadorPdm
                 if ($mismo === null) {
                     // Nueva versión: la vigente anterior del mismo documento pasa a Sustituido.
                     foreach ($actuales as $d) {
-                        if ($d->socu_id_solicitud == $fila['socu_id_solicitud'] && $d->docu_id_documento == $fila['docu_id_documento']
+                        if ($d->socu_id_solicitud == $fila['socu_id_solicitud'] && $d->socu_id_documento == $fila['socu_id_documento']
                             && (int) $d->esdo_id_estado_documento === $cargado) {
                             $marcar($d, $sustituido, 'Versión anterior conservada (historial)');
                         }
@@ -176,7 +176,7 @@ class AplicadorPdm
                 continue;
             }
             $sigue = collect($vigentesPlan)->contains(fn ($f) => $f['socu_id_solicitud'] == $d->socu_id_solicitud
-                && $f['docu_id_documento'] == $d->docu_id_documento && $f['socu_url_archivo'] === $d->socu_url_archivo);
+                && $f['socu_id_documento'] == $d->socu_id_documento && $f['socu_url_archivo'] === $d->socu_url_archivo);
             if (!$sigue) {
                 $marcar($d, $sustituido, 'Versión anterior conservada (historial)');
             }

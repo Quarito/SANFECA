@@ -24,6 +24,18 @@ class AnfecaModeloSqlTest extends TestCase
         $this->assertSame(35, $conteo['llaves_foraneas']);
     }
 
+    public function test_el_ddl_coincide_con_la_referencia_corregida_de_powerdesigner(): void
+    {
+        // Huella de la referencia adjunta al retirar comentarios, envoltura de esquema
+        // y transacción, y normalizar espacios. Incluye tipos, PK, FK, índices y comentarios SQL.
+        $ddl = preg_replace('~/\*.*?\*/|--[^\n]*~s', '', $this->script());
+        $ddl = preg_replace('/^\s*create schema anfeca_modelo;\s*/im', '', $ddl);
+        $ddl = str_replace('anfeca_modelo.', '', $ddl);
+        $ddl = trim(preg_replace('/\s+/', ' ', $ddl));
+
+        $this->assertSame('a894bfafe6750fbd47730a83f89a5ef83ea4133024f04b3bf71a063b43f2ebc5', hash('sha256', $ddl));
+    }
+
     public function test_el_script_pasa_la_revision_estatica(): void
     {
         $this->assertSame(
