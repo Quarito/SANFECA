@@ -18,7 +18,7 @@
 set -euo pipefail
 
 DUMP="${1:-}"; MODO="${2:-plan}"; RECREAR="${3:-}"
-COPIA="bd_anfeca_copia_pruebas_pg"; TRABAJO="bd_laravelanfeca_pruebas"
+COPIA="bd_anfeca_copia_pruebas_pg"; TRABAJO="bd_anfeca_ensayo_pruebas_pg"
 export PGHOST="${DB_HOST:-127.0.0.1}" PGPORT="${DB_PORT:-5432}" PGUSER="${DB_USERNAME:-rol_anfecalaravel}"
 SALIDA="$HOME/ANFECA_RESPALDOS/ensayo_f2/$(date +%Y%m%d_%H%M%S)"
 
@@ -26,7 +26,10 @@ falla() { echo "ERROR: $*" >&2; exit 1; }
 paso()  { echo; echo "=== $* ==="; }
 
 [[ -f artisan ]] || falla "Ejecute el script desde la raíz del worktree."
-[[ "$(pwd -P)" != /var/www/ANFECA_PRUEBAS* ]] || falla "No se permite ejecutar en /var/www/ANFECA_PRUEBAS."
+case "$(pwd -P)" in
+    /var/www/ANFECA_PRUEBAS|/var/www/ANFECA_PRUEBAS/*|/var/www/ANFECA_ENSAYO|/var/www/ANFECA_ENSAYO/*|/var/www/anfeca|/var/www/anfeca/*)
+        falla "Ejecute este script desde un worktree aislado, nunca desde un despliegue activo." ;;
+esac
 [[ "$MODO" =~ ^(plan|simular|completo)$ ]] || falla "Modo no válido: $MODO"
 [[ -n "$DUMP" && -s "$DUMP" ]] || falla "Indique un respaldo existente: $0 /ruta/respaldo.dump"
 
@@ -35,6 +38,10 @@ exec > >(tee -a "$SALIDA/ensayo.log") 2>&1
 
 read -r -s -p "Contraseña de $PGUSER: " PGPASSWORD; echo; export PGPASSWORD
 trap 'unset PGPASSWORD' EXIT
+
+[[ "$TRABAJO" != "$COPIA" ]] || falla "La base de origen nunca puede ser la copia."
+[[ "$(psql -d "$TRABAJO" -At -v ON_ERROR_STOP=1 -c 'select current_database()')" == "$TRABAJO" ]] \
+    || falla "No se confirmó el acceso de solo lectura a la base de origen $TRABAJO."
 
 paso "1. Respaldo identificado y verificado"
 echo "Archivo:   $DUMP"
@@ -53,7 +60,8 @@ if psql -d postgres -Atc "select 1 from pg_database where datname = '$COPIA'" | 
     dropdb "$COPIA"
 fi
 createdb "$COPIA" || falla "No se pudo crear $COPIA. Créela con: sudo -u postgres createdb -O $PGUSER $COPIA"
-pg_restore --no-owner --no-privileges -d "$COPIA" "$DUMP" || echo "AVISO: pg_restore reportó advertencias (revise arriba)."
+pg_restore --exit-on-error --single-transaction --no-owner --no-privileges -d "$COPIA" "$DUMP" \
+    || falla "Falló la restauración: la copia no es válida. No se ejecutarán migraciones ni escrituras."
 
 paso "3. ¿La copia corresponde a la base de trabajo actual? (conteos; solo SELECT en $TRABAJO)"
 CONTEOS="select 'users', count(*) from public.users union all select 'datos_solicitantes', count(*) from public.datos_solicitantes
@@ -61,9 +69,13 @@ CONTEOS="select 'users', count(*) from public.users union all select 'datos_soli
  union all select 'formaciones_academicas_solicitud', count(*) from public.formaciones_academicas_solicitud union all select 'documentos_probatorios_solicitud', count(*) from public.documentos_probatorios_solicitud
  union all select 'historial_documentos_academicos', count(*) from public.historial_documentos_academicos union all select 'certificados_historicos', count(*) from public.certificados_historicos
  union all select 'instituciones_afiliadas', count(*) from public.instituciones_afiliadas order by 1"
-diff <(psql -d "$TRABAJO" -At -F ' ' -c "$CONTEOS") <(psql -d "$COPIA" -At -F ' ' -c "$CONTEOS") \
-    && echo "Conteos idénticos: la copia es actual." \
-    || echo "AVISO: la copia difiere de la base de trabajo (izquierda: trabajo; derecha: copia). Use un respaldo más reciente si importa."
+CONTEOS_ORIGEN=$(psql -d "$TRABAJO" -v ON_ERROR_STOP=1 -At -F ' ' -c "$CONTEOS") \
+    || falla "No se pudieron consultar los conteos del origen."
+CONTEOS_COPIA=$(psql -d "$COPIA" -v ON_ERROR_STOP=1 -At -F ' ' -c "$CONTEOS") \
+    || falla "No se pudieron consultar los conteos de la copia."
+[[ "$CONTEOS_ORIGEN" == "$CONTEOS_COPIA" ]] \
+    || falla "La copia difiere de la base de ensayo. Detenido antes de ejecutar migraciones o escrituras."
+echo "Conteos idénticos: la copia corresponde al origen verificado."
 
 paso "4. Conexión efectiva de Laravel hacia la copia"
 php artisan config:clear >/dev/null
@@ -82,7 +94,8 @@ psql -d "$COPIA" -Atc "select 'tablas PDM: '||count(*) from pg_tables where sche
 psql -d "$COPIA" -Atc "select 'FK PDM: '||count(*) from pg_constraint where contype='f' and connamespace='anfeca_modelo'::regnamespace"
 
 paso "6. Plan de migración (solo lectura)"
-php artisan anfeca:pdm-migrar --informe="$SALIDA/plan.json" || true
+php artisan anfeca:pdm-migrar --informe="$SALIDA/plan.json" \
+    || falla "Falló la generación del plan PDM. No se ejecutarán las fases siguientes."
 
 if [[ "$MODO" == "simular" || "$MODO" == "completo" ]]; then
     paso "7. Simulación (escribe, concilia y revierte en la copia)"
