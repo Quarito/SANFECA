@@ -2,6 +2,8 @@
 
 namespace App\Models\Pdm;
 
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -9,8 +11,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Tabla anfeca_modelo.usuario del modelo PowerDesigner.
  * Generado a partir de database/sql/anfeca_modelo/anfeca_modelo.sql y sus extensiones (F1, F4).
  */
-class Usuario extends PdmModel
+class Usuario extends PdmModel implements AuthenticatableContract
 {
+    use Authenticatable;
+
+    public const ESTATUS_ACTIVO = 'ACTIVO';
+
+    protected $hidden = ['usua_contrasenia'];
+
     protected $table = 'anfeca_modelo.usuario';
 
     protected $primaryKey = 'usua_id_usuario';
@@ -33,6 +41,17 @@ class Usuario extends PdmModel
         'usua_id_persona' => 'integer',
         'usua_id_rol' => 'integer',
     ];
+
+    public function getAuthPasswordName()
+    {
+        return 'usua_contrasenia';
+    }
+
+    public function getRememberTokenName()
+    {
+        // El modelo aprobado solo admite sesión, sin token persistente.
+        return '';
+    }
 
     /** FK FK_USUARIO_TIENE_ROL_ROL: usuario.usua_id_rol → rol.rol_id_rol */
     public function rol(): BelongsTo

@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Services\Pdm\Autenticacion\ProveedorUsuarioPdm;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use App\Models\User;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Auth::provider('anfeca-pdm', fn ($app, array $config) => new ProveedorUsuarioPdm($app['hash'], $config['model']));
+
         // V8: además del límite por IP (igual al anterior throttle:N,1),
         // se limita por cuenta para frenar intentos desde varias IP.
         $correo = fn (Request $r) => mb_strtolower(trim((string) $r->input('email')));
