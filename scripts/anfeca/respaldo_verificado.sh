@@ -57,7 +57,18 @@ podman pod create --name "$POD" --network none >/dev/null
 trap 'podman pod rm -f "$POD" >/dev/null 2>&1 || true' EXIT
 podman run -d --pod "$POD" --name "$POD-pg" --tmpfs /var/lib/postgresql:rw,size=800m -v "$DESTINO:/respaldo:ro,Z" \
     -e POSTGRES_USER=rol_restauracion -e POSTGRES_PASSWORD="$CLAVE_PG" -e POSTGRES_DB=bd_restaurada_desechable "$IMAGEN_PG" >/dev/null
-for _ in $(seq 1 30); do podman exec "$POD-pg" pg_isready -q -U rol_restauracion && break; sleep 1; done
+# Espera al servidor DEFINITIVO: durante la inicialización la imagen arranca un servidor temporal solo por socket y
+# pg_isready respondía «listo» antes de crear POSTGRES_DB (incidente del 2026-11-26: «database … does not exist»).
+# El servidor temporal no escucha en TCP; se exige además que la base ya acepte consultas.
+LISTO=0
+for _ in $(seq 1 60); do
+    if podman exec "$POD-pg" pg_isready -q -h 127.0.0.1 -U rol_restauracion -d bd_restaurada_desechable \
+        && podman exec -e PGPASSWORD="$CLAVE_PG" "$POD-pg" psql -h 127.0.0.1 -U rol_restauracion -d bd_restaurada_desechable -Atqc 'select 1' >/dev/null 2>&1; then
+        LISTO=1; break
+    fi
+    sleep 1
+done
+[ "$LISTO" = 1 ] || { echo "DETENIDO: la base desechable no quedó disponible en 60 s" >&2; exit 1; }
 podman exec "$POD-pg" pg_restore --no-owner --no-privileges --exit-on-error -U rol_restauracion -d bd_restaurada_desechable /respaldo/base.dump
 registrar "pg_restore en PostgreSQL 18.6 desechable (sin red): correcto"
 
