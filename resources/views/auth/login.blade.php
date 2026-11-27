@@ -39,8 +39,8 @@
     <main class="contenido">
 
         <section class="fotografia">
-            <img src="{{ asset('images/evento_anfeca.jpg') }}"
-                 alt="Evento académico ANFECA">
+            <img src="{{ asset('images/ANFECA.jpg.jpeg') }}"
+                 alt="ANFECA">
         </section>
 
         <section class="acceso">
