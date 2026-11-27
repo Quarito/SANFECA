@@ -304,7 +304,8 @@ Las demás pantallas (seguimiento, `RegistroCompletado`) solo verifican la compl
    - Al reactivar la bandera, todo reaparece.
 2. **Código.** `git revert --no-edit` en orden inverso y sin `reset --hard`; push sin forzar; recompilar.
    - **Sin la migración aplicada:** pueden revertirse todos los commits del catálogo.
-   - **Con la migración aplicada:** revertir **solo** la interfaz y la bandera (`4e89d36`, `85952ea`) y **conservar** `bb18852` y `df9d4b3`. Así se mantienen la protección de nivel y área, la sincronización del área «Otro» y la presentación del título exacto. Probado en la prueba integral.
+   - **Con la migración aplicada:** revertir **solo** la interfaz y la bandera y **conservar** `bb18852` y `df9d4b3`.
+   - **Actualización (2026-11-26):** con commits de interfaz posteriores (licenciaturas y casilla de posgrado), revertir solo `4e89d36` y `85952ea` **entra en conflicto**. Hay que revertir todos los commits de interfaz, del más reciente al más antiguo: `git log --format=%h 85952ea^..HEAD -- resources/js resources/views/registro/formacion-academica.blade.php`. Probado en `probar_migracion_catalogo.sh` (15/15). Así se mantienen la protección de nivel y área, la sincronización del área «Otro» y la presentación del título exacto. Probado en la prueba integral.
    - Revertir también `df9d4b3` con títulos registrados dejaría el formulario anterior sin esa protección. Las columnas y sus datos no se pierden (el código anterior no las toca), pero un cambio de área posterior podría dejar un título incoherente con el área. Requiere decisión expresa.
 3. **Base de datos (estructural).** `ANFECA_AUTORIZO_REVERSION=catalogo_posgrados bash scripts/anfeca/revertir_catalogo_posgrados.sh <base> <commit> <respaldo>`:
    - exige respaldo verificado reciente;
@@ -429,3 +430,11 @@ Para **guardar** se deben adjuntar los 4 documentos (PDF, JPG o PNG, ≤ 5 MB); 
 | Administración de servicios especializados / Analítica de negocios / Lavado de dinero | 3 / 3 / 2 | — |
 
 **Nada se aprueba automáticamente.** La columna «Clasificación autorizada» de la matriz original sigue vacía.
+
+## 15. Relación con la casilla «Cuento con estudios de posgrado concluidos» (2026-11-26; desarrollo aislado)
+
+- Con `ANFECA_DECLARACION_POSGRADO` activa (o una declaración ya guardada), el último grado **solo** admite Especialidad, Maestría o Doctorado; «Licenciatura» se rechaza en el servidor y por el CHECK `fas_declaracion_posgrado_ck`.
+- El catálogo de posgrados (1 794 denominaciones) y sus 4 columnas **no cambian**.
+- En el escenario «solo licenciatura» no se escriben ni se borran las columnas de posgrado: los datos guardados antes se conservan sin considerarse vigentes.
+- Detalle en `PROPUESTA_CATALOGO_LICENCIATURAS.md`, Parte II.
+

@@ -1,12 +1,16 @@
 # Catálogo de licenciaturas (Formación Académica de Origen): investigación, catálogo preliminar y propuesta
 
-**Fecha:** 2026-11-26.
+**Fecha:** 2026-11-26 (Parte II el mismo día).
 
-**Estado: INVESTIGACIÓN Y CATÁLOGO PRELIMINAR.**
-- No integrado ni instalado en 8086.
-- Sin migraciones.
-- Sin cambios en las equivalencias.
-- Bandera propuesta `ANFECA_CATALOGO_LICENCIATURAS=false` (no creada).
+**Estado:**
+
+| Aspecto | Estado |
+|---|---|
+| Investigación y catálogo | Hecho: ciclo 2025-2026 y consolidado 2000-2001 a 2025-2026 |
+| Integración en Formación Académica | **Implementada y probada en aislamiento** (Parte II) |
+| 8086 | **Sin cambios**: no desplegada, migración no aplicada, banderas no creadas en `.env` |
+| Clasificación | **Preliminar**: 1 417 (ciclo actual) / 2 319 (consolidado) por revisar; nada aprobado |
+| Equivalencias normativas | Sin cambios |
 
 > La clasificación por área es **administrativa y preliminar**. No es una equivalencia normativa ni un criterio de elegibilidad. «Otro» **no** significa «no elegible». La formación académica real se mantiene separada del área de certificación solicitada.
 
@@ -252,3 +256,267 @@ Se reutilizan los scripts de aplicación, verificación y despliegue de la compi
 5. Decidir sobre DOC-02: casilla de posgrado y documentos del último grado.
 6. Revisión institucional de la regla 1:1 área ↔ certificación para licenciaturas interdisciplinarias.
 7. Tratamiento en refrendos (completar el nombre específico sin cambiar el área histórica).
+
+---
+
+# Parte II · Integración en Formación Académica (etapa 1) — desarrollo aislado, 2026-11-26
+
+## 18. Alcance y diseño conservado
+
+**Solo dos escenarios:**
+1. Solo licenciatura.
+2. Licenciatura con posgrado.
+
+No hay multigrado, segunda licenciatura, varios posgrados ni relaciones 1:N.
+
+**Diseño validado conservado:**
+- encabezado, menú lateral, pie, fichas 50/50, Institución de Procedencia, tarjetas documentales y botones.
+
+**Únicos cambios visibles:**
+- **Formación de origen:** el **mismo** campo «Nombre del Título» usa ahora `SelectorBuscable` en modo remoto. Tiene búsqueda parcial sin acentos ni mayúsculas y lista flotante de ≈ 200 px. La opción «No encuentro mi título» abre la captura manual en el mismo espacio. **No** hay desplegable de Área: el área se deriva internamente.
+- **Último grado:** la casilla autorizada «Cuento con estudios de posgrado concluidos».
+  - **Desmarcada** (escenario 1): se ocultan nivel, área, título y los documentos del posgrado. Se muestran dos líneas: «Su formación académica de origen corresponde a su último grado de estudios. / No es necesario registrar nuevamente el título ni la cédula profesional.»
+  - **Marcada** (escenario 2): la interfaz de posgrados vigente, con nivel **solo** Especialidad, Maestría o Doctorado.
+
+**Comparación de alturas** con la pantalla activa (`app-CYBBpN_p.js`, usuario de aceptación):
+
+| Vista | 8086 actual | Desarrollo | Diferencia |
+|---|---:|---:|---|
+| Escritorio 1366 px | 974 px | 984 px | +10 (selector de 46 px frente a select de 36 px) |
+| Tableta 820 px | 1 359 px | 1 376 px | +17 |
+| Móvil 390 px | 2 271 px | 2 183 px | −88 (sin posgrado) |
+
+Sin desplazamiento horizontal. La lista abierta **no** cambia la altura del documento.
+
+**Controles visibles:**
+- 8086: `nivel_origen_visible, titulo_origen, titulo_origen_archivo, cedula_origen_archivo, nivel_ultimo_grado, titulo_ultimo_grado, titulo_ultimo_grado_archivo, cedula_ultimo_grado_archivo, institucion_afiliada_id`.
+- Desarrollo, escenario 1: los mismos de origen **+ `cuenta_con_posgrado_casilla`** (único control nuevo), sin los 4 del posgrado.
+- Desarrollo, escenario 2: los 9 anteriores + la casilla.
+
+## 19. Persistencia (PostgreSQL) — diagnóstico y columnas
+
+- **Tablas revisadas:**
+  - `formaciones_academicas_solicitud` (1 por solicitud; fuente de la formación del trámite);
+  - `formaciones_academicas` (modelo antiguo sin uso en el flujo);
+  - `historial_documentos_academicos` (versiones anteriores de los documentos del último grado);
+  - `solicitudes_certificacion` (área de certificación);
+  - `certificados_historicos` (antecedente: solo número, CURP y certificación; no guarda la licenciatura).
+- **No** se crea ninguna tabla multigrado.
+
+**Migración PROPUESTA** `2026_11_28_000000_add_titulo_origen_especifico_y_declaracion_posgrado`:
+- aditiva y fuera de la ruta automática;
+- 5 columnas nulas y 2 CHECK;
+- las 4 columnas del catálogo de posgrados, **intactas**.
+
+| Columna | Tipo | Justificación |
+|---|---|---|
+| `titulo_origen_especifico` | varchar(300) | Nombre exacto de la licenciatura. `titulo_origen` guarda el ÁREA y `titulo_origen_otro` solo admite «Otro» (≤ 200) |
+| `origen_titulo_origen` | varchar(20) | `catalogo` o `manual`: distingue la selección verificada de la captura sujeta a revisión |
+| `clave_licenciatura_catalogo` | varchar(40) | Clave estable `LIC-…`, solo para selecciones reales del catálogo |
+| `version_catalogo_licenciaturas` | varchar(60) | Versión de origen; permite conservar lo registrado aunque el catálogo cambie |
+| `cuenta_con_posgrado` | boolean NULL | Declaración explícita del escenario. **No** es derivable: `nivel_ultimo_grado` NULL también significa «histórico incompleto», y el valor «Licenciatura» del formulario anterior tiene otro significado. NULL = histórico o no declarado (no es un tercer escenario) |
+
+**SQL equivalente (PostgreSQL):**
+
+```sql
+BEGIN;
+ALTER TABLE public.formaciones_academicas_solicitud
+  ADD COLUMN titulo_origen_especifico       varchar(300) NULL,
+  ADD COLUMN origen_titulo_origen           varchar(20)  NULL,
+  ADD COLUMN clave_licenciatura_catalogo    varchar(40)  NULL,
+  ADD COLUMN version_catalogo_licenciaturas varchar(60)  NULL,
+  ADD COLUMN cuenta_con_posgrado            boolean      NULL;
+ALTER TABLE public.formaciones_academicas_solicitud
+  ADD CONSTRAINT fas_titulo_origen_coherente_ck CHECK (
+       (origen_titulo_origen IS NULL AND titulo_origen_especifico IS NULL
+            AND clave_licenciatura_catalogo IS NULL AND version_catalogo_licenciaturas IS NULL)
+    OR (coalesce(origen_titulo_origen, '') = 'catalogo' AND coalesce(btrim(titulo_origen_especifico), '') <> ''
+            AND coalesce(clave_licenciatura_catalogo, '') ~ '^LIC-[0-9A-F]{12}$'
+            AND coalesce(btrim(version_catalogo_licenciaturas), '') <> '')
+    OR (coalesce(origen_titulo_origen, '') = 'manual' AND coalesce(btrim(titulo_origen_especifico), '') <> ''
+            AND clave_licenciatura_catalogo IS NULL AND version_catalogo_licenciaturas IS NULL));
+ALTER TABLE public.formaciones_academicas_solicitud
+  ADD CONSTRAINT fas_declaracion_posgrado_ck CHECK (
+       cuenta_con_posgrado IS DISTINCT FROM true
+    OR (coalesce(nivel_ultimo_grado, '') IN ('Especialidad', 'Maestría', 'Doctorado')
+            AND coalesce(btrim(titulo_ultimo_grado), '') <> ''));
+COMMIT;
+```
+
+- **Impacto:** las filas existentes no cambian (columnas nuevas en NULL) y no hay actualizaciones retrospectivas.
+- **Recuperación estructural:** `down()` se **niega** si alguna fila tiene datos en las 5 columnas.
+
+**Procedimientos** (probados en PostgreSQL desechable, 18/18):
+
+```sh
+bash scripts/anfeca/respaldo_verificado.sh bd_anfeca_ensayo_pruebas_pg desarrollo/modulo-coordinacion <commit>
+ANFECA_AUTORIZO_MIGRACION=licenciaturas_posgrado ANFECA_URL_DOCUMENTOS=http://192.168.7.130:8086 \
+  bash scripts/anfeca/aplicar_licenciaturas_posgrado.sh bd_anfeca_ensayo_pruebas_pg <commit> <respaldo>
+bash scripts/anfeca/verificar_licenciaturas_posgrado.sh
+# Solo con autorización y columnas vacías:
+ANFECA_AUTORIZO_REVERSION=licenciaturas_posgrado … bash scripts/anfeca/revertir_licenciaturas_posgrado.sh <base> <commit> <respaldo>
+```
+
+El catálogo de posgrados puede seguir **activo** durante la aplicación. Se exige que las banderas de licenciaturas y de declaración estén desactivadas.
+
+## 20. Almacenamiento — Escenario 1: solo licenciatura
+
+Ejemplo: «Ingeniería en Computación», certificación en Informática Administrativa.
+
+| Campo | Valor físico | Observación |
+|---|---|---|
+| `nivel_origen` | `Licenciatura` | Fijo |
+| `titulo_origen` | `Informática` | Área derivada de la clasificación del catálogo (compatible con la certificación) |
+| `titulo_origen_otro` | NULL | Solo se usa con el área «Otro» (refleja el nombre exacto) |
+| `titulo_origen_especifico` | `INGENIERÍA EN COMPUTACIÓN` | Nombre exacto **del catálogo del servidor** |
+| `origen_titulo_origen` · `clave_licenciatura_catalogo` · `version_catalogo_licenciaturas` | `catalogo` · `LIC-…` · `ANUIES-2000-2026-LIC-PRELIMINAR` | — |
+| `cuenta_con_posgrado` | **false** | Declaración explícita |
+| `nivel_ultimo_grado`, `titulo_ultimo_grado`, `titulo_ultimo_grado_otro`, las 4 columnas de posgrado, `titulo_ultimo_grado_archivo`, `cedula_ultimo_grado_archivo` | **NULL** | No se duplica la licenciatura ni se crean referencias documentales ficticias |
+| `titulo_origen_archivo`, `cedula_origen_archivo` | rutas reales | Los **únicos** 2 archivos académicos (prueba: 2 archivos físicos) |
+
+**Derivado en consultas** (`RequisitosFormacion`):
+- máximo nivel = **Licenciatura**;
+- requisitos = solo los de origen;
+- documentos del último grado = «no aplica» (sin revisión documental duplicada);
+- el acuse y el expediente muestran «Último grado · Licenciatura — corresponde a la formación de origen».
+
+## 21. Almacenamiento — Escenario 2: licenciatura con posgrado
+
+Ejemplo: «Ingeniería en Computación» y «Maestría en Administración de Organizaciones».
+
+| Campo | Valor físico |
+|---|---|
+| Origen | Igual que en el escenario 1 (`titulo_origen`, nombre exacto, `catalogo`, clave `LIC-…` y versión) |
+| `cuenta_con_posgrado` | **true** |
+| `nivel_ultimo_grado` | `Maestría` (solo Especialidad, Maestría o Doctorado: validación y CHECK) |
+| `titulo_ultimo_grado` | `Administración` (área) |
+| `titulo_ultimo_grado_especifico` · `origen_titulo_ultimo_grado` · `clave_posgrado_catalogo` · `version_catalogo_posgrados` | `MAESTRÍA EN ADMINISTRACIÓN DE LAS ORGANIZACIONES` · `catalogo` · `MAE-…` · `ANUIES-2025` |
+| Documentos | Título y cédula de licenciatura y título y cédula del último grado (4 archivos) |
+
+## 22. Fuente única de verdad
+
+| Concepto | Fuente | Nunca |
+|---|---|---|
+| Área de certificación | `solicitudes_certificacion.area_certificacion` | Se modifica desde Formación |
+| Clasificación académica de la licenciatura | Catálogo (clave + versión); se registra en `titulo_origen` solo si es compatible | Se registra un área distinta para «satisfacer» la validación |
+| Nombre exacto | `titulo_origen_especifico` / `titulo_ultimo_grado_especifico` | Lo envía el navegador |
+| Declaración de posgrado | `cuenta_con_posgrado` | Se infiere de registros históricos |
+| Último grado | Escenario 1: derivado (licenciatura); escenario 2: columnas de último grado | Se copia la licenciatura |
+| Documentos | Columnas de archivos e historial | Se copian ni se crean ficticios |
+
+## 23. Validaciones (Laravel y PostgreSQL)
+
+- **Ambos escenarios:**
+  - formación de origen con título del catálogo (clave existente y versión vigente) o manual (5–200 caracteres, sin `<` ni `>`);
+  - `titulo_origen` y `titulo_origen_otro` **prohibidos** desde el navegador.
+- **Escenario 1:**
+  - `cuenta_con_posgrado = 0`;
+  - **cualquier** dato o archivo de posgrado: `prohibited`;
+  - solo 2 documentos exigidos.
+- **Escenario 2:**
+  - `cuenta_con_posgrado = 1`;
+  - `nivel_ultimo_grado ∈ {Especialidad, Maestría, Doctorado}` («Licenciatura» rechazada en el servidor y por el CHECK);
+  - catálogo de posgrados vigente (clave, nivel, área y versión) o captura manual;
+  - 4 documentos.
+- **Requisito normativo conservado (DOC-02 / ELE):** la certificación en «Disciplinas vinculadas al ámbito económico-administrativo» **exige posgrado** (Reglamento vigente, arts. 1 y 13; Instrumentos 2026, factor 1.1). El escenario 1 se rechaza con un mensaje comprensible y la pantalla lo avisa. Para las demás áreas, la convocatoria 2026 (base I.4) pide el posgrado «en caso de poseerlo».
+- **Cambio de casilla con datos guardados:**
+  - se pide confirmación;
+  - los datos y documentos de posgrado **se conservan** sin ser vigentes;
+  - al volver a marcar se recuperan.
+- **Formación autorizada o solicitud enviada:** sin cambios (bloqueo vigente).
+- **Registros sin declaración:** la casilla aparece desmarcada en registros nuevos, o marcada visualmente si ya tienen posgrado. No se escribe nada hasta que el solicitante guarda.
+
+## 24. Decisión pendiente D-LIC-1 (detención autorizada en la instrucción 27)
+
+Un título del catálogo clasificado de forma **preliminar** en un área distinta de la que admite la certificación (p. ej., «Contaduría Fiscal Pública» con certificación en Administración, o «Derecho» con certificación en Contaduría Pública):
+- **hoy** se detiene, con la explicación y la sugerencia de revisar la certificación o usar «No encuentro mi título»;
+- **no** se modifica la regla vigente (`config/anfeca_equivalencias.php`).
+
+| Opción | Efecto |
+|---|---|
+| A (vigente) | Detener con explicación; la captura manual queda sujeta a revisión de procedencia |
+| B | Aceptar y marcar para revisión de procedencia (exige cambiar el significado de `titulo_origen` o agregar una columna de procedencia) |
+| C | Relajar la regla 1:1 área ↔ certificación (cambio normativo) |
+
+Requiere la decisión de la CNCA, ligada también a la aprobación de la clasificación (las 1 417 pendientes).
+
+**Captura manual:** no existe clasificación de catálogo y no se inventa. Se registra el área que admite la certificación (igual que el selector vigente de una sola opción) con `origen = manual`, lo que la deja sujeta a revisión.
+
+## 25. Refrendos
+
+- Con título de origen histórico registrado en el trámite de refrendo, el bloque de origen **no cambia** (regla vigente: `titulo_origen` prohibido).
+- En un refrendo **sin** formación previa, el catálogo se usa igual que en primera vez.
+- El antecedente (`certificados_historicos`) no guarda la licenciatura y **no se modifica**.
+- **Propuesta (no implementada):** permitir **completar** el nombre exacto una sola vez cuando la solicitud de refrendo tenga solo el área, sin cambiar el área histórica.
+
+## 26. Banderas y recuperación
+
+| Bandera | Por omisión | Rige |
+|---|---|---|
+| `ANFECA_CATALOGO_POSGRADOS` | true en 8086 | Catálogo de posgrados (sin cambios) |
+| `ANFECA_CATALOGO_LICENCIATURAS` | **false** | Selector de licenciaturas en el origen |
+| `ANFECA_DECLARACION_POSGRADO` | **false** | Casilla de posgrado |
+
+Dos banderas independientes: el catálogo de licenciaturas depende de la aprobación de la clasificación; la casilla depende solo de DOC-02, ya decidido.
+
+1. **Funcional (principal):** desactivar las banderas (probado con datos de ambos escenarios, 8/8):
+   - el origen vuelve al select anterior y protege el título registrado (no se puede cambiar el área);
+   - la **declaración guardada sigue rigiendo**, así que el solicitante no tiene que duplicar documentos;
+   - se conservan nombres, claves, versiones, declaración, documentos e historial;
+   - el catálogo de posgrados sigue funcionando.
+2. **Código:** `git revert --no-edit` de los commits de **interfaz**, del más reciente al más antiguo (`git log --format=%h <primer commit de interfaz>^..HEAD -- resources/js resources/views/registro/formacion-academica.blade.php`), conservando los commits del servidor.
+   - Si la interfaz anterior no envía la casilla, rige la declaración guardada.
+   - Probado: revertir solo dos commits intermedios **entra en conflicto** si hay commits de interfaz posteriores.
+   - No usar `reset --hard`.
+3. **Compilación:** `bash scripts/anfeca/desplegar_compilacion.sh restaurar <manifest_anterior.json>` (probado en aislamiento; rechaza manifiestos inexistentes).
+4. **Estructural:** `revertir_licenciaturas_posgrado.sh` solo con autorización y columnas vacías.
+   - **Nunca** `down()` con datos.
+   - **Nunca** una restauración automática de PostgreSQL.
+
+## 27. Catálogo consolidado (2000-2001 a 2025-2026)
+
+- **Fuente:** 25 ciclos históricos más el actual, descargados de uno en uno (agrupados por nivel, programa y campos; sin detalle institucional).
+- **Volumen:** 23 MB en `~/ANFECA_FUENTES/licenciaturas/historico/`, con `descargas.ndjson` (huellas por ciclo).
+
+| Área | Denominaciones | Vigentes 2025-2026 | Solo históricas | Requieren revisión |
+|---|---:|---:|---:|---:|
+| Administración | 1 110 | 768 | 342 | 1 013 |
+| Contaduría | 211 | 122 | 89 | 112 |
+| Informática | 589 | 367 | 222 | 232 |
+| Negocios Internacionales | 199 | 114 | 85 | 143 |
+| Otro | 7 277 | 3 900 | 3 377 | 819 |
+| **Total** | **9 386** | 5 271 | 4 115 | 2 319 |
+
+- Se conservan las 5 271 claves del ciclo actual; sin colisiones.
+- 2 718 denominaciones solo tienen el nombre en la fuente (sin campo de formación).
+- Archivos: `licenciaturas_anuies_consolidado.json` (SHA-256 `7bc8c998…`), matriz consolidada y manifiesto (privados).
+
+**Resúmenes por familia** (`resumir_revision.py`; matrices sin cambios):
+
+| Catálogo | Pendientes | Grupos | Subgrupos homogéneos | Aprobación en bloque posible |
+|---|---:|---:|---:|---|
+| Licenciaturas 2025-2026 | 1 417 | 80 | 134 | 46 subgrupos ≥ 5 cubren 1 276 (90 %) |
+| Licenciaturas consolidado | 2 319 | 111 | 189 | 61 subgrupos ≥ 5 cubren 2 092 |
+| Posgrados | 572 | 68 | 107 | 30 subgrupos ≥ 5 cubren 444 |
+
+## 28. PDM (apagado; sin cambios en PowerDesigner)
+
+- `anfeca_compat` y `EquivalenciaPdm` desconocen las 5 columnas.
+- En modo PDM, el nombre exacto, la clave y la declaración no se guardarían.
+- Ampliación pendiente **antes** de activar el PDM (igual que CAT-09).
+
+## 29. Pruebas
+
+| Prueba | Resultado |
+|---|---|
+| `FormacionLicenciaturaPosgradoTest` (13 pruebas, catálogo ficticio): escenarios 1 y 2 en los 3 niveles; Derecho y «Otro»; captura manual; discrepancia de área; 13 negativas; cambio de casilla; autorizada y enviada; endpoint; catálogo ausente; rollback por banderas; refrendo; sin migración; reversión con datos | Correcto |
+| `FormacionLicenciaturaMigracionPgTest` (PostgreSQL 18.6 desechable) | Correcto |
+| Regresión completa | SQLite 195 pruebas con PHP 8.4 y 8.5 (1 omitida preexistente); PostgreSQL de revisión 22/22; PDM 69/69 |
+| `probar_migracion_licenciaturas.sh` | 18/18 |
+| `probar_migracion_catalogo.sh` (actualizado) | 15/15 |
+| Verificación visual (25 comprobaciones) | Correcto |
+| Rollback funcional (8) | Correcto |
+| Recuperación de compilación en aislamiento | Correcto |
+
+Evidencias en `~/ANFECA_EVIDENCIAS/formacion_licenciaturas_posgrado_20261126/`.
+
