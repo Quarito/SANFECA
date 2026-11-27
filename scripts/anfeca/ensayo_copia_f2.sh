@@ -18,7 +18,7 @@
 set -euo pipefail
 
 DUMP="${1:-}"; MODO="${2:-plan}"; RECREAR="${3:-}"
-COPIA="bd_anfeca_copia_pruebas_pg"; TRABAJO="bd_laravelanfeca_pruebas"
+COPIA="bd_anfeca_copia_pruebas_pg"; TRABAJO="bd_anfeca_ensayo_pruebas_pg"
 export PGHOST="${DB_HOST:-127.0.0.1}" PGPORT="${DB_PORT:-5432}" PGUSER="${DB_USERNAME:-rol_anfecalaravel}"
 SALIDA="$HOME/ANFECA_RESPALDOS/ensayo_f2/$(date +%Y%m%d_%H%M%S)"
 
@@ -32,6 +32,9 @@ case "$(pwd -P)" in
 esac
 [[ "$MODO" =~ ^(plan|simular|completo)$ ]] || falla "Modo no válido: $MODO"
 [[ -n "$DUMP" && -s "$DUMP" ]] || falla "Indique un respaldo existente: $0 /ruta/respaldo.dump"
+[[ "$TRABAJO" != "$COPIA" ]] || falla "La base de origen nunca puede ser la copia."
+[[ "$(psql -d "$TRABAJO" -At -v ON_ERROR_STOP=1 -c 'select current_database()')" == "$TRABAJO" ]] \
+    || falla "No se confirmó el acceso de solo lectura a la base de origen $TRABAJO."
 
 mkdir -p "$SALIDA" && chmod 700 "$HOME/ANFECA_RESPALDOS" "$HOME/ANFECA_RESPALDOS/ensayo_f2" "$SALIDA"
 exec > >(tee -a "$SALIDA/ensayo.log") 2>&1
@@ -67,7 +70,7 @@ CONTEOS="select 'users', count(*) from public.users union all select 'datos_soli
  union all select 'instituciones_afiliadas', count(*) from public.instituciones_afiliadas order by 1"
 diff <(psql -d "$TRABAJO" -At -F ' ' -c "$CONTEOS") <(psql -d "$COPIA" -At -F ' ' -c "$CONTEOS") \
     && echo "Conteos idénticos: la copia es actual." \
-    || echo "AVISO: la copia difiere de la base de trabajo (izquierda: trabajo; derecha: copia). Use un respaldo más reciente si importa."
+    || falla "La copia difiere de la base de ensayo. Detenido antes de ejecutar migraciones o escrituras."
 
 paso "4. Conexión efectiva de Laravel hacia la copia"
 php artisan config:clear >/dev/null
