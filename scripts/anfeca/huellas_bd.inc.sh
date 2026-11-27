@@ -7,3 +7,18 @@ huellas_bd() {
         psql -Atc "select \$q\$$t\$q\$, count(*), md5(coalesce(string_agg(x::text, E'\\n' order by x::text), '')) from $t x"
     done
 }
+
+# Genera el mismo formato que huellas_origen.txt, con una única instantánea de lectura.
+# Uso: huellas_bd_instantanea psql [opciones de conexión]
+huellas_bd_instantanea() {
+    "$@" -XqAt -v ON_ERROR_STOP=1 <<'SQL'
+begin isolation level repeatable read read only;
+select format(
+    'select %L, count(*), md5(coalesce(string_agg(x::text, chr(10) order by x::text), '''')) from %I.%I x',
+    format('%I.%I', schemaname, relname), schemaname, relname
+)
+from pg_stat_user_tables order by schemaname, relname
+\gexec
+commit;
+SQL
+}

@@ -95,23 +95,6 @@ select r.sore_id_solicitud_refrendo::bigint as id, r.sore_id_solicitud::bigint a
     r.sore_creado_en::timestamp(0) as created_at, r.sore_actualizado_en::timestamp(0) as updated_at
 from anfeca_modelo.solicitud_refrendo r;
 
-create view anfeca_compat.formaciones_academicas_solicitud as
-select f.fosc_id_formacion::bigint as id, f.fosc_id_solicitud::bigint as solicitud_id,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ORIGEN', 'nivel') as nivel_origen,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ORIGEN', 'titulo') as titulo_origen,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ULTIMO', 'nivel') as nivel_ultimo_grado,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ULTIMO', 'titulo') as titulo_ultimo_grado,
-    f.fosc_id_institucion::bigint as institucion_afiliada_id,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ORIGEN', 'url_titulo') as titulo_origen_archivo,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ORIGEN', 'url_cedula') as cedula_origen_archivo,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ULTIMO', 'url_titulo') as titulo_ultimo_grado_archivo,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ULTIMO', 'url_cedula') as cedula_ultimo_grado_archivo,
-    f.fosc_creado_en::timestamp(0) as created_at, f.fosc_actualizado_en::timestamp(0) as updated_at,
-    anfeca_compat.evento_utc(f.fosc_id_solicitud, 'FA') as formacion_completada_at,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ORIGEN', 'otro')::varchar(200) as titulo_origen_otro,
-    anfeca_compat.estudio(f.fosc_id_solicitud, 'ULTIMO', 'otro')::varchar(200) as titulo_ultimo_grado_otro
-from anfeca_modelo.formacion_solicitud f;
-
 create view anfeca_compat.documentos_probatorios_solicitud as
 select d.dosc_id_documentos::bigint as id, d.dosc_id_solicitud::bigint as solicitud_id,
     anfeca_compat.documento_vigente(d.dosc_id_solicitud, 'constancia_antiguedad_archivo')::varchar(255) as constancia_antiguedad_archivo,

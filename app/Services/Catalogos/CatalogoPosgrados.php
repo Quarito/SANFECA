@@ -4,7 +4,7 @@ namespace App\Services\Catalogos;
 
 use App\Exceptions\Catalogos\CatalogoNoDisponible;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use App\Services\Pdm\Compat\FormacionCatalogoPdm;
 use Illuminate\Support\Str;
 
 /**
@@ -79,7 +79,7 @@ class CatalogoPosgrados
     /** ¿Existen las columnas aditivas? (la aplicación funciona sin ellas con la bandera desactivada). */
     public static function persistenciaDisponible(): bool
     {
-        return self::$persistencia ??= collect(self::COLUMNAS)->every(fn ($c) => Schema::hasColumn('formaciones_academicas_solicitud', $c));
+        return self::$persistencia ??= FormacionCatalogoPdm::persistenciaDisponible(self::COLUMNAS);
     }
 
     public static function olvidarPersistencia(): void

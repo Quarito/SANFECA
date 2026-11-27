@@ -17,6 +17,7 @@ set -euo pipefail
 BASE_ESPERADA="${1:?base esperada}"; RAMA_ESPERADA="${2:?rama esperada}"; COMMIT_ESPERADO="${3:?commit esperado}"
 APP=$(pwd); IMAGEN_PHP=localhost/anfeca-php:8.5.12
 source "$(dirname "$0")/pg_herramientas.inc.sh"
+source "$(dirname "$0")/huellas_bd.inc.sh"
 valor() { grep -E "^$1=" "$APP/.env" | tail -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
 
 DISPONIBLE=$(df -Pm "$HOME" | awk 'NR==2 {print $4}')
@@ -41,14 +42,7 @@ pg_dump -Fc -f "$DESTINO/base.dump"
 registrar "pg_dump -Fc: $(du -h "$DESTINO/base.dump" | cut -f1) · SHA-256 $(cut -c1-16 "$DESTINO/base.dump.sha256")…"
 
 # Huellas de origen: conteo y MD5 de todas las filas por tabla (orden determinista).
-HUELLAS_SQL="select string_agg(format('%I.%I', schemaname, relname), ' ' order by schemaname, relname) from pg_stat_user_tables"
-huellas() {
-    local consulta=$1; shift
-    for t in $("$@" -Atc "$HUELLAS_SQL"); do
-        "$@" -Atc "select \$q\$$t\$q\$, count(*), md5(coalesce(string_agg(x::text, E'\\n' order by x::text), '')) from $t x"
-    done
-}
-huellas origen psql > "$DESTINO/huellas_origen.txt"
+huellas_bd_instantanea psql > "$DESTINO/huellas_origen.txt"
 pg_dump --schema-only --no-owner --no-privileges | grep -vE '^(--|\\restrict|\\unrestrict)' > "$DESTINO/estructura_origen.sql"
 
 # --- 3. Restauración real en base desechable ----------------------------------------------
@@ -58,11 +52,11 @@ trap 'podman pod rm -f "$POD" >/dev/null 2>&1 || true' EXIT
 podman run -d --pod "$POD" --name "$POD-pg" --tmpfs /var/lib/postgresql:rw,size=800m -v "$DESTINO:/respaldo:ro,Z" \
     -e POSTGRES_USER=rol_restauracion -e POSTGRES_PASSWORD="$CLAVE_PG" -e POSTGRES_DB=bd_restaurada_desechable "$IMAGEN_PG" >/dev/null
 for _ in $(seq 1 30); do podman exec "$POD-pg" pg_isready -q -U rol_restauracion && break; sleep 1; done
-podman exec "$POD-pg" pg_restore --no-owner --no-privileges --exit-on-error -U rol_restauracion -d bd_restaurada_desechable /respaldo/base.dump
+podman exec "$POD-pg" pg_restore --no-owner --no-privileges --exit-on-error --single-transaction -U rol_restauracion -d bd_restaurada_desechable /respaldo/base.dump
 registrar "pg_restore en PostgreSQL 18.6 desechable (sin red): correcto"
 
-destino_psql() { podman exec "$POD-pg" psql -U rol_restauracion -d bd_restaurada_desechable "$@"; }
-huellas destino destino_psql > "$DESTINO/huellas_restaurada.txt"
+destino_psql() { podman exec -i "$POD-pg" psql -U rol_restauracion -d bd_restaurada_desechable "$@"; }
+huellas_bd_instantanea destino_psql > "$DESTINO/huellas_restaurada.txt"
 podman exec "$POD-pg" pg_dump --schema-only --no-owner --no-privileges -U rol_restauracion bd_restaurada_desechable \
     | grep -vE '^(--|\\restrict|\\unrestrict)' > "$DESTINO/estructura_restaurada.sql"
 

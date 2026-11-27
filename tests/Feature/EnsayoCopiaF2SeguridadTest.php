@@ -21,9 +21,8 @@ class EnsayoCopiaF2SeguridadTest extends TestCase
     public function test_rechaza_directorios_de_despliegue_activos(): void
     {
         $script = $this->script();
-        foreach (['/var/www/ANFECA_PRUEBAS', '/var/www/ANFECA_ENSAYO', '/var/www/anfeca'] as $ruta) {
-            $this->assertStringContainsString($ruta, $script);
-        }
+        $this->assertStringContainsString('/var/www|/var/www/*)', $script);
+        $this->assertStringNotContainsString('dropdb', $script);
         $this->assertStringContainsString('Ejecute este script desde un worktree aislado', $script);
     }
 
@@ -42,13 +41,12 @@ class EnsayoCopiaF2SeguridadTest extends TestCase
         $this->assertStringNotContainsString('anfeca:pdm-migrar --informe="$SALIDA/plan.json" || true', $script);
     }
 
-    public function test_comparacion_aborta_si_fallan_consultas_o_difieren_conteos(): void
+    public function test_comparacion_bloquea_laravel_si_fallan_huellas_o_son_distintas(): void
     {
         $script = $this->script();
-        $this->assertStringContainsString('CONTEOS_ORIGEN=$(psql', $script);
-        $this->assertStringContainsString('CONTEOS_COPIA=$(psql', $script);
-        $this->assertStringContainsString('No se pudieron consultar los conteos del origen.', $script);
-        $this->assertStringContainsString('No se pudieron consultar los conteos de la copia.', $script);
-        $this->assertStringContainsString('La copia difiere de la base de ensayo.', $script);
+        $this->assertStringContainsString('ANFECA_ENSAYO_HUELLAS', $script);
+        $this->assertStringContainsString('huellas_bd_instantanea psql -d "$COPIA"', $script);
+        $this->assertStringContainsString('La copia difiere de las huellas de la base de ensayo.', $script);
+        $this->assertLessThan(strpos($script, 'php artisan'), strpos($script, 'cmp -s "$HUELLAS_ORIGEN"'));
     }
 }

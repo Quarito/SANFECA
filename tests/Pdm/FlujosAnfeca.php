@@ -187,7 +187,9 @@ trait FlujosAnfeca
         $verificar('envio');
 
         // 11. Acuse y panel siguen funcionando (leen a través del modo activo).
-        $this->actingAs($user)->get("/registro/acuse/{$solicitudId}")->assertOk()->assertHeader('content-type', 'application/pdf');
+        $acuse = $this->actingAs($user)->get("/registro/acuse/{$solicitudId}")
+            ->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF-', $acuse->getContent());
         $this->actingAs($user)->get('/panel')->assertOk();
 
         return [$user, $personaId, $solicitudId];

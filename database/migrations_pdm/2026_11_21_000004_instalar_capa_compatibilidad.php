@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Pdm\Compat\FormacionCatalogoPdm;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -31,9 +32,13 @@ return new class extends Migration
             throw new RuntimeException("La base {$bd} es la de pruebas en uso. Defina ANFECA_PDM_AUTORIZAR_EXTENSIONES=si solo en ese comando, tras un respaldo verificado.");
         }
 
-        foreach (['esquema', 'funciones_pdm', 'vistas', 'escritura'] as $archivo) {
+        foreach (['esquema', 'funciones_pdm', 'vistas'] as $archivo) {
             DB::unprepared((string) file_get_contents(database_path("sql/anfeca_modelo/anfeca_compat_{$archivo}.sql")));
         }
+
+        FormacionCatalogoPdm::actualizarVista(false);
+        FormacionCatalogoPdm::actualizarDisparador();
+        DB::unprepared(file_get_contents(database_path('sql/anfeca_modelo/anfeca_compat_escritura.sql')));
 
         // Correspondencias desde config/anfeca_pdm.php (la misma fuente que F2 y F3).
         $cat = (array) config('anfeca_pdm.catalogos');

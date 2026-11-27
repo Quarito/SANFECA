@@ -2,7 +2,7 @@
 
 namespace App\Services\Formacion;
 
-use Illuminate\Support\Facades\Schema;
+use App\Services\Pdm\Compat\FormacionCatalogoPdm;
 
 /**
  * FUENTE ÚNICA de los requisitos de la Formación Académica (etapa 1), según los dos escenarios autorizados:
@@ -25,7 +25,7 @@ class RequisitosFormacion
     /** ¿Existe la columna cuenta_con_posgrado? (la aplicación funciona sin ella). */
     public static function persistenciaDisponible(): bool
     {
-        return self::$persistencia ??= Schema::hasColumn('formaciones_academicas_solicitud', 'cuenta_con_posgrado');
+        return self::$persistencia ??= FormacionCatalogoPdm::persistenciaDisponible(['cuenta_con_posgrado']);
     }
 
     public static function olvidarPersistencia(): void
