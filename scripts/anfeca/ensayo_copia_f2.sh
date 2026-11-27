@@ -94,7 +94,8 @@ psql -d "$COPIA" -Atc "select 'tablas PDM: '||count(*) from pg_tables where sche
 psql -d "$COPIA" -Atc "select 'FK PDM: '||count(*) from pg_constraint where contype='f' and connamespace='anfeca_modelo'::regnamespace"
 
 paso "6. Plan de migración (solo lectura)"
-php artisan anfeca:pdm-migrar --informe="$SALIDA/plan.json" || true
+php artisan anfeca:pdm-migrar --informe="$SALIDA/plan.json" \
+    || falla "Falló la generación del plan PDM. No se ejecutarán las fases siguientes."
 
 if [[ "$MODO" == "simular" || "$MODO" == "completo" ]]; then
     paso "7. Simulación (escribe, concilia y revierte en la copia)"
