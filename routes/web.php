@@ -192,6 +192,21 @@ Route::middleware('guest')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| CONTROL DE SESIÓN (inactividad y expiración)
+|--------------------------------------------------------------------------
+| Sin middleware auth: atienden sesiones autenticadas y de visitantes. La
+| expiración la aplica el middleware ControlInactividad (grupo web).
+*/
+
+Route::get('/sesion/estado', [\App\Http\Controllers\SesionController::class, 'estado'])
+    ->middleware('throttle:30,1')->name('sesion.estado');
+Route::post('/sesion/continuar', [\App\Http\Controllers\SesionController::class, 'continuar'])
+    ->middleware('throttle:30,1')->name('sesion.continuar');
+Route::get('/sesion-finalizada', [\App\Http\Controllers\SesionController::class, 'finalizada'])
+    ->name('sesion.finalizada');
+
+/*
+|--------------------------------------------------------------------------
 | CATÁLOGO NACIONAL DE CÓDIGOS POSTALES (SEPOMEX)
 |--------------------------------------------------------------------------
 | Consulta de solo lectura para el registro inicial (visitantes) y la

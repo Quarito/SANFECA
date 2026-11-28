@@ -1,0 +1,26 @@
+APROBADA Inicio de sesión sin regresiones — http://127.0.0.1:8189/registro/completado
+APROBADA Navegación entre etapas sin cierres inesperados — {'/mis-datos': 200, '/registro/certificacion': 200, '/registro/completado': 200, '/registro/compromiso': 200, '/panel': 200}
+APROBADA Pantallas autenticadas incluyen el aviso oculto (sin formulario de cierre anticipado)
+APROBADA Acuse PDF y su temporizador propio se conservan
+APROBADA Cierre manual de sesión como antes
+APROBADA Visitante en el registro inicial: aviso disponible y estado de visitante
+APROBADA 419 con sesión vigente (HTML): página amigable «La página expiró», código 419, sin detalles técnicos
+APROBADA 419 con sesión vigente (AJAX): cuerpo original de Laravel intacto y marca «token» (no «sesión finalizada») — {
+    "message": "CSRF token mismatch.",
+    "exception": "Symfony\\Component\\H
+APROBADA 419 de visitante (HTML): ofrece iniciar sesión
+APROBADA 419 sin sesión autenticada (AJAX): marca «expirada», cuerpo original
+APROBADA 401 sin sesión previa: respuesta original de Laravel y SIN marca de sesión finalizada
+APROBADA 401 de una sesión que existía y ya no está en el servidor: marca «finalizada», cuerpo original
+APROBADA Continuar sesión exige CSRF (419 sin token)
+APROBADA Continuar sesión vigente: renueva al tiempo completo — {'vigente': True, 'autenticado': True, 'restante': 59}
+APROBADA Después de continuar sigue activa más allá del vencimiento original
+APROBADA La consulta de estado no prolonga la sesión (restante decreciente) — [45, 30, 15]
+APROBADA 3 s antes del límite la sesión sigue vigente (sin cierre anticipado) — t=57.0s {'vigente': True, 'autenticado': True, 'restante': 3}
+APROBADA Al cumplirse el límite la sesión termina y «continuar» no la reactiva (401 «finalizada») — t=62.0s
+APROBADA Sesión vencida: sin acceso autenticado (redirige a iniciar sesión)
+APROBADA Envío con sesión vencida: redirección a «sesión finalizada» con mensaje amigable, sin 419
+APROBADA Sin bucles: «sesión finalizada» responde 200 y ofrece iniciar sesión
+APROBADA Visitante con formulario vencido: mensaje «El tiempo del formulario terminó», sin crear cuenta
+
+Resultado: 22/22 verificaciones aprobadas.
