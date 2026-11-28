@@ -27,6 +27,16 @@ sudo install -d -m 750 -o root -g servidorweb /var/lib/anfeca8088/sepomex && sud
 
 La huella debe ser `0a8e2611b92635f47c646816b3641354ab4a554f64b058447890d77e8a052821`.
 
+Paquete SQL privado (alternativa B, recomendada): se transfiere por `scp`, nunca por GitHub.
+
+```powershell
+scp .\SEPOMEX_ANFECA_21112026.zip .\SEPOMEX_ANFECA_21112026.zip.sha256 servidorweb@192.168.7.130:/tmp/
+```
+
+```bash
+cd /tmp && sha256sum -c SEPOMEX_ANFECA_21112026.zip.sha256 && sudo unzip -q -o SEPOMEX_ANFECA_21112026.zip -d /var/lib/anfeca8088/sepomex && sudo chown -R root:servidorweb /var/lib/anfeca8088/sepomex/SEPOMEX_ANFECA && sudo chmod -R g+rX,o-rwx /var/lib/anfeca8088/sepomex/SEPOMEX_ANFECA && rm /tmp/SEPOMEX_ANFECA_21112026.zip* && (cd /var/lib/anfeca8088/sepomex/SEPOMEX_ANFECA && sha256sum -c --quiet SHA256SUMS && echo "Paquete íntegro")
+```
+
 Obtener los scripts sin tocar el checkout existente:
 
 ```bash
@@ -45,11 +55,20 @@ socket: `export PG_SOCKET=/run/postgresql-anfeca8088`.
 | 1 · Diagnóstico | `sudo -E bash 01_diagnostico.sh` | Nada | — (solo informa) |
 | 2 · Respaldo | `sudo -E bash 02_respaldo.sh` | `/var/backups/anfeca8088/fase9_<fecha>` y una base **nueva** de restauración | volcado ilegible, huellas o conteos distintos |
 | 3 · Preparación del código | `bash 03_preparar_codigo.sh` | `/home/servidorweb/anfeca_8088_fase9` (directorio nuevo) | cambios locales, commits no incluidos, código desplegado distinto del repositorio, faltan archivos de sesión/fase 9, falla Vite |
-| 4 · Diagnóstico SEPOMEX | `bash 04_diagnostico_sepomex.sh` | Nada (transacción de solo lectura) | huella distinta, estructura distinta, conflicto de nombres |
-| 5 · Aplicación | `CONFIRMAR=si RESPALDO=… bash 05_aplicar_sepomex.sh` | Solo filas faltantes en `entidad_federativa`, `alcaldia_municipio`, `colonia` | sin respaldo verificado, pendientes tras aplicar |
+| **4B · Diagnóstico SQL** (alternativa B) | `bash 04b_diagnostico_sql.sh` | Nada (`00_diagnostico_previo.sql`, solo lectura) | paquete alterado, estructura distinta de 36/173/35, «CONFLICTO» |
+| **5B · Carga SQL** (alternativa B) | `CONFIRMAR=si RESPALDO=… bash 05b_cargar_sepomex_sql.sh` | Solo filas faltantes en las tres tablas (una transacción; repite la carga para comprobar 0 inserciones) | sin respaldo, error de carga (todo se revierte), repetición con inserciones |
+| 4A · Diagnóstico Artisan (alternativa A) | `bash 04_diagnostico_sepomex.sh` | Nada (transacción de solo lectura) | huella distinta, estructura distinta, conflicto de nombres |
+| 5A · Aplicación Artisan (alternativa A) | `CONFIRMAR=si RESPALDO=… bash 05_aplicar_sepomex.sh` | Solo filas faltantes en `entidad_federativa`, `alcaldia_municipio`, `colonia` | sin respaldo verificado, pendientes tras aplicar |
 | 6 · Despliegue | `CONFIRMAR=si RESPALDO=… sudo -E bash 06_compilar_desplegar.sh` | `/var/www/ANFECA_8088` (conserva `.env` y `storage/`) | commit distinto, sin compilación |
 | 7 · Pruebas | `RESPALDO=… sudo -E bash 07_pruebas.sh` | Parte B: base **nueva** `certificacion_anfeca_pruebas_fase9` y copia `/home/servidorweb/anfeca_8088_pruebas` | — (reporta) |
 | 8 · Reversión | `RESPALDO=… [MODO=datos] [CONFIRMAR=si] sudo -E bash 08_reversion.sh` | Simula por omisión | — |
+| 8B · Reversión del catálogo | `psql … $(cat marcas) -f 05_reversion_catalogos.sql` (y `-v confirmar=si` solo con autorización) | Simula por omisión | — |
+
+**Alternativas de carga equivalentes — basta UNA.** A: importador `anfeca:sepomex` (bloques 4A y 5A; requiere PHP y el
+archivo XLS en el servidor). **B (prioritaria): scripts SQL con psql** (bloques 4B y 5B; solo requiere el paquete
+`SEPOMEX_ANFECA` y `psql`). Ambas cargan exactamente los mismos registros (comprobado: ver
+`evidencias_8088/sepomex_sql/`). Orden con la alternativa B: 1 → 2 → 3 → 4B → 5B → 6 → 7. La carga es independiente del
+despliegue del código: el catálogo puede cargarse antes del bloque 6 (la versión anterior no lo consulta).
 
 Revisar el resultado de cada bloque (cada uno deja su registro en `~/anfeca_fase9/<fecha>_<bloque>/`) antes de pasar al siguiente.
 
@@ -66,7 +85,11 @@ Revisar el resultado de cada bloque (cada uno deja su registro en `~/anfeca_fase
   y fija el commit preparado en `.commit_preparado`; el bloque 6 se niega a desplegar si ese directorio cambió.
 - **Bloque 4**: entidades existentes conciliadas (sus nombres de INEGI coinciden con SEPOMEX), «Pendientes de insertar»
   esperados en una base sin catálogo: municipios 2 478 y colonias 158 507.
-- **Bloque 5**: repetición con 0 pendientes (idempotencia) y expedientes sin cambios.
+- **Bloque 5A**: repetición con 0 pendientes (idempotencia) y expedientes sin cambios.
+- **Bloque 4B**: estructura 36/173/35; sección 5 en 0; sección 6 sin «CONFLICTO»; sección 7 sin conflictos de grafía.
+- **Bloque 5B**: «Insertados · entidades: … · municipios: … · colonias: …», «Transacción confirmada», verificación con
+  «coincide» en las 32 entidades (base sin catálogo previo) e integridad en 0; repetición con 0 inserciones. La línea
+  «Marcas de reversión» queda en `marcas_reversion.txt` y en el directorio del respaldo.
 
 ## B · Requisitos de la batería (parte B del bloque 7)
 

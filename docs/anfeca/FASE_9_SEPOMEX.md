@@ -136,13 +136,40 @@ Presentación (ajuste aprobado):
 Total con `scripts/anfeca_8088/pruebas/ejecutar_bateria.sh`: **81/81** (76 previas + 5 nuevas de presentación y colonia).
 Evidencias: `docs/anfeca/evidencias_8088/sepomex/` y `docs/anfeca/evidencias_8088/fase9/`.
 
-## 7. Aplicación en 8088
+## 7. Carga permanente y alternativas equivalentes
+
+El catálogo queda almacenado de forma permanente en `ENTIDAD_FEDERATIVA`, `ALCALDIA_MUNICIPIO` y `COLONIA`. ANFECA no
+depende del portal de Correos de México: no hay APIs externas, sesiones, descargas al desplegar o iniciar, tareas cron ni
+sincronizaciones; la ruta `GET /catalogos/codigo-postal/{cp}` consulta solo PostgreSQL y Vue.js solo esa ruta interna
+(comprobado con la aplicación y el navegador en un espacio de red sin Internet: 12/12, ver
+`evidencias_8088/sepomex_sql/`). Las actualizaciones futuras son manuales, excepcionales y autorizadas.
+
+| | Alternativa A · Artisan | **Alternativa B · SQL (prioritaria)** |
+|---|---|---|
+| Comando | `php artisan anfeca:sepomex <xls> --aplicar --base=… --sha256=…` | `psql -f SEPOMEX_CATALOGO_COMPLETO.sql` |
+| Requiere | PHP, Laravel y el XLS en el servidor | Solo `psql` y el paquete privado `SEPOMEX_ANFECA` |
+| Lectura del archivo | En cada ejecución (~2 min 47 s, 515 MB) | Una sola vez al generar el paquete (`anfeca:sepomex-sql`) |
+| Carga en base vacía | ~3 min | 8–9 s, 63 MB en el servidor |
+| Registros | Idénticos (misma lectura y consolidación: `CatalogoSepomex`) | Idénticos |
+
+Generador: `php artisan anfeca:sepomex-sql <xls> --salida=<directorio fuera de Git> --sha256=<huella>` produce
+`00_diagnostico_previo.sql` … `05_reversion_catalogos.sql`, el maestro, `reporte_duplicados.csv` y
+`conteos_por_entidad.csv`. Documentación del paquete: `docs/anfeca/SEPOMEX_PAQUETE_SQL.md` (es su `README.md`). Pruebas:
+`scripts/anfeca_8088/sepomex_sql/` (escenarios con datos ficticios, prueba sin Internet y empaquetador).
+
+Conciliación común a ambas alternativas: la entidad se reconoce por su nombre (sin acentos ni mayúsculas) y se reutiliza
+su identificador real; una entidad nueva toma la clave oficial si está libre, el siguiente valor de la secuencia si la
+ocupa otra entidad del catálogo, y se detiene si la ocupa un nombre ajeno. Las secuencias SERIAL atrasadas se llevan al
+máximo existente, nunca hacia abajo.
+
+## 8. Aplicación en 8088
+
 
 Procedimiento completo por bloques en `docs/anfeca/OPERACION_8088_FASE9.md` (rama `integracion/fase9-8088`). Resumen:
 
 1. Copiar el archivo oficial a `/var/lib/anfeca8088/sepomex/` y anotar su `sha256sum`.
 2. Respaldo verificado: `scripts/anfeca_8088/servidor/respaldo_8088.sh`.
 3. Desplegar la rama, `php artisan config:cache` y `php artisan view:clear`; compilar el frontend (`npm ci && npm run build`).
-4. `php -d memory_limit=1024M artisan anfeca:sepomex <archivo>` (diagnóstico) y, si no hay incidencias,
-   `… --aplicar --base=certificacion_anfeca --sha256=<huella>`; repetir el diagnóstico (0 faltantes).
+4. Alternativa B (prioritaria): bloques 4B y 5B con el paquete SQL. Alternativa A: `php -d memory_limit=1024M artisan
+   anfeca:sepomex <archivo>` (diagnóstico) y `… --aplicar --base=certificacion_anfeca --sha256=<huella>`. Basta una.
 5. `php artisan anfeca:verificar-esquema` y las pruebas de `scripts/anfeca_8088/pruebas/` con datos ficticios.

@@ -1,0 +1,289 @@
+{
+ "archivo": "CPdescarga.xls",
+ "fuente_oficial": "https://www.correosdemexico.gob.mx/SSLServicios/ConsultaCP/CodigoPostal_Exportar.aspx",
+ "version_sepomex": "21/11/2026",
+ "fecha_descarga": "no registrada; el archivo dentro del ZIP recibido tiene fecha 21/11/2026 00:16",
+ "sha256": "0a8e2611b92635f47c646816b3641354ab4a554f64b058447890d77e8a052821",
+ "registros_originales": 159527,
+ "registros_procesados": 158507,
+ "registros_consolidados": 1020,
+ "colonias_con_registros_consolidados": 939,
+ "nombres_con_variante_de_acentos_o_mayusculas": 14,
+ "entidades": 32,
+ "municipios": 2478,
+ "colonias": 158507,
+ "total_registros_tres_tablas": 161017,
+ "codigos_postales_distintos": 31860,
+ "codigos_postales_con_cero_inicial": 685,
+ "inconsistencias": {
+  "estructura": "ninguna (encabezado oficial, claves numéricas, longitudes dentro del modelo)",
+  "claves_con_dos_nombres": 0,
+  "municipios_que_solo_difieren_por_clave": 0,
+  "tipo_de_asentamiento_no_representable": "1020 registros que solo difieren en el tipo se consolidan (reporte_duplicados.csv)"
+ },
+ "restricciones_de_uso": "Correos de México: «se proporciona en forma gratuita para uso particular, no estando permitida su comercialización, total o parcial, ni su distribución a terceros bajo ningún concepto». Uso interno de ANFECA; no publicar el archivo ni los SQL derivados.",
+ "generado": "2026-11-28T02:38:21+00:00",
+ "segundos": 169.5,
+ "memoria_pico_mb": 515,
+ "paquete": "SEPOMEX_ANFECA",
+ "orden_de_ejecucion": [
+  "sql/00_diagnostico_previo.sql (solo lectura)",
+  "sql/SEPOMEX_CATALOGO_COMPLETO.sql (01, 02, 03 y 04 en una transacción)",
+  "sql/04_verificacion_catalogos.sql (solo lectura, repetible)",
+  "sql/05_reversion_catalogos.sql (solo si se autoriza; simula por omisión)"
+ ],
+ "archivos": {
+  "README.md": {
+   "sha256": "79361722950c774031b6dce25e7d26c994b29103fd09b971ca2ae53e18819154",
+   "bytes": 12500
+  },
+  "evidencias/conteos_por_entidad.csv": {
+   "sha256": "1f30efc2546aed541fa8c74f082b2063cc66014fab73db032f248b45792fe09c",
+   "bytes": 3220
+  },
+  "evidencias/pruebas.sql": {
+   "sha256": "b5cb051e9720089f909674c909629aae4c677204641dc73c25e042ef8bae02fd",
+   "bytes": 6661
+  },
+  "evidencias/reporte_duplicados.csv": {
+   "sha256": "67d1414a8b413fbd87f7b593972f5ad8b4893d7414e83f15bbba66f466e4e76d",
+   "bytes": 71700
+  },
+  "evidencias/reporte_importacion.txt": {
+   "sha256": "8cc278f9930908318d4759bbb14d64fc1a8fe385b15e8e0ed9e7a394b214c8a1",
+   "bytes": 10543
+  },
+  "evidencias/escenarios/e10_artisan.json": {
+   "sha256": "a54ab409098566f98fcb98dbfba69b0181c87e8229aae09fe40581f15c95144a",
+   "bytes": 704
+  },
+  "evidencias/escenarios/e10_diagnostico_sobre_sql.json": {
+   "sha256": "e8866ff7c945b9d7480264e801b12ef0f23e622a9cd60a2c4a7904bc631d9d56",
+   "bytes": 708
+  },
+  "evidencias/escenarios/e10_sql_sobre_artisan.log": {
+   "sha256": "c62ff275ce1122831c1028cad2fbbd40e69efcdd03e7562fcaed0494a56bbb62",
+   "bytes": 18258
+  },
+  "evidencias/escenarios/e10b_artisan.json": {
+   "sha256": "2e4aca5d2599ce17188e159494c934c28e3d5e3abbe7bb5ccce8ce530ad8b0f9",
+   "bytes": 709
+  },
+  "evidencias/escenarios/e11_cp.txt": {
+   "sha256": "ba010eb459db881cd499332e960d7d243c819cf1d35020cb154ff33483fd9b5d",
+   "bytes": 301
+  },
+  "evidencias/escenarios/e12_esquema.txt": {
+   "sha256": "44872cbbab9d05ea0e53ee92f7a331b30ab1c3c1891387c575163a5f2c238a2c",
+   "bytes": 380
+  },
+  "evidencias/escenarios/e1_carga.log": {
+   "sha256": "3290398a632ba4bb997cdec06e92440da785ef5cf8a7b72364fd9b2fbd68ddf2",
+   "bytes": 17541
+  },
+  "evidencias/escenarios/e1b_01_insert_entidad_federativa.log": {
+   "sha256": "d2487794fea1efa3b75e0281c28870e6da6ebc16062222d096b2068988fbc055",
+   "bytes": 420
+  },
+  "evidencias/escenarios/e1b_02_insert_alcaldia_municipio.log": {
+   "sha256": "444e1dc048319dfcd4c9e5263d331f919f17ca81634c74ee97247996d0902997",
+   "bytes": 346
+  },
+  "evidencias/escenarios/e1b_03_insert_colonia.log": {
+   "sha256": "b39b741cd3a0edc7fe34d5650fa28f3a47523fc0b793345821b05230ddaa12df",
+   "bytes": 334
+  },
+  "evidencias/escenarios/e1m_carga.log": {
+   "sha256": "7bcd9d9a5dbd32edb05f21c4b36905867ae98bc7befa76937bfd06111f822f42",
+   "bytes": 17550
+  },
+  "evidencias/escenarios/e2_carga.log": {
+   "sha256": "73930208d3743011bb94f36bdf956511010076a77d4f3cc28f4ddfd85eaca4fa",
+   "bytes": 16180
+  },
+  "evidencias/escenarios/e3_carga.log": {
+   "sha256": "8ab9c83e1bf7a7a5c69f947ed79eebb99f1dd0a24288191f5f7df7684bcd17ac",
+   "bytes": 16428
+  },
+  "evidencias/escenarios/e4_carga.log": {
+   "sha256": "d22e89a08b522fe428b829dd4bfe98e08ba2f3ddc4435f61bda959eed51df5c5",
+   "bytes": 17993
+  },
+  "evidencias/escenarios/e5a_carga.log": {
+   "sha256": "e327fb6a24c951e7b1695bed8816942294f8a5ae80183c06a297990c35c36f7e",
+   "bytes": 8463
+  },
+  "evidencias/escenarios/e5b_carga.log": {
+   "sha256": "d5af67019f9903771dacd481b7b0f98d8f70aa764145a0d2e1d89287fd2cecbd",
+   "bytes": 9739
+  },
+  "evidencias/escenarios/e5c_carga.log": {
+   "sha256": "6829376dd39983a896e02dc91e72dd91e74523b2ba2261b9972d8e45c166879f",
+   "bytes": 8449
+  },
+  "evidencias/escenarios/e5d_carga.log": {
+   "sha256": "b44367ad4969055c6d850e40d65d16b8ee05787c38452b77ea34a16a81742a7f",
+   "bytes": 9719
+  },
+  "evidencias/escenarios/e6_01_insert_entidad_federativa.log": {
+   "sha256": "d322f6cf563cc9cbcdc7630042170bff33dd142f033ceeeaaecea02cbddf8443",
+   "bytes": 356
+  },
+  "evidencias/escenarios/e6_02_insert_alcaldia_municipio.log": {
+   "sha256": "99efccef2fe84661d09b1151a5c5a5787800dd371a9c70fb7199765a87de1a03",
+   "bytes": 356
+  },
+  "evidencias/escenarios/e6_03_insert_colonia.log": {
+   "sha256": "8c4536e8576a85b2f8398d6c2336e4b63df58742c6091004a3a4e2962c63514f",
+   "bytes": 334
+  },
+  "evidencias/escenarios/e6_repeticion.log": {
+   "sha256": "595b5349cd4baf854a3440ff93c1db3693449ab5e6871b389c44af492e3b984d",
+   "bytes": 18249
+  },
+  "evidencias/escenarios/e7a_carga.log": {
+   "sha256": "779181ec6507d784b8f75df7872615d7747a5c82a1616b139af4294d0476dbf2",
+   "bytes": 9483
+  },
+  "evidencias/escenarios/e7b_carga.log": {
+   "sha256": "951362ecf877fd157cf13bd4f59733389c157c90e6ad46c5afe90658c640c200",
+   "bytes": 9739
+  },
+  "evidencias/escenarios/e7b_rc": {
+   "sha256": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+   "bytes": 2
+  },
+  "evidencias/escenarios/e8_carga.log": {
+   "sha256": "5d65564b7f8630c7a2b1490adde4303d1e7201b8b0675379c2e0db9c7ef85f05",
+   "bytes": 16201
+  },
+  "evidencias/escenarios/e8_preparacion.txt": {
+   "sha256": "4992370b7363c45850c78fdae161eea508b8aee8a88b5566fb31be85a33d0da2",
+   "bytes": 92
+  },
+  "evidencias/escenarios/r_aplicada.log": {
+   "sha256": "ecf7315d6460fa9791b2ddeb65154ef3df7b72a0b5f4a04569484dbab9e4debd",
+   "bytes": 584
+  },
+  "evidencias/escenarios/r_carga.log": {
+   "sha256": "1435938df886b3c782474bdfb903d5f6f0f6bf906edaa410f847c6aa6b6ef632",
+   "bytes": 16431
+  },
+  "evidencias/escenarios/r_marcas.txt": {
+   "sha256": "93756016ded86dc46a1d3377a38128fa1e38d966d34f4eece0c1fdba03d58edc",
+   "bytes": 109
+  },
+  "evidencias/escenarios/r_simulacion.log": {
+   "sha256": "6bf454896da1cc75992409eff839d0afc389180d6835a9ff5829d87c0c7c41a3",
+   "bytes": 636
+  },
+  "evidencias/escenarios/r_sin_marcas.log": {
+   "sha256": "5302843f714a870a1c1432c064f641e9d02d696e6218f194a32adcaaaec68fc2",
+   "bytes": 100
+  },
+  "evidencias/escenarios/resultados.txt": {
+   "sha256": "41dace4071e38eaf343a51f0e85141bf4a5ecb64f683fea2d902cc6fd8d2ec01",
+   "bytes": 5072
+  },
+  "evidencias/sin_internet/01_red.txt": {
+   "sha256": "fe8d39544cba6d990c1a966902a039192c109e9747b35ef92027dde67e24b949",
+   "bytes": 164
+  },
+  "evidencias/sin_internet/02_codigo_postal.txt": {
+   "sha256": "8016f0b172f17554fe814e6de048284f2111d3319fe95c4836dc1a3b30b80133",
+   "bytes": 1588
+  },
+  "evidencias/sin_internet/03_navegador.txt": {
+   "sha256": "7662055f68e71f66cd555a884cfd04e67a98f0f500d23c6ff1d20dcf081820b0",
+   "bytes": 1322
+  },
+  "evidencias/sin_internet/04_clientes_http.txt": {
+   "sha256": "4b540ff84947da2ebb250afc47a7fe682a75be6cdd8b2f395f2982233d0d9fac",
+   "bytes": 1810
+  },
+  "evidencias/sin_internet/php_s.log": {
+   "sha256": "f36680718f51d3d00fd3b3683352c5ea554e8e4faa075a20d795af24bef1f356",
+   "bytes": 20593
+  },
+  "evidencias/sin_internet/capturas/cp_02_mis_datos.png": {
+   "sha256": "f49a847139380c297d10de566c5453f4d33d10f2537e51d453f0aafb48cb93d6",
+   "bytes": 200953
+  },
+  "evidencias/sin_internet/capturas/cp_03_modificar.png": {
+   "sha256": "79e9272649ad6d1b364ecf775cc062b8dbf98e9a6bdc5ff32d7e8fdbadff0be6",
+   "bytes": 209808
+  },
+  "evidencias/sin_internet/capturas/cp_04_autorizado.png": {
+   "sha256": "665d5694a458742491ac11d8ad25b88a44cbd399a0535579ab64373a97035410",
+   "bytes": 196043
+  },
+  "herramientas/CatalogoSepomex.php": {
+   "sha256": "1773091f7741b886fbbbc241e5d2e478e93c6f6f7c3ff17988241b6cc478d2d1",
+   "bytes": 5710
+  },
+  "herramientas/GenerarSqlSepomex.php": {
+   "sha256": "4b658f71266f76029ec46aefd3c801eb42265f5e26208a9df99c49609c5f8358",
+   "bytes": 48387
+  },
+  "herramientas/ImportarSepomex.php": {
+   "sha256": "1a5883a7eadfdfe337cc66e76367c8206c4543a9b42488e32857d7af9f7bef5f",
+   "bytes": 12695
+  },
+  "herramientas/LectorSepomex.php": {
+   "sha256": "4c674edf4b5be349016518f8176de1a30f942fff514442c730e9229fe89a4bd8",
+   "bytes": 5474
+  },
+  "herramientas/empaquetar.sh": {
+   "sha256": "78eca4344a6539bbbbb9fb39ef627fd4ee52cbecc299db020cf4a86864077919",
+   "bytes": 6889
+  },
+  "herramientas/generar_sql.sh": {
+   "sha256": "94dc2023fb13afd8a7775966441c2f7f634b853ae087236e4670151e20a0bcda",
+   "bytes": 444
+  },
+  "herramientas/levantar_lo.py": {
+   "sha256": "011aeb61fac9ece8ed4d72b3476db66e7859592590cefee70c5d8f53622ff6f6",
+   "bytes": 418
+  },
+  "herramientas/probar_escenarios.sh": {
+   "sha256": "e47a16f6a708d00bd98a26bc4cecb0f624b8b068192001ca0d9106512d936dfd",
+   "bytes": 19855
+  },
+  "herramientas/probar_sin_internet.sh": {
+   "sha256": "ab88721754ac23081e1dc70747f26ba38f76c0bbc486304a804e369a3f039df7",
+   "bytes": 3539
+  },
+  "original/CPdescarga.xls": {
+   "sha256": "0a8e2611b92635f47c646816b3641354ab4a554f64b058447890d77e8a052821",
+   "bytes": 72515584
+  },
+  "sql/00_diagnostico_previo.sql": {
+   "sha256": "91f63000e83dcfb11b74874a2725855840cfc416ec88f415838c4e8288c1b178",
+   "bytes": 158816
+  },
+  "sql/01_insert_entidad_federativa.sql": {
+   "sha256": "af50e1fecee3c522e59bff2357084fb44e22d653c27c67478c2e7ad06ef8abf9",
+   "bytes": 30854
+  },
+  "sql/02_insert_alcaldia_municipio.sql": {
+   "sha256": "3b91bcefc6d7bee9e71dc6c338cedf1dda5d70efa1af50758a71cb24e79ecc71",
+   "bytes": 172901
+  },
+  "sql/03_insert_colonia.sql": {
+   "sha256": "30753a782c74a5e86c64942d2fd3725bbb36c82f32aa501682bef90764082731",
+   "bytes": 9121857
+  },
+  "sql/04_verificacion_catalogos.sql": {
+   "sha256": "64e5298c89503edd957ca436180416f9e0cac9116f9b37dcf9b98d7e51e67710",
+   "bytes": 12278
+  },
+  "sql/05_reversion_catalogos.sql": {
+   "sha256": "89d5a7d976ae2f91916a90345281f3a09969330e28313bcb8d06b344d7f03c1b",
+   "bytes": 4113
+  },
+  "sql/SEPOMEX_CATALOGO_COMPLETO.sql": {
+   "sha256": "1974e2b477b62c868ea69a513cf2e5511ce560e5851791cd9df7af8c15a5ef1d",
+   "bytes": 11052
+  }
+ }
+}

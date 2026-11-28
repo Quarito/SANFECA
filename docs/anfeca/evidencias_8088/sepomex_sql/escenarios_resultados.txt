@@ -1,0 +1,37 @@
+APROBADA E1 carga completa en base vacía (sx3_e1_vacia) — Insertados · entidades: 32 · municipios: 2478 · colonias: 158507 · 8.2 s totales
+APROBADA E1 conteos 32/2478/158507 — 32/2478/158507
+APROBADA E1 huella exacta del catálogo en las 32 entidades (04)
+APROBADA E11 códigos postales con cero inicial conservados (685 distintos)
+APROBADA E11 consulta de 01000, 04510, 06600 y 09000 — 01000 Álvaro Obregón, Ciudad de México: San Ángel;04510 Coyoacán, Ciudad de México: Universidad Nacional Autónoma de México;06600 Cuauhtémoc, Ciudad de
+APROBADA E12 esquema de 36 tablas idéntico al SQL oficial tras la carga — Tablas 36/36 · atributos 173 · FK 35/35 · índices 96 (60 explícitos + 36 de PK) · secuencias 36
+APROBADA E9 integridad referencial: huérfanos, duplicados, CP inválidos, FK validadas y secuencias = 0
+INFO espacio: tres tablas 18 MB (datos e índices) · base completa 27 MB · paquete sql/ 9.1M
+INFO memoria: cliente psql pico 13 MB · proceso servidor de la sesión pico 62 MB · 8.6 s totales (rc=0)
+APROBADA E6 segunda ejecución del maestro no inserta nada — Insertados · entidades: 0 · municipios: 0 · colonias: 0
+APROBADA E6 01_insert_entidad_federativa.sql ejecutado de nuevo por separado: 0 insertados — Insertados en entidad_federativa: 0
+APROBADA E6 02_insert_alcaldia_municipio.sql ejecutado de nuevo por separado: 0 insertados — Insertados en alcaldia_municipio: 0
+APROBADA E6 03_insert_colonia.sql ejecutado de nuevo por separado: 0 insertados — Insertados en colonia: 0
+APROBADA E6 conteos sin cambio tras cuatro ejecuciones adicionales — 32/2478/158507
+APROBADA E1b la carga por archivos separados produce el mismo contenido que el maestro — 32/2478/158507
+APROBADA E2 reutiliza las 32 entidades existentes sin modificar nombres ni identificadores — Insertados · entidades: 0 · municipios: 2478 · colonias: 158507
+APROBADA E3 inserta solo lo faltante y conserva los municipios y colonias previos (incluida una ajena al catálogo) — Insertados · entidades: 0 · municipios: 2475 · colonias: 158505 · 32/2478/158508
+APROBADA E3 la verificación distingue la entidad con registros adicionales
+APROBADA E4 resuelve referencias con los ids reales (Jalisco = 30, Guadalajara = 90000) y ajusta secuencias sin colisiones — Insertados · entidades: 16 · municipios: 2475 · colonias: 158507 · entidades nuevas 33–48
+APROBADA E4 secuencias SERIAL iguales o mayores al máximo (nunca disminuidas)
+APROBADA E12 esquema de 36 tablas intacto en E4
+APROBADA E5a municipio duplicado en la base — rc=3 · EPOMEX_CATALOGO_COMPLETO.sql:100: ERROR:  SEPOMEX DETENIDO: ALCALDIA_MUNICIPIO con nombres duplicados en la base: Guadalajara (entidad 14) · conteos 32/2/0 → 32/2/0
+APROBADA E5b clave oficial ocupada por una entidad ajena al catálogo — rc=3 · ERROR:  SEPOMEX DETENIDO: ENTIDAD_FEDERATIVA 9 es «Entidad Ficticia de Prueba» y SEPOMEX indica «Ciudad de México»; se requiere revisión. · conteos 1/0/0 → 1/0/0
+APROBADA E5c municipio existente con grafía distinta (no se duplica ni se renombra) — rc=3 · ERROR:  SEPOMEX DETENIDO: alcaldia_municipio «Jalisco»: 1 nombres existentes difieren del catálogo solo en acentos, mayúsculas o espacios; se requiere revisión. · conteos 32/1/0 → 32/1/0
+APROBADA E5d entidad registrada dos veces — rc=3 · ERROR:  SEPOMEX DETENIDO: la entidad «Jalisco» está registrada 2 veces; se requiere revisión. · conteos 2/0/0 → 2/0/0
+APROBADA E7a error a mitad de las colonias: no queda ninguna inserción (ni entidades ni municipios) — rc=3 · ERROR:  value too long for type character varying(150) · conteos 0/0/0 → 0/0/0
+APROBADA E7b conexión terminada durante las colonias: la transacción se revierte por completo — rc=2 · 0/0/0
+APROBADA E8 domicilios, personas, usuarios, solicitudes y documentos idénticos tras la carga — 3 domicilios · 24 filas · ad5d9c54e3aa6f3d1f4e0d220472b2cb
+APROBADA E10 Artisan y SQL producen el mismo contenido en base vacía (incluidos ids de entidad) — 158507 filas · md5 7534f1c3db93 / 7534f1c3db93
+APROBADA E10 Artisan y SQL equivalentes con ids distintos y secuencias atrasadas (escenario E4) — 32/2478/158508
+APROBADA E10 el diagnóstico Artisan sobre la base cargada con SQL no encuentra pendientes
+APROBADA E10 el SQL sobre la base cargada con Artisan no inserta nada — Insertados · entidades: 0 · municipios: 0 · colonias: 0
+APROBADA R1 la reversión simula por omisión y no modifica nada — 32/2478/158509
+APROBADA R2 reversión aplicada: elimina solo lo cargado; conserva lo previo y el municipio con una colonia posterior — 32/4/4
+APROBADA R3 sin marcas la reversión no hace nada
+Resultado: 33/33 verificaciones aprobadas.
+Bases de prueba creadas (se conservan como evidencia): sx3_e1_vacia sx3_e1m_memoria sx3_e1b_separados sx3_e2_entidades sx3_e3_previos sx3_e4_ids sx3_e5a_municipio_duplicado sx3_e5b_clave_ocupada sx3_e5c_grafia sx3_e5d_entidad_ambigua sx3_e7a_error sx3_e7b_cancelada sx3_e8_solicitantes sx3_e10_artisan sx3_e10b_artisan_ids sx3_r_reversion

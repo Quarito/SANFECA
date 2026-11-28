@@ -1,0 +1,15 @@
+-- Clientes HTTP de servidor (Http::, curl, Guzzle, sockets):
+   ninguno
+-- URL absolutas en el código del navegador (resources/js):
+   ninguna
+-- fetch() del navegador: todas usan rutas relativas o URL internas entregadas por Laravel:
+resources/js/components/VisorDocumento.vue:88:        const r = await fetch(props.url, { credentials: 'same-origin', signal: controlador.signal, headers: { Accept: 'application/pdf,image/*' } });
+resources/js/components/PanelRevisionDocumental.vue:68:        const r = await fetch(`${props.urlBase}/${props.campo}/revisiones`, {
+resources/js/components/FormacionAcademica.vue:231:        const respuesta = await fetch(`${props.catalogo.url}?${parametros}`, {
+resources/js/components/FormacionAcademica.vue:326:    const r = await fetch(`${props.catalogoLicenciaturas.url}?${parametros}`, {
+resources/js/components/BandejaSolicitudes.vue:52:        const r = await fetch(`${props.urlApi}?${parametros}`, {
+resources/js/components/SeguimientoRegistros.vue:39:        const r = await fetch(`${props.urlApi}?${p}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin', signal: controlador.signal });
+resources/js/components/SeleccionCertificacion.vue:111:        const respuesta = await fetch(
+resources/js/components/ExpedienteDocumentos.vue:33:    const r = await fetch(`${props.urlBase}/${campo}/revisiones`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+resources/js/components/CoordinacionInicio.vue:18:        const respuesta = await fetch(props.urlIndicadores, {
+resources/js/composables/codigoPostal.js:39:            const r = await fetch(`/catalogos/codigo-postal/${cp}`, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
