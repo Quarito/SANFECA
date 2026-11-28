@@ -24,7 +24,7 @@ paso "SELinux y permisos"
 getenforce; ls -ldZ "$APP" "$APP/storage" "$APP/bootstrap/cache" 2>/dev/null; semanage port -l 2>/dev/null | grep -E '\b(8088|5488)\b'
 pedir_clave
 paso "PostgreSQL (consultas de solo lectura)"
-leer "select version(), current_setting('data_directory'), inet_server_port(), (select system_identifier from pg_control_system())"
+leer "select concat_ws(' · ', current_database(), 'puerto ' || current_setting('port'), 'rol ' || current_user, 'iniciado ' || pg_postmaster_start_time()::timestamp(0), version())"
 paso "Estructura oficial (36 tablas)"; DIR_APP="$APP" artisan anfeca:verificar-esquema || echo "(el comando no existe en la versión desplegada; se repite en el bloque 4)"
 leer "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE'"
 paso "Registros geográficos existentes"

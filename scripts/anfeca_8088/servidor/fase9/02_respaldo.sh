@@ -7,7 +7,7 @@ FECHA=$(date +%Y%m%d_%H%M%S); DEST="$RESPALDOS/fase9_$FECHA"; BD_RESTAURACION="$
 install -d -m 700 "$DEST"
 pedir_clave
 paso "Identidad del clúster (debe ser el exclusivo del 8088)"
-leer "select current_setting('data_directory'), inet_server_port()" | tee "$DEST/cluster.txt"
+leer "select concat_ws(' · ', current_database(), 'puerto ' || current_setting('port'), 'rol ' || current_user, 'iniciado ' || pg_postmaster_start_time()::timestamp(0), version())" | tee "$DEST/cluster.txt"
 paso "Volcado lógico de $BD (pg_dump -Fc) y roles"
 "$PG_BIN/pg_dump" -U "$ROL_APP" -d "$BD" -Fc -f "$DEST/$BD.dump" || alto "Falló pg_dump."
 "$PG_BIN/pg_restore" -l "$DEST/$BD.dump" > "$DEST/contenido_volcado.txt" || alto "El volcado no es legible."
