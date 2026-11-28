@@ -86,12 +86,21 @@ return [
         'O' => 'Otro',
     ],
 
+    // Nombres internos de las áreas (reglas, equivalencias y pantallas). La base es la referencia: cada nombre se
+    // resuelve a la fila existente de AREA_CERTIFICACION por su descripción exacta o por una equivalente (sin
+    // distinguir acentos, mayúsculas ni signos). Nunca se crea un área duplicada.
     'areas_certificacion' => [
         'Contaduría Pública',
         'Administración',
         'Informática Administrativa',
         'Negocios Internacionales',
         'Disciplinas vinculadas al ámbito económico-administrativo',
+    ],
+    'areas_certificacion_equivalentes' => [
+        'Disciplinas vinculadas al ámbito económico-administrativo' => [
+            'Otras Disciplinas Vinculadas al Ámbito Económico Administrativo',
+            'Otras disciplinas vinculadas al ámbito económico-administrativo',
+        ],
     ],
 
     'tipos_personal_academico' => [

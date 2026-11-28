@@ -72,7 +72,9 @@ class CargarCatalogosAnfeca extends Command
                 $this->asegurar('nivel_profesional', ['nipr_nivel_profesional' => $nivel]);
             }
             foreach ((array) config('anfeca_8088.areas_certificacion') as $area) {
-                $this->asegurar('area_certificacion', ['area_descripcion' => $area]);
+                if (\App\Services\Anfeca\Catalogo::area($area) === null) {   // una equivalente existente evita el duplicado
+                    $this->asegurar('area_certificacion', ['area_descripcion' => $area]);
+                }
             }
             foreach ((array) config('anfeca_8088.tipos_personal_academico') as $tipo) {
                 $this->asegurar('tipo_personal_academico', ['tipa_descripcion' => $tipo], ['tipa_estado' => true]);

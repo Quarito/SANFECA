@@ -93,7 +93,7 @@ final class Tramites
             'fecha_envio' => $this->momento($f->enviada_en),
             'created_at' => $this->momento($f->creada_en) ?? $this->momento($f->fecha_registro),
             'tipo_personal' => $f->tipo_personal,
-            'area_certificacion' => $f->area_certificacion,
+            'area_certificacion' => Catalogo::areaInterna($f->area_certificacion),   // nombre interno de las reglas
             'compromiso_aceptado' => $f->compromiso_en !== null,
             'compromiso_aceptado_en' => $this->momento($f->compromiso_en),
             'numero_certificado' => $f->numero_certificado,

@@ -157,7 +157,7 @@ final class ConsultaRefrendo
             return false;
         }
         foreach ($this->historico->dePersona($curp, $certificacion) as $c) {
-            if (mb_strtolower(trim((string) $c->area_certificacion)) === mb_strtolower(trim($area))) {
+            if (Catalogo::mismaArea((string) $c->area_certificacion, $area)) {
                 return false;
             }
         }

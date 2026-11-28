@@ -97,10 +97,36 @@ final class Catalogo
 
     // ---------------------------------------------------------------- solicitud
 
+    /** Nombre interno → AREA_ID existente (descripción exacta o equivalente). Acepta también la descripción de la base. */
     public static function area(string $descripcion): ?int
     {
-        return self::recordar("area:{$descripcion}", fn () => DB::table('area_certificacion')
-            ->where('area_descripcion', $descripcion)->value('area_id_area_certificacion'));
+        return self::recordar("area:{$descripcion}", function () use ($descripcion) {
+            $interna = self::areaInterna($descripcion);
+            $claves = array_map(self::clave(...), array_merge([$interna], (array) config("anfeca_8088.areas_certificacion_equivalentes.{$interna}", [])));
+            $ids = DB::table('area_certificacion')->orderBy('area_id_area_certificacion')->get()
+                ->filter(fn ($a) => in_array(self::clave($a->area_descripcion), $claves, true))->pluck('area_id_area_certificacion');
+
+            return $ids->isEmpty() ? null : (int) $ids->first();
+        });
+    }
+
+    /** Descripción de la base (o texto histórico) → nombre interno de config/anfeca_8088.php; si no hay equivalencia, el mismo texto. */
+    public static function areaInterna(?string $descripcion): string
+    {
+        $clave = self::clave($descripcion);
+        foreach ((array) config('anfeca_8088.areas_certificacion') as $interna) {
+            $equivalentes = array_merge([$interna], (array) config("anfeca_8088.areas_certificacion_equivalentes.{$interna}", []));
+            if (in_array($clave, array_map(self::clave(...), $equivalentes), true)) {
+                return $interna;
+            }
+        }
+
+        return trim((string) $descripcion);
+    }
+
+    public static function mismaArea(?string $a, ?string $b): bool
+    {
+        return self::clave(self::areaInterna($a)) === self::clave(self::areaInterna($b));
     }
 
     public static function tipoPersonal(string $descripcion): ?int
