@@ -7,7 +7,8 @@ pedir_clave
 paso "Paquete SQL"; exigir_paquete
 paso "Conexión real: base, puerto, versión y usuario"
 leer "select concat_ws(' · ', current_database(), 'puerto ' || current_setting('port'), version(), 'rol ' || current_user, pg_size_pretty(pg_database_size(current_database())))"
-paso "Estructura oficial de $BD"; verificar_estructura_sql || alto "La base no tiene la estructura oficial de 36 tablas."
+[ -f "$PREPARACION/artisan" ] || alto "Ejecute primero el bloque 3: la verificación completa del esquema usa su anfeca:verificar-esquema."
+paso "Estructura oficial de $BD"; verificar_estructura_sql; exigir_esquema_oficial artisan_prep
 paso "Espacio y memoria disponibles"
 D=$("$PG_BIN/psql" -X -U "$ROL_APP" -d "$BD" -Atc 'show data_directory' 2>/dev/null); df -h "${D:-/var/lib/pgsql}" 2>/dev/null || df -h /var/lib/pgsql 2>/dev/null || df -h /
 echo "Requerido: ~200 MB libres en el volumen de datos (18 MB de tablas + WAL y margen); memoria: ~65 MB en la sesión."

@@ -3,6 +3,7 @@
 # Uso: CONFIRMAR=si RESPALDO=/var/backups/anfeca8088/fase9_<fecha> sudo -E bash 06_compilar_desplegar.sh
 source "$(dirname "$0")/comun.inc.sh"
 exigir_confirmacion; exigir_respaldo
+paso "Estructura oficial antes de desplegar"; exigir_esquema_oficial artisan_prep
 [ -f "$PREPARACION/public/build/manifest.json" ] || alto "Falta la compilación de Vite (bloque 3)."
 [ "$(git -C "$PREPARACION" rev-parse HEAD)" = "$(cat "$PREPARACION/.commit_preparado" 2>/dev/null)" ] || alto "$PREPARACION cambió después del bloque 3."
 git -C "$PREPARACION" merge-base --is-ancestor "$COMMIT_ESPERADO" HEAD || alto "$PREPARACION no contiene $COMMIT_ESPERADO."

@@ -42,6 +42,44 @@ exigir_respaldo() {
     (cd "$RESPALDO" && sha256sum -c --quiet SHA256SUMS) || alto "El respaldo $RESPALDO no supera la verificación de huellas."
     echo "Respaldo verificado: $RESPALDO"
 }
+# Estructura con anfeca:verificar-esquema, clasificada. $1 = artisan (aplicación desplegada) o artisan_prep (preparación).
+# Devuelve 0 coincide · 2 diferencias · 3 sin conexión · 4 sin SQL de referencia · 5 comando inexistente · otro = error.
+# Las versiones anteriores del comando devolvían 1 en todos los casos: se clasifican por su salida.
+verificar_esquema() {
+    local ejecutor="$1" rc salida="$SALIDA/esquema_${1}_$(date +%H%M%S).txt"
+    if ! $ejecutor list --raw 2>/dev/null | grep -q '^anfeca:verificar-esquema\b'; then
+        echo "ESQUEMA · COMANDO INEXISTENTE: esta versión no tiene anfeca:verificar-esquema."; return 5
+    fi
+    $ejecutor anfeca:verificar-esquema > "$salida" 2>&1; rc=$?
+    cat "$salida"
+    if [ "$rc" = 1 ]; then
+        if grep -q 'diferencias:' "$salida"; then rc=2
+        elif grep -qiE 'SQLSTATE\[08|connection|could not connect|password authentication|no pg_hba' "$salida"; then rc=3
+        elif grep -qiE 'No such file|failed to open stream' "$salida"; then rc=4; fi
+    fi
+    case "$rc" in
+        0) echo "ESQUEMA · COINCIDE con el modelo oficial (36 tablas, 173 atributos, 35 FK).";;
+        2) echo "ESQUEMA · DIFERENCIAS respecto al modelo oficial: $(grep -c '^ - ' "$salida") (detalle arriba y en $salida).";;
+        3) echo "ESQUEMA · ERROR DE CONEXIÓN con PostgreSQL (revisar .env, contraseña, pg_hba o puerto).";;
+        4) echo "ESQUEMA · SIN REFERENCIA: no se pudo leer el SQL oficial.";;
+        *) echo "ESQUEMA · ERROR INESPERADO (código $rc).";;
+    esac
+    return "$rc"
+}
+# Detiene el bloque si la estructura no es la autorizada. Solo continúa con diferencias si DIFERENCIAS_AUTORIZADAS
+# apunta a un archivo, aprobado por escrito, cuyo contenido coincide EXACTAMENTE con la lista de diferencias actual.
+exigir_esquema_oficial() {
+    verificar_esquema "$1"; local rc=$?
+    [ "$rc" = 0 ] && return 0
+    if [ "$rc" = 2 ] && [ -n "${DIFERENCIAS_AUTORIZADAS:-}" ] && [ -f "$DIFERENCIAS_AUTORIZADAS" ]; then
+        local ultima; ultima=$(ls -t "$SALIDA"/esquema_*.txt | head -1)
+        if diff <(grep '^ - ' "$ultima" | sort) <(grep '^ - ' "$DIFERENCIAS_AUTORIZADAS" | sort) >/dev/null; then
+            echo "AVISO: las diferencias coinciden exactamente con las autorizadas en $DIFERENCIAS_AUTORIZADAS; se continúa."; return 0
+        fi
+        alto "Las diferencias actuales no coinciden con las autorizadas en $DIFERENCIAS_AUTORIZADAS."
+    fi
+    alto "La estructura de $BD no corresponde al modelo oficial autorizado (código $rc). No se continúa."
+}
 # Paquete SQL íntegro (SHA256SUMS) y generado a partir del archivo oficial validado.
 exigir_paquete() {
     [ -f "$PAQUETE_SQL/SHA256SUMS" ] && [ -f "$PAQUETE_SQL/sql/SEPOMEX_CATALOGO_COMPLETO.sql" ] || alto "No se encontró el paquete SQL en $PAQUETE_SQL."

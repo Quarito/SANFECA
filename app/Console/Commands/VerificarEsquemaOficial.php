@@ -6,6 +6,10 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
+ * Códigos de salida (los bloques de operación los distinguen):
+ *   0 = el esquema coincide con el SQL oficial · 2 = hay diferencias · 3 = no hay conexión con PostgreSQL
+ *   4 = no se pudo leer el SQL oficial de referencia. (Laravel devuelve 1 si el comando no existe.)
+ *
  * Compara el esquema físico de la base conectada con el SQL oficial PowerDesigner (solo lectura):
  * tablas, atributos, tipos, longitudes, nulos, PK, FK (columnas y reglas), índices y secuencias,
  * y verifica que no exista ningún otro objeto (tablas, vistas, esquemas, funciones).
@@ -21,11 +25,36 @@ class VerificarEsquemaOficial extends Command
         'DATE' => 'date', 'TIME' => 'time without time zone', 'MONEY' => 'money',
     ];
 
+    public const SIN_DIFERENCIAS = 0;
+    public const CON_DIFERENCIAS = 2;
+    public const SIN_CONEXION = 3;
+    public const SIN_REFERENCIA = 4;
+
     public function handle(): int
     {
         require_once base_path('scripts/anfeca_8088/ModeloOficial.php');
         $ruta = (string) config('anfeca_8088.sql_oficial');
-        $modelo = \ModeloOficial::leer($ruta);
+        try {
+            if (!is_file($ruta) || !is_readable($ruta)) {
+                throw new \RuntimeException("No se puede leer {$ruta}.");
+            }
+            $modelo = \ModeloOficial::leer($ruta);
+            if (count($modelo['tablas']) === 0) {
+                throw new \RuntimeException("{$ruta} no contiene tablas.");
+            }
+        } catch (\Throwable $e) {
+            $this->error('SQL oficial de referencia no disponible: '.$e->getMessage());
+
+            return self::SIN_REFERENCIA;
+        }
+        try {
+            DB::connection()->getPdo();
+            DB::selectOne('select 1');
+        } catch (\Throwable $e) {
+            $this->error('Sin conexión con PostgreSQL: '.$e->getMessage());
+
+            return self::SIN_CONEXION;
+        }
         $dif = [];
 
         $tablasBd = collect(DB::select("select table_name from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE'"))->pluck('table_name')->all();
@@ -121,7 +150,10 @@ class VerificarEsquemaOficial extends Command
             'base' => DB::selectOne('select current_database() as b')->b,
             'servidor' => DB::selectOne("select inet_server_addr()::text as h, inet_server_port() as p, current_setting('server_version') as v"),
             'tablas' => ['oficial' => count($modelo['tablas']), 'fisicas' => count($tablasBd)],
-            'atributos' => ['oficial' => $columnas],
+            'atributos' => ['oficial' => $columnas, 'fisicos' => (int) DB::selectOne("select count(*) as n from information_schema.columns c
+                join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
+                where c.table_schema = 'public' and t.table_type = 'BASE TABLE'")->n],
+            'estado' => $dif === [] ? 'sin_diferencias' : 'con_diferencias',
             'fk' => ['oficial' => count($modelo['fks']), 'fisicas' => $fksBd->count()],
             'indices' => ['oficial_explicitos' => count($modelo['indices']), 'fisicos' => $indicesBd->count(), 'de_pk' => count($pkNombres)],
             'secuencias' => $secuencias,
@@ -132,7 +164,7 @@ class VerificarEsquemaOficial extends Command
         } else {
             $this->info("SQL oficial {$resumen['sql_oficial']} (sha256 {$resumen['sha256']}) contra la base {$resumen['base']} "
                 ."({$resumen['servidor']->h}:{$resumen['servidor']->p}, PostgreSQL {$resumen['servidor']->v}).");
-            $this->line("Tablas {$resumen['tablas']['fisicas']}/{$resumen['tablas']['oficial']} · atributos {$columnas} · FK {$resumen['fk']['fisicas']}/{$resumen['fk']['oficial']}"
+            $this->line("Tablas {$resumen['tablas']['fisicas']}/{$resumen['tablas']['oficial']} · atributos {$resumen['atributos']['fisicos']}/{$columnas} · FK {$resumen['fk']['fisicas']}/{$resumen['fk']['oficial']}"
                 ." · índices {$resumen['indices']['fisicos']} ({$resumen['indices']['oficial_explicitos']} explícitos + {$resumen['indices']['de_pk']} de PK) · secuencias {$secuencias}");
             $dif ? $this->error(count($dif).' diferencias:') : $this->info('Sin diferencias: el esquema físico coincide exactamente con el SQL oficial.');
             foreach ($dif as $d) {
@@ -140,6 +172,6 @@ class VerificarEsquemaOficial extends Command
             }
         }
 
-        return $dif === [] ? self::SUCCESS : self::FAILURE;
+        return $dif === [] ? self::SIN_DIFERENCIAS : self::CON_DIFERENCIAS;
     }
 }

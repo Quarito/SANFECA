@@ -25,7 +25,8 @@ getenforce; ls -ldZ "$APP" "$APP/storage" "$APP/bootstrap/cache" 2>/dev/null; se
 pedir_clave
 paso "PostgreSQL (consultas de solo lectura)"
 leer "select concat_ws(' · ', current_database(), 'puerto ' || current_setting('port'), 'rol ' || current_user, 'iniciado ' || pg_postmaster_start_time()::timestamp(0), version())"
-paso "Estructura oficial (36 tablas)"; DIR_APP="$APP" artisan anfeca:verificar-esquema || echo "(el comando no existe en la versión desplegada; se repite en el bloque 4)"
+paso "Estructura oficial (36 tablas, 173 atributos, 35 FK) · solo informa; los bloques 3 a 7 se detienen si no coincide"
+DIR_APP="$APP" verificar_esquema artisan; echo "$?" > "$SALIDA/esquema_codigo.txt"
 leer "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE'"
 paso "Registros geográficos existentes"
 leer "select 'entidad_federativa', count(*), min(enfe_id_entidad_federativa), max(enfe_id_entidad_federativa) from entidad_federativa

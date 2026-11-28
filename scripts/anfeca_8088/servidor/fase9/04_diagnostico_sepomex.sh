@@ -7,7 +7,7 @@ source "$(dirname "$0")/comun.inc.sh"
 paso "Huella del archivo oficial"
 HUELLA=$(sha256sum "$SEPOMEX" | cut -d' ' -f1); echo "$HUELLA"
 [ "$HUELLA" = "$SEPOMEX_SHA256" ] || alto "La huella no coincide con la validada ($SEPOMEX_SHA256)."
-paso "Estructura oficial de la base $BD"; artisan_prep anfeca:verificar-esquema || alto "La estructura no coincide con el SQL oficial."
+paso "Estructura oficial de la base $BD"; exigir_esquema_oficial artisan_prep
 if [ -n "${BD_RESTAURACION:-}" ]; then
     paso "Estructura de la base restaurada $BD_RESTAURACION"; ENTORNO="DB_DATABASE=$BD_RESTAURACION" artisan_prep anfeca:verificar-esquema
 fi

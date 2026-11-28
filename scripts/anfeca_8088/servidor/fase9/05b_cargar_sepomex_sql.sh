@@ -7,7 +7,8 @@ source "$(dirname "$0")/comun.inc.sh"
 exigir_confirmacion; exigir_respaldo
 pedir_clave
 paso "Paquete SQL"; exigir_paquete
-paso "Estructura oficial de $BD antes de la carga"; verificar_estructura_sql || alto "La base no tiene la estructura oficial."
+[ -f "$PREPARACION/artisan" ] || alto "Ejecute primero el bloque 3."
+paso "Estructura oficial de $BD antes de la carga"; exigir_esquema_oficial artisan_prep
 paso "Carga (SEPOMEX_CATALOGO_COMPLETO.sql) en $BD"
 (cd "$PAQUETE_SQL/sql" && "$PG_BIN/psql" -X -U "$ROL_APP" -d "$BD" -v ON_ERROR_STOP=1 -f SEPOMEX_CATALOGO_COMPLETO.sql) > "$SALIDA/carga.log" 2>&1
 r=$?; grep -aE "^Insertados|^Marcas|Transacción confirmada|DETENIDO|ERROR" "$SALIDA/carga.log"
@@ -22,7 +23,7 @@ grep -aq "^Insertados · entidades: 0 · municipios: 0 · colonias: 0" "$SALIDA/
 paso "Verificación (04): cobertura por entidad e integridad"
 sed -n '/5\/5 · Verificación final/,$p' "$SALIDA/carga.log" | sed -n '1,60p'
 paso "Estructura y expedientes sin cambios"
-verificar_estructura_sql || alto "La estructura cambió."
+exigir_esquema_oficial artisan_prep
 while IFS='|' read -r t n; do
     case "$t" in entidad_federativa|alcaldia_municipio|colonia) continue;; esac
     actual=$(leer "select count(*) from public.$t"); [ "$actual" = "$n" ] || echo "AVISO: $t tenía $n filas y ahora $actual (actividad de usuarios o diferencia a revisar)"

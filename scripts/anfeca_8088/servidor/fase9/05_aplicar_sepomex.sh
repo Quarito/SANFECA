@@ -5,6 +5,7 @@
 source "$(dirname "$0")/comun.inc.sh"
 exigir_confirmacion; exigir_respaldo
 [ -f "$PREPARACION/artisan" ] || alto "Ejecute primero el bloque 3."
+paso "Estructura oficial antes de aplicar"; exigir_esquema_oficial artisan_prep
 pedir_clave
 paso "Aplicación (huella $SEPOMEX_SHA256, base $BD)"
 artisan_prep anfeca:sepomex "$SEPOMEX" --aplicar --base="$BD" --sha256="$SEPOMEX_SHA256" --json | tee "$SALIDA/aplicacion.json" \
@@ -19,7 +20,7 @@ print('Pendientes:', p, '· totales:', d['totales_base'])
 sys.exit(0 if p == (0, 0, 0) else 'Quedaron registros pendientes.')
 P
 paso "Estructura y expedientes sin cambios"
-artisan_prep anfeca:verificar-esquema || alto "La estructura cambió."
+exigir_esquema_oficial artisan_prep
 while IFS='|' read -r t n; do
     case "$t" in entidad_federativa|alcaldia_municipio|colonia) continue;; esac
     actual=$(leer "select count(*) from public.$t"); [ "$actual" = "$n" ] || echo "AVISO: $t tenía $n filas y ahora $actual (actividad de usuarios o diferencia a revisar)"

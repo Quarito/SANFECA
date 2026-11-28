@@ -11,7 +11,7 @@ PARTE="${PARTE:-AB}"
 
 if [[ "$PARTE" == *A* ]]; then
     paso "A1 · Versión desplegada y estructura"
-    cat "$APP/storage/app/version_desplegada.txt" 2>/dev/null; DIR_APP="$APP" artisan anfeca:verificar-esquema || echo "FALLIDA estructura"
+    cat "$APP/storage/app/version_desplegada.txt" 2>/dev/null; DIR_APP="$APP" verificar_esquema artisan || echo "FALLIDA estructura"
     leer "select count(*) from information_schema.tables where table_schema not in ('pg_catalog','information_schema')"
     paso "A2 · Respuestas HTTP de la aplicación real (solo consulta)"
     for ruta in /login /registro/datos-personales /recuperar /sesion-finalizada /sesion/estado /catalogos/codigo-postal/04510 /.env /storage/../.env; do

@@ -44,4 +44,6 @@ ls -l "$PREPARACION/public/build/manifest.json"
 sudo install -m 600 -o "$(id -un)" "$APP/.env" "$PREPARACION/.env"   # misma conexión; solo para los diagnósticos del bloque 4
 mkdir -p "$PREPARACION/storage/framework/"{cache/data,sessions,views} "$PREPARACION/storage/logs"
 (cd "$PREPARACION" && "$PHP" artisan config:clear -q)   # sin caché: los diagnósticos leen .env y el entorno
+paso "Estructura de $BD frente al modelo oficial (el código preparado no se usa si no coincide)"
+exigir_esquema_oficial artisan_prep
 echo; echo "Código preparado en $PREPARACION ($HEAD). Nada se ha desplegado."
