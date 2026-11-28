@@ -27,7 +27,8 @@ class ImportarSepomex extends Command
         {--aplicar : Inserta únicamente los registros faltantes}
         {--base= : Nombre exacto de la base autorizada (obligatorio con --aplicar)}
         {--sha256= : Huella SHA-256 esperada del archivo (obligatoria con --aplicar)}
-        {--json : Resumen en JSON}';
+        {--json : Resumen en JSON}
+        {--reporte= : Ruta (fuera de public/ y de Git) del CSV con los registros consolidados por tipo de asentamiento}';
 
     protected $description = 'Diagnostica (solo lectura) o importa el catálogo SEPOMEX a entidad_federativa, alcaldia_municipio y colonia.';
 
@@ -47,11 +48,28 @@ class ImportarSepomex extends Command
         }
     }
 
+    /** CSV: entidad, municipio, código postal, colonia, tipos de asentamiento de origen y registros consolidados. */
+    private function reporte(string $ruta, array $consolidados, array $estados, array $municipios): void
+    {
+        if (str_starts_with(realpath(dirname($ruta)) ?: '', public_path()) || str_starts_with(realpath(dirname($ruta)) ?: '', base_path().'/.git')) {
+            throw new RuntimeException('El reporte no puede escribirse en public/ ni en .git.');
+        }
+        $f = fopen($ruta, 'wb');
+        fputcsv($f, ['entidad_clave', 'entidad', 'municipio', 'codigo_postal', 'colonia', 'tipos_de_asentamiento', 'registros_consolidados']);
+        foreach ($consolidados as $k => $t) {
+            [$e, $cm, $cp, $nombre] = explode('|', $k, 4);
+            fputcsv($f, [$e, $estados[(int) $e], $municipios[$e.'|'.$cm], $cp, $nombre, implode(' / ', $t), count($t) - 1]);
+        }
+        fclose($f);
+        $this->info("Reporte de consolidación: {$ruta}");
+    }
+
     private function ejecutar(): int
     {
         if ((int) ini_get('memory_limit') > 0 && (int) ini_get('memory_limit') < 1024) {
             ini_set('memory_limit', '1024M');
         }
+        $inicio = microtime(true);
         $archivo = (string) $this->argument('archivo');
         $aplicar = (bool) $this->option('aplicar');
         $huella = is_file($archivo) ? hash_file('sha256', $archivo) : null;
@@ -73,7 +91,7 @@ class ImportarSepomex extends Command
 
         // 1) Lectura y validación del archivo (sin base de datos).
         $lector = new LectorSepomex();
-        $estados = $municipios = $nombresMunicipio = $colonias = $variantes = [];
+        $estados = $municipios = $nombresMunicipio = $colonias = $variantes = $tipos = [];
         $filas = $repetidos = 0;
         foreach ($lector->filas($archivo) as $f) {
             $filas++;
@@ -93,6 +111,7 @@ class ImportarSepomex extends Command
             }
             $nombresMunicipio[$nm] = $m;
             $k = $m.'|'.$f['d_codigo'].'|'.$f['d_asenta'];
+            $tipos[$k][] = $f['d_tipo_asenta'];
             if (isset($colonias[$k])) {
                 $repetidos++;               // mismo nombre, CP y municipio; solo difiere el tipo de asentamiento
                 continue;
@@ -104,6 +123,10 @@ class ImportarSepomex extends Command
             throw new RuntimeException('El archivo no contiene las 32 entidades: se requiere el catálogo nacional completo.');
         }
         $grafias = count(array_filter($variantes, fn ($v) => count($v) > 1));
+        $consolidados = array_filter($tipos, fn ($t) => count($t) > 1);
+        if ($ruta = $this->option('reporte')) {
+            $this->reporte((string) $ruta, $consolidados, $estados, $municipios);
+        }
 
         // 2) Conciliación con PostgreSQL (lectura en instantánea) y, con --aplicar, inserción de faltantes.
         $resultado = DB::transaction(function () use ($aplicar, $estados, $municipios, $colonias) {
@@ -195,8 +218,12 @@ class ImportarSepomex extends Command
             'archivo' => basename($archivo), 'sha256' => $huella, 'version_sepomex' => $lector->version, 'base' => $base,
             'filas_leidas' => $filas, 'entidades' => count($estados), 'municipios' => count($municipios),
             'colonias_distintas' => count($colonias), 'repetidos_solo_por_tipo_de_asentamiento' => $repetidos,
+            'colonias_con_registros_consolidados' => count($consolidados),
             'nombres_con_variante_de_acentos_o_mayusculas' => $grafias,
-        ] + $resultado;
+        ] + $resultado + [
+            'segundos' => round(microtime(true) - $inicio, 1),
+            'memoria_pico_mb' => round(memory_get_peak_usage(true) / 1048576),
+        ];
 
         if ($this->option('json')) {
             $this->line(json_encode($resumen, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

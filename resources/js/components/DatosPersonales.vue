@@ -34,7 +34,7 @@ const campos = reactive({
 });
 
 // Catálogo SEPOMEX: el código postal determina entidad, alcaldía/municipio y colonias posibles.
-const { colonias } = usarCodigoPostal(campos, () => document.getElementById('codigo_postal'));
+const { colonias } = usarCodigoPostal(campos, () => document.getElementById('codigo_postal'), () => document.getElementById('colonia'));
 
 const personales = [
     { name: 'curp', label: 'CURP', required: true, maxlength: 18 },
