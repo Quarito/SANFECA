@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import SelectorBuscable from './SelectorBuscable.vue';
+import InstitucionProcedencia from './InstitucionProcedencia.vue';
 
 const archivosSeleccionados = ref({});
 
@@ -13,10 +14,9 @@ const props = defineProps({
     formacionBloqueada: { type: Boolean, default: false },
     areaCertificacion: { type: String, default: '' },
     titulosPermitidos: { type: Array, default: () => [] },
-    instituciones: {
-        type: Array,
-        default: () => []
-    },
+    institucionGuardada: { type: Object, default: null },
+    numeroAfiliacion: { type: String, default: '' },
+    urlInstitucion: { type: String, default: '' },
     formacion: {
         type: Object,
         default: () => ({})
@@ -384,16 +384,6 @@ function cambiarCasillaPosgrado(evento) {
     notificarCambio(campoPosgrado);
 }
 
-const institucionId = ref(
-    String(props.formacion?.institucion_afiliada_id ?? '')
-);
-
-const institucionSeleccionada = computed(() => {
-    return props.instituciones.find(
-        institucion =>
-            String(institucion.id) === institucionId.value
-    );
-});
 </script>
 
 <template>
@@ -914,87 +904,12 @@ const institucionSeleccionada = computed(() => {
             </section>
         </div>
 
-        <!-- INSTITUCIÓN DE PROCEDENCIA -->
-        <section class="institucion">
-            <h2>Institución de Procedencia</h2>
-
-            <div class="institucion-datos">
-
-                <!-- Número de Afiliación -->
-                <div class="campo">
-                    <label for="institucion_afiliada_id">
-                        Número de Afiliación
-                    </label>
-
-                    <select
-                        id="institucion_afiliada_id"
-                        name="institucion_afiliada_id"
-                        v-model="institucionId"
-                        :disabled="formacionBloqueada"
-                        required
-                    >
-                        <option value="">Seleccione</option>
-
-                        <option
-                            v-for="institucion in instituciones"
-                            :key="institucion.id"
-                            :value="String(institucion.id)"
-                        >
-                            {{ institucion.numero_afiliacion }}
-                        </option>
-                    </select>
-                </div>
-
-                <!-- Datos dinámicos del catálogo -->
-                <div v-if="institucionSeleccionada" class="detalle-institucion">
-
-                    <div
-                        v-if="institucionSeleccionada.nombre?.trim()"
-                        class="anfeca-institucion-principal"
-                    >
-                        <strong>Institución:</strong>
-                        <span>{{ institucionSeleccionada.nombre }}</span>
-                    </div>
-
-                    <div class="anfeca-institucion-grid">
-
-                        <div
-                            v-if="institucionSeleccionada.escuela_facultad?.trim()"
-                            class="anfeca-institucion-campo"
-                        >
-                            <strong>Escuela o Facultad:</strong>
-                            <span>{{ institucionSeleccionada.escuela_facultad }}</span>
-                        </div>
-
-                        <div
-                            v-if="institucionSeleccionada.campus?.trim()"
-                            class="anfeca-institucion-campo"
-                        >
-                            <strong>Campus:</strong>
-                            <span>{{ institucionSeleccionada.campus }}</span>
-                        </div>
-
-                        <div
-                            v-if="institucionSeleccionada.sede?.trim()"
-                            class="anfeca-institucion-campo"
-                        >
-                            <strong>Sede:</strong>
-                            <span>{{ institucionSeleccionada.sede }}</span>
-                        </div>
-
-
-                        <div
-                            v-if="institucionSeleccionada.zona_anfeca?.trim()"
-                            class="anfeca-institucion-campo"
-                        >
-                            <strong>Zona ANFECA:</strong>
-                            <span>{{ institucionSeleccionada.zona_anfeca }}</span>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-        </section>
+        <InstitucionProcedencia
+            :institucion-guardada="institucionGuardada"
+            :numero-inicial="numeroAfiliacion"
+            :url="urlInstitucion"
+            :bloqueada="formacionBloqueada"
+        />
     </div>
 </template>
 
