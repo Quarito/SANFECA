@@ -2,137 +2,210 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Anfeca\Sepomex\LectorSepomex;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 
+/**
+ * Catálogo SEPOMEX → ENTIDAD_FEDERATIVA, ALCALDIA_MUNICIPIO y COLONIA (modelo oficial de 36 tablas).
+ *
+ *  ENTIDAD_FEDERATIVA  ← c_estado (clave = ENFE_ID_ENTIDAD_FEDERATIVA) y d_estado (ENFE_NOMBRE)
+ *  ALCALDIA_MUNICIPIO  ← D_mnpio dentro de su entidad (ALMU_ID_ENTIDAD_FEDERATIVA)
+ *  COLONIA             ← d_asenta y d_codigo dentro de su alcaldía o municipio (COLO_ID_ALCALDIA)
+ *
+ * Fuente de verdad: el archivo oficial y la estructura real de PostgreSQL (no la configuración de la aplicación).
+ * Por omisión SOLO DIAGNOSTICA en una transacción de solo lectura. Con --aplicar inserta únicamente lo faltante,
+ * en una sola transacción: nunca actualiza ni elimina filas, ni toca DOMICILIO u otras tablas.
+ * COLONIA no tiene tipo de asentamiento: los registros que solo difieren en ese dato se guardan una vez.
+ */
 class ImportarSepomex extends Command
 {
-    protected $signature = 'anfeca:sepomex {archivo : TXT nacional oficial} {--aplicar : Inserta únicamente faltantes} {--base= : Nombre exacto de la base autorizada} {--sha256= : Huella esperada del archivo}';
-    protected $description = 'Diagnostica o importa SEPOMEX sin modificar el esquema ni domicilios';
+    protected $signature = 'anfeca:sepomex
+        {archivo : CPdescarga.xls o CPdescarga.txt oficial de Correos de México}
+        {--aplicar : Inserta únicamente los registros faltantes}
+        {--base= : Nombre exacto de la base autorizada (obligatorio con --aplicar)}
+        {--sha256= : Huella SHA-256 esperada del archivo (obligatoria con --aplicar)}
+        {--json : Resumen en JSON}';
 
-    private function normal(string $s): string
+    protected $description = 'Diagnostica (solo lectura) o importa el catálogo SEPOMEX a entidad_federativa, alcaldia_municipio y colonia.';
+
+    private static function clave(string $s): string
     {
-        return Str::lower(Str::ascii(preg_replace('/\s+/u', ' ', trim($s))));
+        return Str::of($s)->ascii()->lower()->replaceMatches('/\s+/', ' ')->trim()->value();
     }
 
     public function handle(): int
     {
         try {
-            $file = $this->argument('archivo');
-            $raw = file_get_contents($file);
-            if ($raw === false) throw new RuntimeException('Archivo ilegible');
-            $hash = hash('sha256', $raw);
-            $this->info('SHA-256: '.$hash);
-            $apply = (bool) $this->option('aplicar');
-            if ($apply && (! $this->option('sha256') || ! hash_equals($hash, strtolower($this->option('sha256'))))) {
-                throw new RuntimeException('Aplicación requiere SHA-256 verificado');
-            }
-            if (! mb_check_encoding($raw, 'UTF-8')) $raw = mb_convert_encoding($raw, 'UTF-8', 'Windows-1252');
-            $raw = preg_replace('/^\x{FEFF}/u', '', $raw);
-            $header = null;
-            $rows = [];
-            $states = [];
-            $municipalCodes = [];
-            $seen = [];
-            $duplicates = 0;
-            $required = ['d_codigo','d_asenta','D_mnpio','d_estado','c_estado','c_mnpio','id_asenta_cpcons'];
-            foreach (preg_split('/\r\n|\n|\r/', $raw) as $i => $line) {
-                if (trim($line) === '') continue;
-                $cols = array_map('trim', explode('|', $line));
-                if ($header === null) {
-                    if (in_array('d_codigo', $cols, true)) {
-                        if (count(array_unique($cols)) !== count($cols) || array_diff($required, $cols)) throw new RuntimeException('Encabezado inválido');
-                        $header = $cols;
-                    }
-                    continue;
-                }
-                if (count($cols) !== count($header)) throw new RuntimeException('Número de campos inválido en línea '.($i+1));
-                $r = array_combine($header, $cols);
-                if (! preg_match('/^[0-9]{5}$/D', $r['d_codigo']) || ! preg_match('/^[0-9]{2}$/D', $r['c_estado']) || ! preg_match('/^[0-9]{3}$/D', $r['c_mnpio']) || ! preg_match('/^[0-9]+$/D', $r['id_asenta_cpcons'])) throw new RuntimeException('Claves inválidas en línea '.($i+1));
-                $state = (int) $r['c_estado'];
-                $official = config('anfeca_8088.entidades_federativas.'.$state);
-                $name = $this->normal($r['d_estado']);
-                $alias = config('anfeca_8088.alias_entidades', [])[$name] ?? $r['d_estado'];
-                if (! $official || $this->normal($alias) !== $this->normal($official)) throw new RuntimeException('Entidad no conciliada en línea '.($i+1));
-                foreach (['D_mnpio','d_asenta'] as $field) {
-                    if ($r[$field] === '' || mb_strlen($r[$field]) > 150 || preg_match('/[\x00-\x1F]/u', $r[$field])) throw new RuntimeException('Nombre inválido en línea '.($i+1));
-                }
-                $m = $state.'|'.$this->normal($r['D_mnpio']);
-                $code = $state.'|'.$r['c_mnpio'];
-                if (isset($municipalCodes[$m]) && $municipalCodes[$m] !== $code) throw new RuntimeException('Municipios homónimos: '.$m);
-                $municipalCodes[$m] = $code;
-                $key = $m.'|'.$r['d_codigo'].'|'.$this->normal($r['d_asenta']);
-                $source = $code.'|'.$r['id_asenta_cpcons'].'|'.($r['d_tipo_asenta'] ?? '');
-                if (isset($seen[$key])) {
-                    if ($seen[$key] !== $source) throw new RuntimeException('Asentamientos indistinguibles en el esquema: '.$key);
-                    $duplicates++;
-                    continue;
-                }
-                $seen[$key] = $source;
-                $states[$state] = $official;
-                $rows[$m][] = [$r['D_mnpio'], $r['d_asenta'], $r['d_codigo'], $state];
-            }
-            if (count($states) !== 32 || ! $rows) throw new RuntimeException('Se requiere catálogo nacional de 32 entidades');
-            $this->info('Entidades: '.count($states).'; municipios: '.count($rows).'; asentamientos: '.count($seen).'; duplicados equivalentes: '.$duplicates);
-            if (DB::connection()->getDriverName() !== 'pgsql') throw new RuntimeException('Solo PostgreSQL');
-            $db = DB::selectOne('select current_database() as nombre')->nombre;
-            $this->info('Base: '.$db);
-            if ($apply && ($this->option('base') !== $db)) throw new RuntimeException('Base no autorizada');
-            $counts = DB::transaction(function () use ($apply, $states, $rows) {
-                if ($apply) {
-                    DB::statement("SET LOCAL lock_timeout = '5s'");
-                    DB::statement('LOCK TABLE public.entidad_federativa, public.alcaldia_municipio, public.colonia IN SHARE ROW EXCLUSIVE MODE');
-                } else {
-                    DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
-                }
-                $entities = DB::table('public.entidad_federativa')->get();
-                foreach ($states as $id => $name) {
-                    $matches = $entities->filter(fn ($e) => $this->normal($e->enfe_nombre) === $this->normal($name));
-                    if ($matches->count() !== 1 || (int) $matches->first()->enfe_id_entidad_federativa !== $id) throw new RuntimeException('Entidad existente no coincide con configuración: '.$name);
-                }
-                $municipalities = [];
-                foreach (DB::table('public.alcaldia_municipio')->get() as $m) {
-                    $key = $m->almu_id_entidad_federativa.'|'.$this->normal($m->almu_nombre);
-                    if (isset($municipalities[$key])) throw new RuntimeException('Municipio duplicado existente: '.$key);
-                    $municipalities[$key] = $m->almu_id_alcaldia;
-                }
-                $colonies = [];
-                foreach (DB::table('public.colonia')->cursor() as $c) {
-                    $key = $c->colo_id_alcaldia.'|'.$c->colo_codigo_postal.'|'.$this->normal($c->colo_nombre);
-                    if (isset($colonies[$key])) throw new RuntimeException('Colonia duplicada existente: '.$key);
-                    $colonies[$key] = true;
-                }
-                $nm = $nc = 0;
-                foreach ($rows as $key => $items) {
-                    [$name,,, $state] = $items[0];
-                    $id = $municipalities[$key] ?? null;
-                    if ($id === null) {
-                        $nm++;
-                        if ($apply) $id = DB::table('public.alcaldia_municipio')->insertGetId(['almu_id_entidad_federativa'=>$state,'almu_nombre'=>$name], 'almu_id_alcaldia');
-                    }
-                    $batch = [];
-                    foreach ($items as [, $colony, $cp]) {
-                        if ($id !== null && isset($colonies[$id.'|'.$cp.'|'.$this->normal($colony)])) continue;
-                        $nc++;
-                        if ($apply) {
-                            $batch[] = ['colo_id_alcaldia'=>$id,'colo_nombre'=>$colony,'colo_codigo_postal'=>$cp];
-                            if (count($batch) === 500) {
-                                DB::table('public.colonia')->insert($batch);
-                                $batch = [];
-                            }
-                        }
-                    }
-                    if ($batch) DB::table('public.colonia')->insert($batch);
-                }
-                return [$nm,$nc];
-            });
-            $this->info(($apply ? 'Insertados' : 'Pendientes (solo lectura)').': municipios '.$counts[0].'; colonias '.$counts[1]);
-            return self::SUCCESS;
+            return $this->ejecutar();
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
+
             return self::FAILURE;
         }
+    }
+
+    private function ejecutar(): int
+    {
+        if ((int) ini_get('memory_limit') > 0 && (int) ini_get('memory_limit') < 1024) {
+            ini_set('memory_limit', '1024M');
+        }
+        $archivo = (string) $this->argument('archivo');
+        $aplicar = (bool) $this->option('aplicar');
+        $huella = is_file($archivo) ? hash_file('sha256', $archivo) : null;
+        if ($huella === null) {
+            throw new RuntimeException('El archivo no existe o no es legible.');
+        }
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            throw new RuntimeException('Solo PostgreSQL.');
+        }
+        $base = DB::selectOne('select current_database() as b')->b;
+        if ($aplicar) {
+            if (!$this->option('sha256') || !hash_equals($huella, strtolower((string) $this->option('sha256')))) {
+                throw new RuntimeException('Con --aplicar, --sha256 debe coincidir con la huella del archivo verificado.');
+            }
+            if ($this->option('base') !== $base) {
+                throw new RuntimeException("Base no autorizada: la conexión apunta a «{$base}».");
+            }
+        }
+
+        // 1) Lectura y validación del archivo (sin base de datos).
+        $lector = new LectorSepomex();
+        $estados = $municipios = $nombresMunicipio = $colonias = $variantes = [];
+        $filas = $repetidos = 0;
+        foreach ($lector->filas($archivo) as $f) {
+            $filas++;
+            $e = (int) $f['c_estado'];
+            if (isset($estados[$e]) && $estados[$e] !== $f['d_estado']) {
+                throw new RuntimeException("La clave de entidad {$f['c_estado']} tiene dos nombres ({$f['fila']}).");
+            }
+            $estados[$e] = $f['d_estado'];
+            $m = $e.'|'.$f['c_mnpio'];
+            if (isset($municipios[$m]) && $municipios[$m] !== $f['D_mnpio']) {
+                throw new RuntimeException("La clave de municipio {$m} tiene dos nombres ({$f['fila']}).");
+            }
+            $municipios[$m] = $f['D_mnpio'];
+            $nm = $e.'|'.self::clave($f['D_mnpio']);
+            if (isset($nombresMunicipio[$nm]) && $nombresMunicipio[$nm] !== $m) {
+                throw new RuntimeException("Dos municipios de la entidad {$e} solo se distinguen por su clave: {$f['D_mnpio']} ({$f['fila']}).");
+            }
+            $nombresMunicipio[$nm] = $m;
+            $k = $m.'|'.$f['d_codigo'].'|'.$f['d_asenta'];
+            if (isset($colonias[$k])) {
+                $repetidos++;               // mismo nombre, CP y municipio; solo difiere el tipo de asentamiento
+                continue;
+            }
+            $colonias[$k] = [$m, $f['d_codigo'], $f['d_asenta']];
+            $variantes[$m.'|'.$f['d_codigo'].'|'.self::clave($f['d_asenta'])][$f['d_asenta']] = true;
+        }
+        if (count($estados) !== 32) {
+            throw new RuntimeException('El archivo no contiene las 32 entidades: se requiere el catálogo nacional completo.');
+        }
+        $grafias = count(array_filter($variantes, fn ($v) => count($v) > 1));
+
+        // 2) Conciliación con PostgreSQL (lectura en instantánea) y, con --aplicar, inserción de faltantes.
+        $resultado = DB::transaction(function () use ($aplicar, $estados, $municipios, $colonias) {
+            if ($aplicar) {
+                DB::statement("set local lock_timeout = '5s'");
+                DB::statement('lock table public.entidad_federativa, public.alcaldia_municipio, public.colonia in share row exclusive mode');
+            } else {
+                DB::statement('set transaction isolation level repeatable read read only');
+            }
+
+            $entidades = DB::table('public.entidad_federativa')->pluck('enfe_nombre', 'enfe_id_entidad_federativa')->all();
+            $nuevasEntidades = [];
+            foreach ($estados as $id => $nombre) {
+                if (!array_key_exists($id, $entidades)) {
+                    $nuevasEntidades[$id] = $nombre;
+                } elseif (self::clave($entidades[$id]) !== self::clave($nombre)) {
+                    throw new RuntimeException("ENTIDAD_FEDERATIVA {$id} es «{$entidades[$id]}» y SEPOMEX indica «{$nombre}»: se requiere revisión.");
+                }
+            }
+            $ajenas = array_diff_key($entidades, $estados);
+            if ($aplicar && $nuevasEntidades) {
+                foreach ($nuevasEntidades as $id => $nombre) {
+                    DB::table('public.entidad_federativa')->insert(['enfe_id_entidad_federativa' => $id, 'enfe_nombre' => $nombre]);
+                }
+                DB::statement("select setval(pg_get_serial_sequence('public.entidad_federativa', 'enfe_id_entidad_federativa'),
+                    greatest((select max(enfe_id_entidad_federativa) from public.entidad_federativa), 1))");
+            }
+
+            $existentes = $porClave = [];
+            foreach (DB::table('public.alcaldia_municipio')->get() as $a) {
+                $k = $a->almu_id_entidad_federativa.'|'.self::clave($a->almu_nombre);
+                if (isset($porClave[$k])) {
+                    throw new RuntimeException("ALCALDIA_MUNICIPIO duplicada en la base: {$a->almu_nombre} (entidad {$a->almu_id_entidad_federativa}).");
+                }
+                $porClave[$k] = $a;
+            }
+            $idMunicipio = [];
+            $nuevosMunicipios = 0;
+            foreach ($municipios as $m => $nombre) {
+                $entidad = (int) explode('|', $m)[0];
+                $actual = $porClave[$entidad.'|'.self::clave($nombre)] ?? null;
+                if ($actual && $actual->almu_nombre !== $nombre) {
+                    throw new RuntimeException("ALCALDIA_MUNICIPIO «{$actual->almu_nombre}» difiere de SEPOMEX «{$nombre}»: se requiere revisión.");
+                }
+                if ($actual) {
+                    $idMunicipio[$m] = (int) $actual->almu_id_alcaldia;
+                    continue;
+                }
+                $nuevosMunicipios++;
+                $idMunicipio[$m] = $aplicar
+                    ? (int) DB::table('public.alcaldia_municipio')->insertGetId(['almu_id_entidad_federativa' => $entidad, 'almu_nombre' => $nombre], 'almu_id_alcaldia')
+                    : null;
+            }
+
+            foreach (DB::table('public.colonia')->select('colo_id_alcaldia', 'colo_codigo_postal', 'colo_nombre')->cursor() as $c) {
+                $existentes[$c->colo_id_alcaldia.'|'.$c->colo_codigo_postal.'|'.$c->colo_nombre] = true;
+            }
+            $nuevasColonias = 0;
+            $lote = [];
+            foreach ($colonias as [$m, $cp, $nombre]) {
+                $id = $idMunicipio[$m];
+                if ($id !== null && isset($existentes[$id.'|'.$cp.'|'.$nombre])) {
+                    continue;
+                }
+                $nuevasColonias++;
+                if ($aplicar) {
+                    $lote[] = ['colo_id_alcaldia' => $id, 'colo_nombre' => $nombre, 'colo_codigo_postal' => $cp];
+                    if (count($lote) === 1000) {
+                        DB::table('public.colonia')->insert($lote);
+                        $lote = [];
+                    }
+                }
+            }
+            if ($lote) {
+                DB::table('public.colonia')->insert($lote);
+            }
+
+            return ['entidades_nuevas' => count($nuevasEntidades), 'entidades_ajenas_al_catalogo' => array_values($ajenas),
+                'municipios_nuevos' => $nuevosMunicipios, 'colonias_nuevas' => $nuevasColonias,
+                'totales_base' => [
+                    'entidad_federativa' => DB::table('public.entidad_federativa')->count(),
+                    'alcaldia_municipio' => DB::table('public.alcaldia_municipio')->count(),
+                    'colonia' => DB::table('public.colonia')->count(),
+                ]];
+        });
+
+        $resumen = [
+            'modo' => $aplicar ? 'aplicación' : 'diagnóstico (solo lectura)',
+            'archivo' => basename($archivo), 'sha256' => $huella, 'version_sepomex' => $lector->version, 'base' => $base,
+            'filas_leidas' => $filas, 'entidades' => count($estados), 'municipios' => count($municipios),
+            'colonias_distintas' => count($colonias), 'repetidos_solo_por_tipo_de_asentamiento' => $repetidos,
+            'nombres_con_variante_de_acentos_o_mayusculas' => $grafias,
+        ] + $resultado;
+
+        if ($this->option('json')) {
+            $this->line(json_encode($resumen, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        } else {
+            foreach ($resumen as $k => $v) {
+                $this->line(str_pad($k, 44).': '.(is_array($v) ? json_encode($v, JSON_UNESCAPED_UNICODE) : (string) $v));
+            }
+        }
+
+        return self::SUCCESS;
     }
 }

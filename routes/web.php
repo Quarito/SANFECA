@@ -190,6 +190,17 @@ Route::middleware('guest')->group(function () {
 
 });
 
+/*
+|--------------------------------------------------------------------------
+| CATÁLOGO NACIONAL DE CÓDIGOS POSTALES (SEPOMEX)
+|--------------------------------------------------------------------------
+| Consulta de solo lectura para el registro inicial (visitantes) y la
+| modificación del domicilio (solicitantes autenticados).
+*/
+
+Route::get('/catalogos/codigo-postal/{codigoPostal}', \App\Http\Controllers\Catalogos\CodigoPostalController::class)
+    ->where('codigoPostal', '[0-9]{5}')->middleware('throttle:60,1')->name('catalogos.codigo-postal');
+
 Route::get('/guia', function () {
     return 'Guía paso a paso pendiente.';
 })->name('guia');
