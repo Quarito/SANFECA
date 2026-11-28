@@ -73,12 +73,14 @@ if [[ "$PARTE" == *B* ]]; then
         (cd "$PRUEBAS" && "$PHP" artisan anfeca:coordinador-alta "$1" "$2" $Z --nombre="Coordinación Ficticia" --apellido=Prueba --curp="$4" --rfc="${4:0:10}AB1" --credenciales="$CRED" >/dev/null)
     done
     paso "B4 · Servidor de la copia de prueba y batería"
-    (cd "$PRUEBAS/public" && PHP_CLI_SERVER_WORKERS=4 nohup "$PHP" -S 127.0.0.1:8189 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php > "$SALIDA/php_s.log" 2>&1 & echo $! > "$SALIDA/php_s.pid")
+    pushd "$PRUEBAS/public" >/dev/null    # server.php de Laravel toma getcwd() como carpeta pública
+    PHP_CLI_SERVER_WORKERS=4 nohup "$PHP" -S 127.0.0.1:8189 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php > "$SALIDA/php_s.log" 2>&1 &
+    echo $! > "$SALIDA/php_s.pid"; popd >/dev/null
     sleep 2
     COPIA="$PRUEBAS" URL=http://127.0.0.1:8189 PHP="$PHP" PSQL="$PG_BIN/psql" PGDATABASE="$BD_PRUEBAS" PGUSER="$ROL_APP" CREDENCIALES="$CRED" \
         SALIDA="$SALIDA/bateria" CATALOGO_LIC_VERSION=FICTICIO-LIC-1 CATALOGO_POS_VERSION=FICTICIO-1 \
         bash "$PRUEBAS/scripts/anfeca_8088/pruebas/ejecutar_bateria.sh"
-    kill "$(cat "$SALIDA/php_s.pid")" 2>/dev/null
+    pkill -P "$(cat "$SALIDA/php_s.pid")" 2>/dev/null; kill "$(cat "$SALIDA/php_s.pid")" 2>/dev/null
     echo "La copia $PRUEBAS y la base $BD_PRUEBAS se conservan como evidencia; retirarlas requiere autorización."
 fi
 echo; echo "Resultados en $SALIDA"
