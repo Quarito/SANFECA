@@ -155,8 +155,11 @@ def principal():
     contacto = dict((k, v) for k, v in sql('select t.tico_tipo_comunicacion, c.comu_valor from comunicacion c join tipo_comunicacion t on '
                                              't.tico_id_tipo_comunicacion = c.comu_id_tipo_comunicacion where c.comu_id_persona = %s', persona))
     pagina = c.get('/mis-datos').text
+    # TEL_PARTICULAR: «Teléfono de casa» (vigente en 8088) o su equivalente «Teléfono particular» (bases anteriores).
+    TEL_PART = ('Teléfono de casa', 'Teléfono particular')
     prueba(3, 'Datos personales, correo y teléfonos persistidos; DOMICILIO con entidad derivada del código postal',
-           contacto == {'Correo electrónico': correo, 'Teléfono particular': '5511112222'} and curp in pagina
+           len(contacto) == 2 and contacto.get('Correo electrónico') == correo
+           and any(contacto.get(t) == '5511112222' for t in TEL_PART) and curp in pagina
            and domicilio and domicilio[0][3] == 'Ciudad de México', json.dumps(contacto, ensure_ascii=False))
     geograficos = uno("select count(*) from tipo_comunicacion where tico_tipo_comunicacion ~* '(postal|colonia|municipio|alcald|entidad)'")
     prueba(3, 'Código postal, colonia y municipio NO se guardan en COMUNICACION/TIPO_COMUNICACION ni en otro mecanismo',
@@ -202,7 +205,7 @@ def principal():
               'al menos un teléfono; colonia de otro CP rechazada',
            r.status_code == 302 and dom == ['Avenida Nueva', '99', '', 'Jalisco'] and pers == [curp, 'Ana Prueba']
            and tels.get('Correo electrónico') == correo and tels.get('Teléfono celular') == '3312345678'
-           and 'Teléfono particular' not in tels and sin_tel.status_code == 302 and tels2 == '1'
+           and not any(t in tels for t in TEL_PART) and sin_tel.status_code == 302 and tels2 == '1'
            and uno('select domi_calle from domicilio where domi_id_persona = %s', persona) == 'Avenida Nueva',
            f'domicilio={dom} identidad={pers}')
 

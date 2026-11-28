@@ -4,6 +4,20 @@ Fecha: 28/11/2026 · Estado: **candidato listo para validarse en 8088. Nada se h
 8008, ni en producción.** Todo lo que se reporta como «probado» se probó en un entorno aislado equivalente (PHP 8.5.12 y
 PostgreSQL 18.6 compilados de fuente, bases nuevas y desechables, datos ficticios).
 
+## Actualización · diagnóstico real de 8088 (bloque 1) y correcciones
+
+- **Bloque 1 ejecutado en 8088 por el equipo**: las mejoras de sesión coinciden con lo desplegado; las diferencias de
+  `ExpedienteSolicitante.php`, `config/anfeca_8088.php` y `routes/web.php` corresponden a SEPOMEX y fueron aceptadas.
+- **Compatibilidad del teléfono** (`0393a9e`): 8088 registra «Teléfono de casa»; ahora es la descripción vigente y
+  «Teléfono particular» se acepta como equivalente, sin duplicar tipos ni perder datos. Pruebas: 54/54 en 4 escenarios.
+- **Verificación del esquema** (`4a0ce22`): códigos 0/2/3/4/5 y detención de los bloques 3–6 si la estructura no es la
+  autorizada (11/11).
+- **Bloqueo actual: 15 diferencias estructurales en 8088** (36 tablas, 180 atributos, 37 FK). No están en Git ni en los
+  exports de PowerDesigner versionados; una de ellas rompe la búsqueda de institución (42703). Diagnóstico de solo
+  lectura y propuesta probada (12/12) en `CONCILIACION_MODELO_FISICO_8088.md` (`8adea7d`).
+- **No se ha cargado SEPOMEX ni desplegado código nuevo en 8088.** La carga (bloques 4B/5B) y el despliegue (bloque 6)
+  quedan detenidos hasta que se autorice y aplique la conciliación del modelo físico.
+
 ## 1. Rama y commits
 
 Rama de integración controlada: **`integracion/fase9-8088`** (publicada en GitHub; sin merge a `main`).

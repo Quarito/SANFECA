@@ -72,8 +72,16 @@ despliegue del código: el catálogo puede cargarse antes del bloque 6 (la versi
 
 Revisar el resultado de cada bloque (cada uno deja su registro en `~/anfeca_fase9/<fecha>_<bloque>/`) antes de pasar al siguiente.
 
+### Verificación del esquema en los bloques
+
+`anfeca:verificar-esquema` distingue: **0** coincide con el modelo oficial (36/173/35) · **2** diferencias (se listan) ·
+**3** error de conexión · **4** SQL oficial no disponible · **5** comando inexistente (versión anterior). El bloque 1
+solo informa; los bloques **3, 4/4B, 5/5B y 6 se detienen** si el resultado no es 0. Las diferencias actuales de 8088
+y su conciliación: `docs/anfeca/CONCILIACION_MODELO_FISICO_8088.md` (requiere autorización antes de continuar).
+
 ### Puntos de control
 
+- **Bloque 1**: «ESQUEMA · COINCIDE…» (código 0). Con «ESQUEMA · DIFERENCIAS» no se continúa hasta conciliar.
 - **Bloque 1**: `diferencias_desplegado_vs_repo.txt` debe estar vacío. Si no lo está, existen cambios posteriores en
   `/var/www/ANFECA_8088`: se copian a la rama, se integran con commit propio y el bloque 3 se repite con `REVISADO=si`.
   La consulta de `tipo_comunicacion` mostrará datos geográficos que guardó la versión anterior: **se conservan y no se
@@ -90,6 +98,12 @@ Revisar el resultado de cada bloque (cada uno deja su registro en `~/anfeca_fase
 - **Bloque 5B**: «Insertados · entidades: … · municipios: … · colonias: …», «Transacción confirmada», verificación con
   «coincide» en las 32 entidades (base sin catálogo previo) e integridad en 0; repetición con 0 inserciones. La línea
   «Marcas de reversión» queda en `marcas_reversion.txt` y en el directorio del respaldo.
+
+## Medios de contacto (TIPO_COMUNICACION)
+
+El teléfono particular se registra con la descripción vigente de 8088, «Teléfono de casa»; «Teléfono particular» se
+reconoce como equivalente (bases anteriores). `anfeca:catalogos` no crea un segundo tipo y los datos existentes se
+leen y modifican en su propia fila. Solo correo y teléfonos se guardan en COMUNICACION (`COMU_VISIBLE = true`).
 
 ## B · Requisitos de la batería (parte B del bloque 7)
 
