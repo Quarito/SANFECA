@@ -40,7 +40,7 @@ class SembrarLaboratorioAnfeca extends Command
                 $id = DB::table('institucion')->where('inst_numero_afiliacion', $numero)->value('inst_id_institucion')
                     ?? DB::table('institucion')->insertGetId([
                         'inst_numero_afiliacion' => $numero, 'inst_nombre' => $nombre, 'inst_facultad' => $facultad,
-                        'inst_zona' => $zona, 'ins_coord_regional_cert_academi' => 'Coordinación regional ficticia',
+                        'inst_zona' => $zona, 'inst_coord_regional_cert_academica' => 'Coordinación regional ficticia',
                     ], 'inst_id_institucion');
                 if (!DB::table('sede')->where('inst_id_institucion', $id)->exists()) {
                     DB::table('sede')->insert(['inst_id_institucion' => $id, 'sede_descripcion' => $sede]);

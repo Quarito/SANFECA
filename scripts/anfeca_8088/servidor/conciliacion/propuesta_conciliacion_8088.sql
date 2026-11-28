@@ -1,5 +1,7 @@
 -- =====================================================================================================================
--- ANFECA 8088 · PROPUESTA de conciliación del modelo físico con el SQL oficial (36 tablas, 173 atributos, 35 FK).
+-- ANFECA · PROPUESTA de conciliación del modelo físico con la referencia vigente (36 tablas, 173 atributos, 35 FK):
+-- el SQL oficial de PowerDesigner con la corrección autorizada C-01 (institucion.inst_coord_regional_cert_academica).
+-- SOLO SOBRE LA COPIA INDEPENDIENTE DE 8090 (certificacion_anfeca_8090) o bases de laboratorio: nunca sobre 8088.
 -- NO SE EJECUTA SIN AUTORIZACIÓN ESCRITA. Por omisión SIMULA: aplica todo en una transacción y la REVIERTE.
 -- Requisitos previos: respaldo verificado (bloque 2) y diagnostico_diferencias_8088.sql revisado.
 --
@@ -11,8 +13,8 @@
 -- Qué hace (en este orden, en UNA transacción con bloqueo de las tablas afectadas):
 --   0. Exporta a CSV (en el equipo que ejecuta psql) el contenido de todos los atributos adicionales con la llave de
 --      su fila, y su huella SHA-256 queda en el registro: la información no se pierde aunque se retire la columna.
---   1. institucion: renombra inst_coord_regional_cert_academica → ins_coord_regional_cert_academi (conserva los datos;
---      corrige la búsqueda de institución, que hoy falla con 42703).
+--   1. institucion: C-01 ya es el nombre vigente (inst_coord_regional_cert_academica). Solo si una base conserva el
+--      nombre ANTERIOR ins_coord_regional_cert_academi (laboratorio), se renombra al vigente conservando los datos.
 --   2. institucion: restituye NOT NULL en inst_numero_afiliacion, inst_facultad e inst_zona (se detiene si hay nulos).
 --   3. tipo_convocatoria: restituye VARCHAR(50) (se detiene si alguna descripción excede 50 caracteres).
 --   4. Retira las FK fk_convocatoria_certificacion y fk_estudio_area_certificacion.
@@ -86,6 +88,9 @@ BEGIN
     END IF;
     SELECT count(*) INTO n FROM public.tipo_convocatoria WHERE length(tico_tipo_convocatoria) > 50;
     IF n > 0 THEN RAISE EXCEPTION 'DETENIDO: % tipos de convocatoria exceden 50 caracteres; se requiere decidir su descripción.', n; END IF;
+    IF current_database() = 'certificacion_anfeca' THEN
+        RAISE EXCEPTION 'DETENIDO: la conciliación no se ejecuta sobre la base de 8088; use la copia independiente de 8090.';
+    END IF;
     IF pg_temp.existe('institucion', 'inst_coord_regional_cert_academica') AND pg_temp.existe('institucion', 'ins_coord_regional_cert_academi') THEN
         RAISE EXCEPTION 'DETENIDO: existen ambas columnas de coordinación regional; se requiere conciliarlas manualmente.';
     END IF;
@@ -105,9 +110,9 @@ END $c$;
 \echo '== 1-5. Conciliación'
 DO $a$
 BEGIN
-    IF pg_temp.existe('institucion', 'inst_coord_regional_cert_academica') THEN
-        ALTER TABLE public.institucion RENAME COLUMN inst_coord_regional_cert_academica TO ins_coord_regional_cert_academi;
-        RAISE NOTICE 'institucion: inst_coord_regional_cert_academica renombrada a ins_coord_regional_cert_academi (datos conservados)';
+    IF pg_temp.existe('institucion', 'ins_coord_regional_cert_academi') THEN
+        ALTER TABLE public.institucion RENAME COLUMN ins_coord_regional_cert_academi TO inst_coord_regional_cert_academica;
+        RAISE NOTICE 'institucion: C-01 aplicada (ins_coord_regional_cert_academi → inst_coord_regional_cert_academica, datos conservados)';
     END IF;
     ALTER TABLE public.institucion ALTER COLUMN inst_numero_afiliacion SET NOT NULL, ALTER COLUMN inst_facultad SET NOT NULL,
         ALTER COLUMN inst_zona SET NOT NULL;

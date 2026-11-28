@@ -29,7 +29,7 @@ PHP_BIN="${PHP_BIN:-/usr/bin/php}"
 PHP_FPM_BIN="${PHP_FPM_BIN:-/usr/sbin/php-fpm}"
 FPM_SERVICIO="php-fpm-anfeca8088"
 USUARIO_WEB="${USUARIO_WEB:-apache}"
-SQL_SHA256="5798ce839af01339018536155ab17698c7cb953c7f150e2b9c6b268aab978285"
+SQL_SHA256="0d45c625d4cb714a50e4a5b702d8a2317e5b3d8f21d6955ee726e4a647667d6a"   # referencia vigente (C-01)
 # Catálogo SEPOMEX oficial (no se versiona: su licencia prohíbe redistribuirlo). Ruta fuera de public/ y su huella.
 SEPOMEX_ARCHIVO="${SEPOMEX_ARCHIVO:-/var/lib/anfeca8088/sepomex/CPdescarga.xls}"
 SEPOMEX_SHA256="${SEPOMEX_SHA256:-}"
@@ -80,10 +80,10 @@ run "sudo -u postgres '$PG_BIN/psql' -h 127.0.0.1 -p $PG_PUERTO -d $BD -v ON_ERR
 # ---------------------------------------------------------------- 2. Aplicación
 paso "2. Aplicación en $APP (rama $RAMA)"
 run "git clone --branch '$RAMA' --single-branch '$REPO' '$APP'"
-run "cd '$APP' && echo '$SQL_SHA256  database/sql/oficial/anfeca_modelo_powerdesigner_certificacion_anfeca_sin_esquema.sql' | sha256sum -c -"
+run "cd '$APP' && echo '$SQL_SHA256  database/sql/oficial/anfeca_modelo_36_tablas_vigente.sql' | sha256sum -c -"
 
 paso "2b. 36 tablas oficiales (SQL aprobado, sin modificaciones) y verificación física"
-run "PGPASSWORD=\"\$CLAVE_ROL\" '$PG_BIN/psql' -h 127.0.0.1 -p $PG_PUERTO -U $ROL_BD -d $BD -v ON_ERROR_STOP=1 -f '$APP/database/sql/oficial/anfeca_modelo_powerdesigner_certificacion_anfeca_sin_esquema.sql'"
+run "PGPASSWORD=\"\$CLAVE_ROL\" '$PG_BIN/psql' -h 127.0.0.1 -p $PG_PUERTO -U $ROL_BD -d $BD -v ON_ERROR_STOP=1 -f '$APP/database/sql/oficial/anfeca_modelo_36_tablas_vigente.sql'"
 
 paso "2c. Dependencias, compilación del frontend existente y configuración"
 run "cd '$APP' && '$PHP_BIN' \$(command -v composer) install --no-dev --optimize-autoloader --no-interaction"

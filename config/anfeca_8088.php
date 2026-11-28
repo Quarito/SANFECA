@@ -14,7 +14,7 @@
 return [
 
     // Archivo aprobado y su huella. anfeca:verificar-esquema compara la base contra este archivo.
-    'sql_oficial' => database_path('sql/oficial/anfeca_modelo_powerdesigner_certificacion_anfeca_sin_esquema.sql'),
+    'sql_oficial' => database_path('sql/oficial/anfeca_modelo_36_tablas_vigente.sql'),
 
     // Disco y carpeta de los expedientes. Ruta de cada archivo: {carpeta}/{SOLI_ID}/{SOCU_ID}.{ext}
     'disco' => env('ANFECA_DISCO_EXPEDIENTES', 'local'),

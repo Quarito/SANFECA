@@ -51,7 +51,7 @@ if [[ "$PARTE" == *B* ]]; then
     [ "$(leer "select count(*) from pg_database where datname = '$BD_PRUEBAS'" "$ROL_APP" postgres)" = 0 ] \
         || alto "$BD_PRUEBAS ya existe: use otro nombre (BD_PRUEBAS=…); no se reutiliza ni se borra."
     admin_psql -v ON_ERROR_STOP=1 -c "create database $BD_PRUEBAS owner $ROL_APP" || alto "No se creó $BD_PRUEBAS."
-    "$PG_BIN/psql" -X -U "$ROL_APP" -d "$BD_PRUEBAS" -v ON_ERROR_STOP=1 -q -f "$PREPARACION/database/sql/oficial/anfeca_modelo_powerdesigner_certificacion_anfeca_sin_esquema.sql"
+    "$PG_BIN/psql" -X -U "$ROL_APP" -d "$BD_PRUEBAS" -v ON_ERROR_STOP=1 -q -f "$PREPARACION/database/sql/oficial/anfeca_modelo_36_tablas_vigente.sql"
     paso "B2 · Copia de prueba $PRUEBAS (servida solo en 127.0.0.1:8189)"
     [ -e "$PRUEBAS" ] && alto "$PRUEBAS ya existe."
     rsync -a --exclude .git --exclude node_modules --exclude storage "$PREPARACION/" "$PRUEBAS/"

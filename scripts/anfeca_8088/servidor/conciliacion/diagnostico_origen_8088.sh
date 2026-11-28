@@ -1,6 +1,6 @@
 #!/bin/bash
 # =====================================================================================================================
-# ANFECA 8088 · Diagnóstico del ORIGEN de las 15 diferencias del modelo físico. SOLO LECTURA: no modifica PostgreSQL,
+# ANFECA 8088 · Diagnóstico del ORIGEN de las diferencias del modelo físico (15 reportadas; 13 pendientes tras C-01). SOLO LECTURA: no modifica PostgreSQL,
 # archivos de la aplicación ni configuración; solo escribe su propio registro en $SALIDA.
 #   1) diagnostico_diferencias_8088.sql en una transacción de solo lectura.
 #   2) Búsqueda de las sentencias que crearon las diferencias en registros de PostgreSQL, historiales de shell/psql,

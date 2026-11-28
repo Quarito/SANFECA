@@ -14,7 +14,7 @@ ENTORNO="$C DB_PASSWORD=$ROL_CLAVE DB_DATABASE=$BASE_OK" caso 0 verificar_esquem
 ENTORNO="$C DB_PASSWORD=$ROL_CLAVE DB_DATABASE=$BASE_DIF" caso 2 verificar_esquema artisan_prep
 ENTORNO="$C DB_PASSWORD=incorrecta DB_DATABASE=$BASE_OK" caso 3 verificar_esquema artisan_prep
 ENTORNO="$C DB_PASSWORD=$ROL_CLAVE DB_DATABASE=no_existe_base" caso 3 verificar_esquema artisan_prep
-F=$PREPARACION/database/sql/oficial/anfeca_modelo_powerdesigner_certificacion_anfeca_sin_esquema.sql; mv $F $F.oculto   # solo en la copia de laboratorio
+F=$PREPARACION/database/sql/oficial/anfeca_modelo_36_tablas_vigente.sql; mv $F $F.oculto   # solo en la copia de laboratorio
 ENTORNO="$C DB_PASSWORD=$ROL_CLAVE DB_DATABASE=$BASE_OK" caso 4 verificar_esquema artisan_prep; mv $F.oculto $F
 sin_comando() { [ "$1" = list ] && echo "about   Display basic information"; return 0; }
 caso 5 verificar_esquema sin_comando
@@ -26,6 +26,6 @@ caso 3 verificar_esquema anterior_conexion
 ( ENTORNO="$C DB_PASSWORD=$ROL_CLAVE DB_DATABASE=$BASE_DIF" exigir_esquema_oficial artisan_prep ) > $S/prueba_esquema/exigir1.txt 2>&1; r=$?; n=$((n+1)); [ $r != 0 ] && grep -q DETENIDO $S/prueba_esquema/exigir1.txt && { ok=$((ok+1)); echo "APROBADA el bloque se detiene con diferencias"; } || echo "FALLIDA detención"
 grep '^ - ' $(ls -t $S/prueba_esquema/esquema_*.txt | head -1) > $S/prueba_esquema/autorizadas.txt
 ( DIFERENCIAS_AUTORIZADAS=$S/prueba_esquema/autorizadas.txt ENTORNO="$C DB_PASSWORD=$ROL_CLAVE DB_DATABASE=$BASE_DIF" exigir_esquema_oficial artisan_prep ) > $S/prueba_esquema/exigir2.txt 2>&1; r=$?; n=$((n+1)); [ $r = 0 ] && { ok=$((ok+1)); echo "APROBADA continúa solo con la lista autorizada idéntica"; } || echo "FALLIDA lista autorizada"
-head -14 $S/prueba_esquema/autorizadas.txt > $S/prueba_esquema/autorizadas_parcial.txt
+head -n -1 $S/prueba_esquema/autorizadas.txt > $S/prueba_esquema/autorizadas_parcial.txt
 ( DIFERENCIAS_AUTORIZADAS=$S/prueba_esquema/autorizadas_parcial.txt ENTORNO="$C DB_PASSWORD=$ROL_CLAVE DB_DATABASE=$BASE_DIF" exigir_esquema_oficial artisan_prep ) > $S/prueba_esquema/exigir3.txt 2>&1; r=$?; n=$((n+1)); [ $r != 0 ] && { ok=$((ok+1)); echo "APROBADA se detiene si la lista autorizada no coincide"; } || echo "FALLIDA lista parcial"
 echo "Resultado: $ok/$n verificaciones aprobadas."

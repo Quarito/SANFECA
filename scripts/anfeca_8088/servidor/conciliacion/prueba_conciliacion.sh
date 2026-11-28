@@ -28,7 +28,7 @@ app "$NU" -q -c "update institucion set inst_zona = null where inst_id_instituci
 app "$LA" -q -c "update tipo_convocatoria set tico_tipo_convocatoria = repeat('Descripción extensa ', 4) where tico_id_tipo_convocatoria = (select min(tico_id_tipo_convocatoria) from tipo_convocatoria)"
 
 [ "$(esquema "$SI")" = 2 ]; r "La base de simulación presenta las diferencias (código 2)" $? "$(esquema "$SI")"
-instituciones "$SI" | grep -q 42703; r "Antes de conciliar, la búsqueda de institución falla con 42703" $? "$(instituciones "$SI")"
+instituciones "$SI" | grep -q "^instituciones: [1-9]"; r "Con C-01 la búsqueda de institución funciona aun antes de conciliar lo pendiente" $? "$(instituciones "$SI")"
 h=$(huella "$SI"); rc=$(conc "$SI" simulacion); [ "$rc" = 0 ] && grep -q "SIMULACIÓN" "$SALIDA/simulacion.log" && grep -q "Tablas 36 · atributos 173 · llaves foráneas 35" "$SALIDA/simulacion.log" \
     && [ "$(esquema "$SI")" = 2 ] && [ "$h" = "$(huella "$SI")" ]
 r "Por omisión simula: alcanza 36/173/35 dentro de la transacción y revierte todo" $? "rc=$rc"
@@ -41,8 +41,8 @@ rc=$(conc "$D" datos_autorizados -v retirar_con_datos=si -v confirmar=si)
 [ "$rc" = 0 ] && [ "$(esquema "$D")" = 0 ] && grep -q "Campus Ficticio" "$SALIDA/datos_autorizados/institucion_adicionales.csv" \
     && (cd "$SALIDA/datos_autorizados" && sha256sum -c --quiet SHA256SUMS_conciliacion)
 r "Con autorización: esquema oficial (código 0) y datos preservados en CSV con huella SHA-256" $? "rc=$rc"
-[ "$(app "$D" -Atc "select count(*) from institucion where ins_coord_regional_cert_academi is not null")" = "$(app "$D" -Atc "select count(*) from institucion")" ]
-r "La coordinación regional se conserva al renombrar la columna" $?
+[ "$(app "$D" -Atc "select count(*) from institucion where inst_coord_regional_cert_academica is not null")" = "$(app "$D" -Atc "select count(*) from institucion")" ]
+r "La coordinación regional (C-01) se conserva" $?
 rc=$(conc "$NU" nulos -v confirmar=si); grep -q "DETENIDO: 1 instituciones" "$SALIDA/nulos.log" && [ "$(esquema "$NU")" = 2 ]
 r "Institución con zona nula: se detiene sin cambios" $? "rc=$rc"
 rc=$(conc "$LA" largo -v confirmar=si); grep -q "exceden 50 caracteres" "$SALIDA/largo.log" && [ "$(esquema "$LA")" = 2 ]

@@ -5,8 +5,9 @@
 -- Uso (VS Code SSH):
 --   PGOPTIONS='-c default_transaction_read_only=on' psql -X -h 127.0.0.1 -p 5488 -U anfeca_8088 -d certificacion_anfeca \
 --        -v ON_ERROR_STOP=1 -f diagnostico_diferencias_8088.sql 2>&1 | tee ~/diagnostico_diferencias_8088_$(date +%Y%m%d_%H%M).txt
--- Referencia: database/sql/oficial/anfeca_modelo_powerdesigner_certificacion_anfeca_sin_esquema.sql
---             (SHA-256 5798ce839af01339018536155ab17698c7cb953c7f150e2b9c6b268aab978285)
+-- Referencia vigente: database/sql/oficial/anfeca_modelo_36_tablas_vigente.sql = export original de PowerDesigner
+--   (SHA-256 5798ce83…8285, sin cambios) + corrección autorizada C-01: institucion.inst_coord_regional_cert_academica
+--   (antes ins_coord_regional_cert_academi). Ver database/sql/oficial/CORRECCIONES_AUTORIZADAS.md
 -- =====================================================================================================================
 \set ON_ERROR_STOP on
 \pset footer off
@@ -118,7 +119,7 @@ WITH oficial(tabla, columna, tipo, longitud, nulo) AS (VALUES
         ('institucion', 'inst_nombre', 'character varying', 300, false),
         ('institucion', 'inst_facultad', 'character varying', 500, false),
         ('institucion', 'inst_zona', 'character varying', 80, false),
-        ('institucion', 'ins_coord_regional_cert_academi', 'character varying', 200, true),
+        ('institucion', 'inst_coord_regional_cert_academica', 'character varying', 200, true),
         ('nivel_profesional', 'nipr_id_nivel_profesional', 'integer', NULL, false),
         ('nivel_profesional', 'nipr_nivel_profesional', 'character varying', 300, false),
         ('pago', 'pago_id_pago', 'integer', NULL, false),
@@ -305,7 +306,7 @@ WITH oficial(tabla, columna, tipo, longitud, nulo) AS (VALUES
         ('institucion', 'inst_nombre', 'character varying', 300, false),
         ('institucion', 'inst_facultad', 'character varying', 500, false),
         ('institucion', 'inst_zona', 'character varying', 80, false),
-        ('institucion', 'ins_coord_regional_cert_academi', 'character varying', 200, true),
+        ('institucion', 'inst_coord_regional_cert_academica', 'character varying', 200, true),
         ('nivel_profesional', 'nipr_id_nivel_profesional', 'integer', NULL, false),
         ('nivel_profesional', 'nipr_nivel_profesional', 'character varying', 300, false),
         ('pago', 'pago_id_pago', 'integer', NULL, false),
@@ -529,7 +530,7 @@ UNION ALL SELECT 'institucion: filas con inst_zona nula (impiden NOT NULL)', cou
 UNION ALL SELECT 'institucion: inst_numero_afiliacion con más de 7 caracteres', count(*) FROM institucion WHERE length(inst_numero_afiliacion) > 7
 UNION ALL SELECT 'tipo_convocatoria: descripciones de más de 50 caracteres (impiden VARCHAR(50))', count(*) FROM tipo_convocatoria WHERE length(tico_tipo_convocatoria) > 50
 UNION ALL SELECT 'institucion: inst_coord_regional_cert_academica de más de 200 caracteres', count(*) FROM institucion WHERE length(inst_coord_regional_cert_academica::text) > 200
-UNION ALL SELECT 'institucion: existe ins_coord_regional_cert_academi (nombre oficial)', count(*) FROM information_schema.columns
+UNION ALL SELECT 'institucion: existe el nombre ANTERIOR ins_coord_regional_cert_academi (debe ser 0; C-01)', count(*) FROM information_schema.columns
        WHERE table_schema = 'public' AND table_name = 'institucion' AND column_name = 'ins_coord_regional_cert_academi'
 UNION ALL SELECT 'convocatoria: valores en atributos adicionales (se perderían al retirarlos)', count(*) FROM convocatoria WHERE conv_anio IS NOT NULL OR conv_id_certificacion IS NOT NULL
 UNION ALL SELECT 'estudio_profesional: valores en espr_id_area_certificacion', count(*) FROM estudio_profesional WHERE espr_id_area_certificacion IS NOT NULL
@@ -542,10 +543,10 @@ UNION ALL SELECT 'solicitud_documento: valores en sodo_url', count(*) FROM solic
 \endif
 
 \echo '== 8. Impacto en la aplicación de la rama integracion/fase9-8088'
-\echo '   La aplicación consulta institucion.ins_coord_regional_cert_academi (Instituciones.php, búsqueda de institución).'
-\echo '   Si la columna oficial no existe, esa consulta falla con SQLSTATE 42703 (columna inexistente).'
+\echo '   C-01 (autorizada): la aplicación consulta institucion.inst_coord_regional_cert_academica (Instituciones.php).'
+\echo '   Si ese nombre no existe, la búsqueda de institución falla con SQLSTATE 42703 (columna inexistente).'
 SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'institucion'
-                          AND column_name = 'ins_coord_regional_cert_academi') THEN 'funciona' ELSE 'FALLA (42703)' END AS busqueda_de_institucion;
+                          AND column_name = 'inst_coord_regional_cert_academica') THEN 'funciona (C-01 presente)' ELSE 'FALLA (42703)' END AS busqueda_de_institucion;
 
 \echo '== 9. Propiedad, permisos y actividad de las tablas afectadas'
 SELECT c.relname AS tabla, pg_get_userbyid(c.relowner) AS propietario, c.relacl AS permisos, s.n_tup_ins AS insertadas, s.n_tup_upd AS actualizadas,

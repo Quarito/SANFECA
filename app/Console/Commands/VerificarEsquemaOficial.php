@@ -18,7 +18,7 @@ class VerificarEsquemaOficial extends Command
 {
     protected $signature = 'anfeca:verificar-esquema {--json : Salida JSON}';
 
-    protected $description = 'Compara la base con el SQL oficial de 36 tablas (solo lectura).';
+    protected $description = 'Compara la base con la referencia vigente de 36 tablas: SQL oficial + correcciones autorizadas (solo lectura).';
 
     private const TIPOS = [
         'SERIAL' => 'integer', 'INT4' => 'integer', 'VARCHAR' => 'character varying', 'BOOL' => 'boolean',
@@ -166,7 +166,7 @@ class VerificarEsquemaOficial extends Command
                 ."({$resumen['servidor']->h}:{$resumen['servidor']->p}, PostgreSQL {$resumen['servidor']->v}).");
             $this->line("Tablas {$resumen['tablas']['fisicas']}/{$resumen['tablas']['oficial']} · atributos {$resumen['atributos']['fisicos']}/{$columnas} · FK {$resumen['fk']['fisicas']}/{$resumen['fk']['oficial']}"
                 ." · índices {$resumen['indices']['fisicos']} ({$resumen['indices']['oficial_explicitos']} explícitos + {$resumen['indices']['de_pk']} de PK) · secuencias {$secuencias}");
-            $dif ? $this->error(count($dif).' diferencias:') : $this->info('Sin diferencias: el esquema físico coincide exactamente con el SQL oficial.');
+            $dif ? $this->error(count($dif).' diferencias:') : $this->info('Sin diferencias: el esquema físico coincide exactamente con el SQL oficial (referencia vigente con correcciones autorizadas).');
             foreach ($dif as $d) {
                 $this->line(" - {$d}");
             }

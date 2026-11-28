@@ -20,7 +20,7 @@ class Institucion extends PdmModel
         'inst_nombre',
         'inst_facultad',
         'inst_zona',
-        'ins_coord_regional_cert_academi',
+        'inst_coord_regional_cert_academica',
     ];
 
     protected $casts = [
