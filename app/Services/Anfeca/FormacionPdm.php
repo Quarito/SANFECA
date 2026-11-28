@@ -3,6 +3,7 @@
 namespace App\Services\Anfeca;
 
 use App\Services\Catalogos\CatalogoLicenciaturas;
+use App\Exceptions\Catalogos\CatalogoNoDisponible;
 use App\Services\Catalogos\CatalogoPosgrados;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ use Throwable;
  * Formación académica sobre NIVEL_PROFESIONAL, ESTUDIO_PROFESIONAL y PERSONA_ESTUDIO_PROFESIONAL.
  *
  * Cada persona tiene a lo sumo dos estudios vigentes: la licenciatura de ORIGEN y el ÚLTIMO grado.
- * ESTUDIO_PROFESIONAL.ESPR_ESTADO (3 caracteres) codifica, como diccionario de datos:
+ * Las filas importadas ACT conservan su estado. El nivel determina el papel de un estudio ACT.
+ * Se siguen leyendo las filas Laravel anteriores cuyo código de tres caracteres representa:
  *   1.º origen del nombre: G categoría general · C catálogo ANUIES · M captura manual · O «Otro» (texto libre)
  *   2.º categoría del título: A Administración · C Contaduría · I Informática · N Negocios Internacionales · O Otro
  *   3.º papel del estudio: L licenciatura de origen · U último grado
@@ -37,7 +39,12 @@ final class FormacionPdm
             ->join('estudio_profesional as e', 'e.espr_id_estudio_profesional', '=', 'p.pees_id_estuido_profesional')
             ->join('nivel_profesional as n', 'n.nipr_id_nivel_profesional', '=', 'e.espr_id_nivel_profesional')
             ->where('p.pees_id_persona', $persona)
-            ->whereRaw('substr(e.espr_estado, 3, 1) = ?', [self::ROLES[$papel]])
+            ->where(function ($q) use ($papel) {
+                $q->whereRaw("e.espr_estado ~ '^[GCMO][ACINO][LU]$' and substr(e.espr_estado, 3, 1) = ?", [self::ROLES[$papel]])
+                    ->orWhere(fn ($activo) => $activo->where('e.espr_estado', 'ACT')
+                        ->whereIn('n.nipr_nivel_profesional', $papel === 'origen'
+                            ? ['Licenciatura'] : ['Especialidad', 'Maestría', 'Doctorado']));
+            })
             ->orderByDesc('p.pees_id_persona_estudio_profesi')
             ->first();
     }
@@ -93,6 +100,20 @@ final class FormacionPdm
         if ($sufijo === 'ultimo_grado') {
             $datos['nivel_ultimo_grado'] = $fila->nipr_nivel_profesional;
         }
+        if ($fila->espr_estado === 'ACT') {
+            $coincidencia = $this->tituloActivo($nombre, $fila->nipr_nivel_profesional);
+            $datos["titulo_{$sufijo}_especifico"] = $nombre;
+            if ($coincidencia !== null) {
+                $datos["titulo_{$sufijo}"] = $coincidencia['area'];
+                $datos["titulo_{$sufijo}_otro"] = $coincidencia['area'] === 'Otro' ? $nombre : null;
+                $datos["origen_titulo_{$sufijo}"] = 'catalogo';
+                $datos[$sufijo === 'origen' ? 'clave_licenciatura_catalogo' : 'clave_posgrado_catalogo'] = $coincidencia['clave'];
+                $datos[$sufijo === 'origen' ? 'version_catalogo_licenciaturas' : 'version_catalogo_posgrados'] = $coincidencia['version'];
+            }
+
+            return $datos;
+        }
+
         switch ($fila->espr_estado[0]) {
             case 'G':
                 $datos["titulo_{$sufijo}"] = $nombre;
@@ -166,11 +187,48 @@ final class FormacionPdm
         return [$nombre, $nivel, $tipo.$letra.self::ROLES[$sufijo === 'origen' ? 'origen' : 'ultimo']];
     }
 
-    private function estudioProfesional(string $nombre, string $nivel, string $estado): int
+    private function tituloActivo(string $nombre, string $nivel): ?array
+    {
+        $licenciatura = $nivel === 'Licenciatura';
+        try {
+            $catalogo = app($licenciatura ? CatalogoLicenciaturas::class : CatalogoPosgrados::class);
+            $coincidencias = [];
+            foreach ($catalogo->datos()['titulos'] as $titulo) {
+                if (($licenciatura || $titulo['nivel'] === $nivel)
+                    && mb_strtolower(trim($titulo['titulo'])) === mb_strtolower(trim($nombre))) {
+                    $coincidencias[] = $titulo + ['version' => $catalogo->version()];
+                }
+            }
+
+            return count($coincidencias) === 1 ? $coincidencias[0] : null;
+        } catch (CatalogoNoDisponible) {
+            return null;
+        }
+    }
+
+    private function estudioProfesional(string $nombre, string $nivel, string $estado, string $sufijo, array $datos): int
     {
         $nivelId = Catalogo::nivel($nivel);
-        $id = DB::table('estudio_profesional')->where('espr_nombre', $nombre)->where('espr_id_nivel_profesional', $nivelId)
-            ->where('espr_estado', $estado)->value('espr_id_estudio_profesional');
+        $existentes = DB::table('estudio_profesional')->where('espr_id_nivel_profesional', $nivelId);
+        // La comparación Unicode de títulos no depende del locale del clúster PostgreSQL.
+        $activos = (clone $existentes)->where('espr_estado', 'ACT')
+            ->get(['espr_id_estudio_profesional', 'espr_nombre'])
+            ->filter(fn ($fila) => mb_strtolower(trim($fila->espr_nombre)) === mb_strtolower(trim($nombre)));
+        if ($activos->isNotEmpty()) {
+            $titulo = $this->tituloActivo($activos->first()->espr_nombre, $nivel);
+            $clave = $sufijo === 'origen' ? 'clave_licenciatura_catalogo' : 'clave_posgrado_catalogo';
+            if ($activos->count() !== 1 || $titulo === null || $estado[0] !== 'C'
+                || ($sufijo !== 'origen' && $nivel === 'Licenciatura')
+                || $titulo['clave'] !== ($datos[$clave] ?? null)
+                || $titulo['area'] !== ($datos["titulo_{$sufijo}"] ?? null)) {
+                throw ValidationException::withMessages(["titulo_{$sufijo}" =>
+                    'El estudio ya existe como activo. Seleccione su coincidencia inequívoca en el catálogo para conservar su clasificación.']);
+            }
+
+            return (int) $activos->first()->espr_id_estudio_profesional;
+        }
+
+        $id = $existentes->where('espr_nombre', $nombre)->where('espr_estado', $estado)->value('espr_id_estudio_profesional');
 
         return $id ?? DB::table('estudio_profesional')->insertGetId([
             'espr_id_nivel_profesional' => $nivelId, 'espr_nombre' => $nombre, 'espr_estado' => $estado,
@@ -186,6 +244,7 @@ final class FormacionPdm
      */
     public function guardar(int $persona, int $solicitud, array $datos, array $archivos, bool $sinPosgrado): void
     {
+        $this->documentos->verificarCatalogo(array_keys($archivos));
         $actual = $this->cargar($persona, $solicitud);
         $completo = array_merge($actual?->toArray() ?? [], $datos);
 
@@ -193,12 +252,17 @@ final class FormacionPdm
         if (!$sinPosgrado) {
             $papeles['ultimo'] = ['ultimo_grado', (string) ($completo['nivel_ultimo_grado'] ?? '')];
         }
+        $estudios = [];
         foreach ($papeles as $papel => [$sufijo, $nivel]) {
             $codigo = $nivel === '' ? null : $this->codificar($completo, $sufijo, $nivel);
-            if ($codigo === null) {
-                continue;
+            if ($codigo !== null) {
+                [$nombre, $nivelEstudio, $estado] = $codigo;
+                $estudios[$papel] = $this->estudioProfesional($nombre, $nivelEstudio, $estado, $sufijo, $completo);
+            } elseif (isset($archivos["titulo_{$sufijo}_archivo"]) || isset($archivos["cedula_{$sufijo}_archivo"])) {
+                throw ValidationException::withMessages(["titulo_{$sufijo}" => 'Seleccione un estudio identificable antes de adjuntar sus documentos.']);
             }
-            $espr = $this->estudioProfesional(...$codigo);
+        }
+        foreach ($estudios as $papel => $espr) {
             $fila = $this->estudio($persona, $papel);
             $campoTitulo = $papel === 'origen' ? 'titulo_origen_archivo' : 'titulo_ultimo_grado_archivo';
             $campoCedula = $papel === 'origen' ? 'cedula_origen_archivo' : 'cedula_ultimo_grado_archivo';

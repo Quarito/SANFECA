@@ -250,6 +250,12 @@ private function solicitudActiva(Request $request): ?SolicitudCertificacion
                     ]);
                 }
 
+                $camposCargados = array_keys(array_filter($camposDocumentos, fn ($nombre, $campo) => $request->hasFile($campo), ARRAY_FILTER_USE_BOTH));
+                if (filled($datos['link'] ?? null)) {
+                    $camposCargados[] = 'link';
+                }
+                $this->documentosPdm->verificarCatalogo($camposCargados);
+
                 foreach ($camposDocumentos as $campo => $nombre) {
                     if ($request->hasFile($campo)) {
                         $rutasCreadas[] = $this->documentosPdm->guardar($solicitudBloqueada->id, $campo, $request->file($campo));
