@@ -57,7 +57,16 @@ como **por medir** y ninguna se concilia.
 | P-12 | FK `fk_convocatoria_certificacion` | — | FK adicional (§4: destino real) | — | Ninguno | No existe en el modelo | Retirar | Ninguno (no guarda datos) | Volver a crearla con la definición de §4 |
 | P-13 | FK `fk_estudio_area_certificacion` | — | FK adicional | — | Ninguno | No existe en el modelo | Retirar | Ninguno | Ídem |
 
-**Pendientes: 13.** Se actualizará con los conteos reales de 8088. Ninguna columna con información se elimina sin
+### Grupos y dependencias
+
+| Grupo | Diferencias | Dependencias (estructura y código) | Nota |
+|---|---|---|---|
+| **G-1 Área de los programas** | P-03 + P-13 | FK P-13 → `area_certificacion`; ningún código de la rama la usa; muy probablemente contiene la clasificación ANUIES por área que hoy proviene del JSON | Se analizan juntas. **No se autoriza agregarlas al modelo ni eliminarlas** sin conocer su contenido. Ver `ANUIES_AREAS_8090.md` |
+| G-2 Certificación de la convocatoria | P-02 + P-12 | FK P-12 (destino real en §4 del diagnóstico); redundante con `conv_id_tipo_convocatoria` | Se analizan juntas |
+| G-3 Restricciones de `institucion` | P-07, P-08, P-09 | Búsqueda de institución; P-09 define el alcance por zona («Sin clasificar» si es nula) | Restituir NOT NULL solo sin nulos |
+| Individuales | P-01, P-04, P-05, P-06, P-10, P-11 | Sin índices, vistas, disparadores ni código que las use (diagnóstico §5 lo confirma en 8088) | — |
+
+**Pendientes: 13** (9 decisiones: 3 grupos y 6 individuales). Se actualizará con los conteos reales de 8088. Ninguna columna con información se elimina sin
 identificar antes su contenido y decidir una solución.
 
 ## 4. Propuesta (solo en la copia 8090 o en laboratorio)

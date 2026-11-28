@@ -151,5 +151,14 @@ DIAG="$(dirname "$0")/../../anfeca_8088/servidor/conciliacion/diagnostico_difere
 [ -f "$DIAG" ] && PGOPTIONS='-c default_transaction_read_only=on' "$PG_BIN/psql" -X -U "$ROL_APP" -d "$BD" -v ON_ERROR_STOP=1 -f "$DIAG" > "$SALIDA/8088_diferencias_modelo.txt" 2>&1 \
     && sed -n '/== 1\./,/== 3\./p' "$SALIDA/8088_diferencias_modelo.txt" | head -30
 
+paso "13. Áreas de certificación y programas ANUIES (solo lectura)"
+AN="$(dirname "$0")/10_8_diagnostico_anuies_areas.sql"
+[ -f "$AN" ] && PGOPTIONS='-c default_transaction_read_only=on' "$PG_BIN/psql" -X -U "$ROL_APP" -d "$BD" -v ON_ERROR_STOP=1 -f "$AN" > "$SALIDA/8088_anuies_areas.txt" 2>&1 \
+    && sed -n '/== 2\./,/== 3\./p;/== 5\./,/== 6\./p' "$SALIDA/8088_anuies_areas.txt" | head -40
+leer "select column_name||' · '||data_type||' · '||coalesce(character_maximum_length::text,'')||' · nulos '||is_nullable from information_schema.columns
+      where table_schema='public' and table_name='institucion' and column_name in ('inst_coord_regional_cert_academica','ins_coord_regional_cert_academi')" \
+    | sed 's/^/C-01 · /'
+ls -l "$ENSAYO"/storage/app/private/catalogos/*.json "$APP8088"/storage/app/private/catalogos/*.json 2>/dev/null; sha256sum "$ENSAYO"/storage/app/private/catalogos/*.json 2>/dev/null
+
 echo; echo "Diagnóstico 10.1 terminado sin cambios. Resultados: $SALIDA"
 echo "Para enviarlos (sin secretos): tar -czf ~/fase10_1_resultados.tgz -C $(dirname "$SALIDA") $(basename "$SALIDA")"

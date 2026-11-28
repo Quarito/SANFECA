@@ -21,12 +21,12 @@ SELECT to_regclass('public.area_certificacion') IS NOT NULL AS existe,
 \echo '== 2. Registros de area_certificacion (identificadores reales) y correspondencia con las 5 áreas esperadas'
 WITH esperadas(orden, descripcion) AS (VALUES (1, 'Contaduría Pública'), (2, 'Administración'), (3, 'Informática Administrativa'),
         (4, 'Negocios Internacionales'), (5, 'Otras Disciplinas Vinculadas al Ámbito Económico Administrativo')),
-n AS (SELECT a.*, lower(translate(btrim(a.area_descripcion), 'ÁÉÍÓÚÜÑáéíóúüñ', 'AEIOUUNaeiouun')) AS clave FROM public.area_certificacion a)
+n AS (SELECT a.*, regexp_replace(btrim(regexp_replace(lower(translate(a.area_descripcion, 'ÁÉÍÓÚÜÑáéíóúüñ', 'AEIOUUNaeiouun')), '[^a-z0-9]+', ' ', 'g')), '^otras ', '') AS clave FROM public.area_certificacion a)
 SELECT e.orden, e.descripcion AS esperada, n.area_id_area_certificacion AS id_real, n.area_descripcion AS almacenada,
        CASE WHEN n.area_id_area_certificacion IS NULL THEN 'FALTA'
             WHEN n.area_descripcion = e.descripcion THEN 'idéntica'
-            ELSE 'equivalente (difiere en acentos, mayúsculas o espacios)' END AS resultado
-  FROM esperadas e LEFT JOIN n ON n.clave = lower(translate(e.descripcion, 'ÁÉÍÓÚÜÑáéíóúüñ', 'AEIOUUNaeiouun'))
+            ELSE 'equivalente (difiere en acentos, mayúsculas, signos o el prefijo «Otras»)' END AS resultado
+  FROM esperadas e LEFT JOIN n ON n.clave = regexp_replace(btrim(regexp_replace(lower(translate(e.descripcion, 'ÁÉÍÓÚÜÑáéíóúüñ', 'AEIOUUNaeiouun')), '[^a-z0-9]+', ' ', 'g')), '^otras ', '')
  ORDER BY e.orden;
 SELECT area_id_area_certificacion AS id, area_descripcion, length(area_descripcion) AS longitud FROM public.area_certificacion ORDER BY 1;
 SELECT count(*) AS registros,
