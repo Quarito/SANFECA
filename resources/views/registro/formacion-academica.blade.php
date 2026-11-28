@@ -371,7 +371,9 @@
     data-es-refrendo="{{ $solicitud?->tipo_tramite === 'refrendo' ? 'true' : 'false' }}"
     data-area-certificacion="{{ $areaCertificacion }}"
     data-titulos-permitidos="{{ json_encode($titulosPermitidos) }}"
-    data-instituciones="{{ $instituciones->toJson() }}"
+    data-institucion-guardada="{{ json_encode($institucionGuardada ?? null) }}"
+    data-numero-afiliacion="{{ is_string(old('numero_afiliacion')) ? old('numero_afiliacion') : ($institucionGuardada->numero_afiliacion ?? '') }}"
+    data-url-institucion="{{ request()->is('preview/*') ? '' : route('registro.formacion.institucion') }}"
     data-catalogo-posgrados="{{ json_encode([
         'estado' => $catalogoPosgrados['estado'] ?? 'desactivado',
         'url' => ($catalogoPosgrados['estado'] ?? null) === 'activo' ? route('registro.catalogos.posgrados') : null,
@@ -413,7 +415,6 @@
         'modo_titulo_ultimo_grado' => old('modo_titulo_ultimo_grado'),
         'clave_posgrado_catalogo_old' => old('clave_posgrado_catalogo'),
         'titulo_ultimo_grado_manual' => old('titulo_ultimo_grado_manual'),
-	    'institucion_afiliada_id' => old('institucion_afiliada_id', $formacion?->institucion_afiliada_id),
 	    'titulo_origen_archivo' => !empty($formacion?->titulo_origen_archivo),
 	    'cedula_origen_archivo' => !empty($formacion?->cedula_origen_archivo),
 	    'titulo_ultimo_grado_archivo' => !empty($formacion?->titulo_ultimo_grado_archivo),

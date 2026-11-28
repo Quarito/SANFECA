@@ -101,8 +101,9 @@ def registrar(c, curp, correo, clave, telefono_particular='5511112222'):
 
 
 def flujo_formacion(c, persona, institucion, solicitud, sufijo, refrendo=False):
+    afiliacion = uno('select inst_numero_afiliacion from institucion where inst_id_institucion = %s', institucion)
     datos = {'nivel_origen': 'Licenciatura', 'nivel_ultimo_grado': 'Maestría', 'titulo_ultimo_grado': 'Administración',
-             'institucion_afiliada_id': institucion}
+             'numero_afiliacion': afiliacion}
     if not refrendo or not uno("select 1 from persona_estudio_profesional p join estudio_profesional e on e.espr_id_estudio_profesional = p.pees_id_estuido_profesional "
                                "where p.pees_id_persona = %s and substr(e.espr_estado,3,1) = 'L'", persona):
         datos['titulo_origen'] = 'Administración'
@@ -209,7 +210,20 @@ def principal():
            sol and sol[0][0] == sol[0][1] and sol[0][5] == '' and uno("select count(*) from estado_solicitud where esso_id_solicitud = %s and esso_siglas = 'BO'", solicitud) == '1')
 
     # ------------------------------------------------------------------ 9 · Formación académica
+    ruta_institucion = '/registro/formacion-academica/institucion'
+    buscar = lambda numero: c.get(ruta_institucion, params={'numero_afiliacion': numero}, headers={'Accept': 'application/json'})
+    afiliada = buscar('LAB0002')
+    prueba(9, 'Afiliación exacta, datos institucionales y Campus sin dato oficial',
+           afiliada.status_code == 200 and str(afiliada.json()['id']) == inst
+           and afiliada.json()['numero_afiliacion'] == 'LAB0002' and afiliada.json()['campus'] is None)
+    prueba(9, 'La búsqueda exige sesión y rechaza afiliaciones parciales o inválidas',
+           Cliente().get(ruta_institucion, params={'numero_afiliacion': 'LAB0002'}).status_code == 302
+           and buscar('LAB000').status_code == 404 and buscar('LAB00022').status_code == 422)
     guardada, autorizada, fa = flujo_formacion(c, persona, inst, solicitud, 'ini')
+    pagina_formacion = c.get('/registro/formacion-academica')
+    prueba(9, 'La afiliación persistida se recupera al regresar a Formación',
+           pagina_formacion.status_code == 200 and 'data-numero-afiliacion="LAB0002"' in pagina_formacion.text)
+
     pees = sql('select e.espr_nombre, n.nipr_nivel_profesional, e.espr_estado, p.pees_url_titulo is not null, p.pees_url_cedula is not null '
                'from persona_estudio_profesional p join estudio_profesional e on e.espr_id_estudio_profesional = p.pees_id_estuido_profesional '
                'join nivel_profesional n on n.nipr_id_nivel_profesional = e.espr_id_nivel_profesional where p.pees_id_persona = %s order by 3', persona)

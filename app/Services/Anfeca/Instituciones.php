@@ -24,6 +24,27 @@ final class Instituciones
             ->selectRaw('null::varchar as campus');
     }
 
+    /** Hasta dos resultados para distinguir una afiliación inexistente de una ambigua. */
+    public function porAfiliacion(string $numero): Collection
+    {
+        return DB::table('institucion')->where('inst_numero_afiliacion', $numero)->limit(2)->pluck('inst_id_institucion');
+    }
+
+    public function detalleFormacion(?int $id): ?object
+    {
+        $institucion = $this->porId($id);
+        if ($institucion === null) {
+            return null;
+        }
+
+        $institucion->sede = DB::table('sede')->where('inst_id_institucion', $id)
+            ->orderBy('sede_id_sede')->pluck('sede_descripcion')
+            ->map(fn ($sede) => trim((string) $sede))->filter(fn ($sede) => $sede !== '')->unique()->implode(' · ');
+        unset($institucion->coordinacion_regional);
+
+        return $institucion;
+    }
+
     public function lista(): Collection
     {
         return $this->consulta()->orderBy('i.inst_numero_afiliacion')->get();

@@ -12,9 +12,11 @@ use App\Services\Catalogos\CatalogoPosgrados;
 use App\Services\Catalogos\TituloOrigen;
 use App\Services\Catalogos\TituloUltimoGrado;
 use App\Services\Formacion\RequisitosFormacion;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Fluent;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
@@ -76,11 +78,37 @@ public function create(Request $request)
                 []
             ),
             'formacion' => $formacion,
-            'instituciones' => $this->instituciones->lista(),
+            'institucionGuardada' => $this->instituciones->detalleFormacion(
+                DB::table('persona')->where('pers_id_persona', $solicitud->persona_id)->value('pers_id_institucion')
+            ),
         ]);
     }
 
-    
+    public function buscarInstitucion(Request $request): JsonResponse
+    {
+        abort_unless($this->verificarSolicitud($request), 403);
+        $datos = $request->validate([
+            'numero_afiliacion' => ['required', 'string', 'max:7'],
+        ]);
+
+        $ids = $this->instituciones->porAfiliacion($datos['numero_afiliacion']);
+        if ($ids->count() !== 1) {
+            return response()->json(['message' => $this->errorAfiliacion($ids->count())], $ids->isEmpty() ? 404 : 409);
+        }
+
+        $institucion = $this->instituciones->detalleFormacion($ids->first());
+        abort_if($institucion === null, 404, $this->errorAfiliacion(0));
+
+        return response()->json($institucion)->header('Cache-Control', 'private, no-store');
+    }
+
+    private function errorAfiliacion(int $coincidencias): string
+    {
+        return $coincidencias === 0
+            ? 'No se encontró una institución con ese número de afiliación.'
+            : 'El número de afiliación coincide con más de una institución. Contacta a Coordinación.';
+    }
+
 	public function store(Request $request)
         {
             $solicitud = $this->verificarSolicitud($request);
@@ -236,11 +264,26 @@ public function create(Request $request)
                 $reglas = array_merge($reglas, $tituloUltimoGrado->reglas($request));
             }
             $reglas = array_merge($reglas, $tituloOrigen->reglas($solicitud, $formacion));
+            // El contrato por ID se conserva para el formulario anterior durante una reversión.
+            $capturaManual = $request->exists('numero_afiliacion');
+            if ($capturaManual) {
+                unset($reglas['institucion_afiliada_id']);
+                $reglas['numero_afiliacion'] = ['required', 'string', 'max:7'];
+            }
             $datos = $request->validate($reglas, array_merge(
                 $tituloUltimoGrado->mensajes(),
                 $tituloOrigen->mensajes(),
                 RequisitosFormacion::mensajesDeclaracion($solicitud->area_certificacion)
             ));
+
+            if ($capturaManual) {
+                $ids = $this->instituciones->porAfiliacion($datos['numero_afiliacion']);
+                if ($ids->count() !== 1) {
+                    throw ValidationException::withMessages(['numero_afiliacion' => $this->errorAfiliacion($ids->count())]);
+                }
+                $datos['institucion_afiliada_id'] = $ids->first();
+                unset($datos['numero_afiliacion']);
+            }
 
             if ($esRefrendo && !empty($formacion?->titulo_origen)) {
                 // Conservar ambos valores históricos del título.
