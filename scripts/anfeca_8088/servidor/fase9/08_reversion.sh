@@ -12,8 +12,11 @@ run() { printf '    $ %s\n' "$*"; [ "${CONFIRMAR:-no}" = si ] && eval "$@"; }
 [ "${CONFIRMAR:-no}" = si ] || echo "SIMULACIÓN: no se ejecuta nada (CONFIRMAR=si para aplicar)."
 paso "Código y configuración de la aplicación"
 run "DIR_APP='$APP' artisan down --retry=60 || true"
-run "mv '$APP' '$APP.fase9_retirado_$(date +%Y%m%d%H%M%S)'"
+RETIRADO="$APP.fase9_retirado_$(date +%Y%m%d%H%M%S)"
+run "mv '$APP' '$RETIRADO'"
 run "tar -C '$(dirname "$APP")' -xzf '$RESPALDO/codigo_desplegado.tgz'"
+# Los expedientes cargados después del respaldo están en el directorio retirado: se incorporan sin borrar nada.
+run "rsync -a '$RETIRADO/storage/app/' '$APP/storage/app/'"
 run "install -m 640 -o root -g $USUARIO_WEB '$RESPALDO/env.respaldo' '$APP/.env'"
 run "mkdir -p '$APP/storage/framework/'{cache/data,sessions,views} '$APP/storage/logs' && chown -R root:$USUARIO_WEB '$APP' && chmod -R g+rwX '$APP/storage' '$APP/bootstrap/cache'"
 run "command -v restorecon >/dev/null && restorecon -R '$APP'"

@@ -34,7 +34,7 @@ cd /var/www/ANFECA_8088 && sudo -u apache php artisan anfeca:verificar-esquema
   - Validaciones: encabezado oficial, claves numéricas (CP de 5 dígitos con ceros iniciales), longitudes del modelo, una clave
     por nombre de entidad y de municipio, y conciliación con las entidades ya existentes (si un nombre difiere, se detiene).
   - `COLONIA` no tiene tipo de asentamiento: los registros que solo difieren en ese dato se guardan **una vez** (sin duplicar).
-  - Uso de memoria: ~311 MB; el comando eleva `memory_limit` a 1024 M; duración ~2 min 45 s.
+  - Memoria pico: 515 MB; el comando eleva `memory_limit` a 1024 M; duración ~2 min 47 s.
 - `anfeca:catalogos` ya no carga entidades: la geografía proviene exclusivamente de SEPOMEX. La configuración anterior
   (lista y alias de entidades) se retiró.
 
