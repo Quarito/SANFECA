@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
  */
 class CargarCatalogosAnfeca extends Command
 {
-    protected $signature = 'anfeca:catalogos {--convocatoria-anio= : Año de la convocatoria a registrar si no existe}';
+    protected $signature = 'anfeca:catalogos {--solo-documentos : Inserta solo tipos y estados documentales faltantes} {--convocatoria-anio= : Año de la convocatoria a registrar si no existe}';
 
     protected $description = 'Carga los catálogos de ANFECA en las 36 tablas oficiales (solo datos).';
 
@@ -20,6 +20,40 @@ class CargarCatalogosAnfeca extends Command
 
     public function handle(): int
     {
+        $this->insertadas = 0;
+        if ($this->option('solo-documentos')) {
+            if ($this->option('convocatoria-anio') !== null) {
+                $this->error('No combine --solo-documentos con --convocatoria-anio.');
+
+                return self::FAILURE;
+            }
+
+            try {
+                Catalogo::olvidar();
+                DB::transaction(function () {
+                    if (DB::getDriverName() === 'pgsql') {
+                        DB::statement('lock table documento, estado_documento in share row exclusive mode');
+                    }
+                    $this->documentales();
+                    foreach (array_keys(config('anfeca_8088.documentos')) as $campo) {
+                        Catalogo::documento($campo);
+                    }
+                    foreach (array_keys(config('anfeca_8088.estados_documento')) as $clave) {
+                        Catalogo::estadoDocumento($clave);
+                    }
+                });
+            } catch (\RuntimeException $e) {
+                Catalogo::olvidar();
+                $this->error($e->getMessage());
+
+                return self::FAILURE;
+            }
+            Catalogo::olvidar();
+            $this->info("Catálogos documentales verificados. Filas insertadas: {$this->insertadas}.");
+
+            return self::SUCCESS;
+        }
+
         DB::transaction(function () {
             // ENTIDAD_FEDERATIVA, ALCALDIA_MUNICIPIO y COLONIA se cargan del catálogo oficial con anfeca:sepomex.
 
@@ -29,12 +63,7 @@ class CargarCatalogosAnfeca extends Command
             foreach ((array) config('anfeca_8088.estados_solicitud') as $descripcion) {
                 $this->asegurar('c_estado_solicitud', ['ceso_estado_solicitud' => $descripcion]);
             }
-            foreach ((array) config('anfeca_8088.documentos') as $descripcion) {
-                $this->asegurar('documento', ['docu_descripcion' => $descripcion], ['docu_estatus' => 'ACT']);
-            }
-            foreach ((array) config('anfeca_8088.estados_documento') as $descripcion) {
-                $this->asegurar('estado_documento', ['esdo_estado_documento' => $descripcion], ['esdo_estado' => 'ACT']);
-            }
+            $this->documentales();
             foreach ((array) config('anfeca_8088.niveles_profesionales') as $nivel) {
                 $this->asegurar('nivel_profesional', ['nipr_nivel_profesional' => $nivel]);
             }
@@ -95,6 +124,16 @@ class CargarCatalogosAnfeca extends Command
                 'conv_lugar_entrega' => null,
                 'conv_evento_entrega' => null,
             ]);
+        }
+    }
+
+    private function documentales(): void
+    {
+        foreach ((array) config('anfeca_8088.documentos') as $descripcion) {
+            $this->asegurar('documento', ['docu_descripcion' => $descripcion], ['docu_estatus' => 'ACT']);
+        }
+        foreach ((array) config('anfeca_8088.estados_documento') as $descripcion) {
+            $this->asegurar('estado_documento', ['esdo_estado_documento' => $descripcion], ['esdo_estado' => 'ACT']);
         }
     }
 

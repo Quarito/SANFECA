@@ -298,6 +298,9 @@ Route::post('/registro/certificacion/consultar', [
         'create'
     ])->name('registro.formacion');
 
+    Route::get('/registro/formacion-academica/institucion', [FormacionAcademicaController::class, 'buscarInstitucion'])
+        ->middleware('throttle:60,1')->name('registro.formacion.institucion');
+
     Route::post('/registro/formacion-academica', [
         FormacionAcademicaController::class,
         'store'
@@ -450,7 +453,6 @@ if (app()->environment('local')) {
             Route::get('/formacion-academica', function () {
                 return view('registro.formacion-academica', [
                     'formacion' => null,
-                    'instituciones' => collect(),
                     'solicitud' => null,
                     'formacionBloqueada' => false,
                     'areaCertificacion' => '',
