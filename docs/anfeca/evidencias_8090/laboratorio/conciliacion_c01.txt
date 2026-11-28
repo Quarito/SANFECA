@@ -1,0 +1,13 @@
+APROBADA La base de simulación presenta las diferencias (código 2) — 2
+APROBADA Con C-01 la búsqueda de institución funciona aun antes de conciliar lo pendiente — instituciones: 3
+APROBADA Por omisión simula: alcanza 36/173/35 dentro de la transacción y revierte todo — rc=0
+APROBADA Con datos en atributos adicionales y sin autorización: se detiene sin cambios — rc=3
+APROBADA Los datos quedan exportados a CSV antes de cualquier cambio
+APROBADA Con autorización: esquema oficial (código 0) y datos preservados en CSV con huella SHA-256 — rc=0
+APROBADA La coordinación regional (C-01) se conserva
+APROBADA Institución con zona nula: se detiene sin cambios — rc=3
+APROBADA Tipo de convocatoria de más de 50 caracteres: se detiene sin cambios — rc=3
+APROBADA Aplicada: esquema oficial (código 0) y filas conservadas — rc=0 · persona/solicitud/convocatoria/institucion 0/0/3/3
+APROBADA Repetida sobre la base conciliada: sin errores ni cambios — rc=0
+APROBADA Después de conciliar, la búsqueda de institución funciona — instituciones: 3
+Resultado: 12/12 verificaciones aprobadas.

@@ -1,0 +1,9 @@
+Tablas 36 · atributos 180 · PK 36 · FK 37 · índices 96 · secuencias 36
+  idéntico  columnas
+  idéntico  restricciones
+  idéntico  indices
+  idéntico  secuencias
+  idéntico  datos
+privilegios de anfeca_8090_labb sobre tablas de sx5_simulacion_8088: 0
+anfeca_pruebas puede conectarse a sx5_copia_8090b: false
+10.2 terminado: respaldo en <laboratorio>/ensayo_10_2b; copia sx5_copia_8090b idéntica a sx5_simulacion_8088 (propietario anfeca_8090_labb). 8088 no se modificó.

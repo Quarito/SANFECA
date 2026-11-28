@@ -1,0 +1,14 @@
+APROBADA El código postal llena entidad y municipio desde PostgreSQL
+APROBADA Las sugerencias de colonia son exclusivamente las del código postal ingresado — Arcos, Arcos Vallarta
+APROBADA Colonia: se puede buscar entre las opciones, pero no se acepta un valor fuera del catálogo — Seleccione una de las colonias registradas para el código postal ingresado. · Arcos Vallarta
+APROBADA Al cambiar de código postal las sugerencias se reemplazan y una colonia única se selecciona
+APROBADA Código postal inexistente: se impide enviar con un mensaje claro
+APROBADA Registro inicial con domicilio validado contra SEPOMEX — http://127.0.0.1:8189/mis-datos
+APROBADA Mis datos muestra solo calle, número exterior, número interior y entidad federativa — Calle, Número exterior, Número interior, Entidad federativa
+APROBADA Modificar: conserva lo registrado, captura de nuevo CP, colonia y municipio, e indica revalidar el código postal
+APROBADA Modificación guardada con el domicilio revalidado
+APROBADA Tras cerrar e iniciar sesión se recuperan calle, números y entidad
+APROBADA La autorización procede con los atributos exigibles del modelo vigente — http://127.0.0.1:8189/registro/certificacion
+APROBADA Después de autorizar no se ofrece modificar los datos
+
+Resultado: 12/12 verificaciones aprobadas.
