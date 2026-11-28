@@ -23,8 +23,12 @@ class CargarCatalogosAnfeca extends Command
         DB::transaction(function () {
             // ENTIDAD_FEDERATIVA, ALCALDIA_MUNICIPIO y COLONIA se cargan del catálogo oficial con anfeca:sepomex.
 
-            foreach ((array) config('anfeca_8088.tipos_comunicacion') as $descripcion) {
-                $this->asegurar('tipo_comunicacion', ['tico_tipo_comunicacion' => $descripcion], ['tico_estado' => 'ACT']);
+            // Un medio de contacto se registra solo si no existe ni con su descripción vigente ni con una equivalente.
+            foreach ((array) config('anfeca_8088.tipos_comunicacion') as $clave => $descripcion) {
+                $equivalentes = \App\Services\Anfeca\Catalogo::descripcionesComunicacion($clave);
+                if (!DB::table('tipo_comunicacion')->whereIn('tico_tipo_comunicacion', $equivalentes)->exists()) {
+                    $this->asegurar('tipo_comunicacion', ['tico_tipo_comunicacion' => $descripcion], ['tico_estado' => 'ACT']);
+                }
             }
             foreach ((array) config('anfeca_8088.estados_solicitud') as $descripcion) {
                 $this->asegurar('c_estado_solicitud', ['ceso_estado_solicitud' => $descripcion]);

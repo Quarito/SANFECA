@@ -195,11 +195,20 @@ final class ExpedienteSolicitante
             : DB::table('domicilio')->insert($fila + ['domi_id_persona' => $personaId]);
     }
 
-    /** Un valor vigente por tipo: actualiza el existente, lo crea o lo elimina si quedó vacío. */
+    /** Medios de contacto que el solicitante captura y que se marcan visibles (COMU_VISIBLE = true). */
+    public const MEDIOS_CONTACTO = ['CORREO', 'TEL_PARTICULAR', 'TEL_CELULAR'];
+
+    /**
+     * Un valor vigente por medio de contacto: actualiza el existente (conservando su tipo, aunque sea una descripción
+     * equivalente como «Teléfono particular»), lo crea con el tipo vigente o lo elimina si quedó vacío.
+     */
     private function guardarComunicacion(int $personaId, string $tipo, ?string $valor): void
     {
+        if (!in_array($tipo, self::MEDIOS_CONTACTO, true)) {
+            throw new \InvalidArgumentException("COMUNICACION solo almacena medios de contacto, no «{$tipo}».");
+        }
         $tico = Catalogo::tipoComunicacion($tipo);
-        $base = DB::table('comunicacion')->where('comu_id_persona', $personaId)->where('comu_id_tipo_comunicacion', $tico);
+        $base = DB::table('comunicacion')->where('comu_id_persona', $personaId)->whereIn('comu_id_tipo_comunicacion', Catalogo::tiposComunicacion($tipo));
         $valor = $valor === null ? null : trim($valor);
         if ($valor === null || $valor === '') {
             $base->delete();

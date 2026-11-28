@@ -29,10 +29,16 @@ return [
 
     // TIPO_COMUNICACION: clave interna => TICO_TIPO_COMUNICACION (VARCHAR 50). Solo medios de contacto.
     // La información geográfica proviene exclusivamente de ENTIDAD_FEDERATIVA, ALCALDIA_MUNICIPIO y COLONIA (SEPOMEX).
+    // TEL_PARTICULAR usa la descripción vigente en el catálogo de 8088 («Teléfono de casa»); la etiqueta del formulario
+    // sigue siendo «Teléfono particular». Una base que ya lo registró como «Teléfono particular» se reconoce como
+    // equivalente: se lee y se escribe sobre el tipo existente y nunca se crea un segundo tipo.
     'tipos_comunicacion' => [
         'CORREO' => 'Correo electrónico',
-        'TEL_PARTICULAR' => 'Teléfono particular',
+        'TEL_PARTICULAR' => 'Teléfono de casa',
         'TEL_CELULAR' => 'Teléfono celular',
+    ],
+    'tipos_comunicacion_equivalentes' => [
+        'TEL_PARTICULAR' => ['Teléfono particular'],
     ],
 
     // C_ESTADO_SOLICITUD (VARCHAR 50) y siglas de ESTADO_SOLICITUD.ESSO_SIGLAS (VARCHAR 2)

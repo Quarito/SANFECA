@@ -41,26 +41,51 @@ final class Catalogo
 
     // ---------------------------------------------------------------- comunicaciones y domicilio
 
-    /** Clave interna de medio de contacto (CORREO, TEL_PARTICULAR, TEL_CELULAR) → TICO_ID. */
-    public static function tipoComunicacion(string $clave): int
+    /** @return list<string> descripción vigente seguida de sus equivalentes aceptados */
+    public static function descripcionesComunicacion(string $clave): array
     {
-        $descripcion = (string) config("anfeca_8088.tipos_comunicacion.{$clave}");
+        $vigente = config("anfeca_8088.tipos_comunicacion.{$clave}");
+        if ($vigente === null) {
+            throw new RuntimeException("Medio de contacto desconocido: {$clave}.");
+        }
 
-        return self::recordar("tico:{$clave}", fn () => self::obligatorio(
-            DB::table('tipo_comunicacion')->where('tico_tipo_comunicacion', $descripcion)->value('tico_id_tipo_comunicacion'),
-            'TIPO_COMUNICACION', $descripcion
-        ));
+        return array_values(array_unique(array_merge([(string) $vigente], (array) config("anfeca_8088.tipos_comunicacion_equivalentes.{$clave}", []))));
     }
 
-    /** @return array<int, string> TICO_ID → clave interna */
+    /** @return list<int> TICO_ID existentes para la clave, el de la descripción vigente primero */
+    public static function tiposComunicacion(string $clave): array
+    {
+        return self::recordar("tico*:{$clave}", function () use ($clave) {
+            $ids = [];
+            foreach (self::descripcionesComunicacion($clave) as $descripcion) {
+                foreach (DB::table('tipo_comunicacion')->where('tico_tipo_comunicacion', $descripcion)->orderBy('tico_id_tipo_comunicacion')
+                    ->pluck('tico_id_tipo_comunicacion') as $id) {
+                    $ids[] = (int) $id;
+                }
+            }
+
+            return array_values(array_unique($ids));
+        });
+    }
+
+    /** Clave interna de medio de contacto (CORREO, TEL_PARTICULAR, TEL_CELULAR) → TICO_ID existente (vigente o equivalente). */
+    public static function tipoComunicacion(string $clave): int
+    {
+        return self::obligatorio(self::tiposComunicacion($clave)[0] ?? null, 'TIPO_COMUNICACION', implode(' / ', self::descripcionesComunicacion($clave)));
+    }
+
+    /** @return array<int, string> TICO_ID → clave interna (incluye las descripciones equivalentes) */
     public static function tiposComunicacionPorId(): array
     {
         return self::recordar('tico:todos', function () {
-            $porDescripcion = array_flip((array) config('anfeca_8088.tipos_comunicacion'));
+            $mapa = [];
+            foreach (array_keys((array) config('anfeca_8088.tipos_comunicacion')) as $clave) {
+                foreach (self::tiposComunicacion($clave) as $id) {
+                    $mapa[$id] = $clave;
+                }
+            }
 
-            return DB::table('tipo_comunicacion')->get()->mapWithKeys(fn ($t) => [
-                (int) $t->tico_id_tipo_comunicacion => $porDescripcion[$t->tico_tipo_comunicacion] ?? null,
-            ])->filter()->all();
+            return $mapa;
         });
     }
 
