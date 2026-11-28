@@ -95,7 +95,7 @@ def registrar(c, curp, correo, clave, telefono_particular='5511112222'):
         'curp': curp, 'rfc': curp[:10] + 'AB1', 'nombres': 'Ana Prueba', 'apellido_paterno': 'Ficticia',
         'apellido_materno': 'Ocho', 'genero': 'Femenino', 'password': clave, 'password_confirmation': clave,
         'calle': 'Calle Ficticia', 'numero_exterior': '12', 'numero_interior': '3', 'codigo_postal': '04510',
-        'entidad_federativa': 'cdmx', 'colonia': 'Colonia Ficticia', 'municipio': 'Coyoacán',
+        'entidad_federativa': 'Ciudad de México', 'colonia': 'Universidad Nacional Autónoma de México', 'municipio': 'Coyoacán',
         'correo_electronico': correo, 'telefono_particular': telefono_particular, 'telefono_celular': '',
     }, desde='/registro/datos-personales')
 
@@ -151,19 +151,38 @@ def principal():
            hash_ok and r.status_code == 302 and '/mis-datos' in r.headers.get('Location', '') and r_mal.status_code == 302
            and '/login' in r_mal.headers.get('Location', ''), r.headers.get('Location', ''))
 
-    # ------------------------------------------------------------------ 3 · Captura de datos personales (COMUNICACION)
+    # ------------------------------------------------------------------ 3 · Captura de datos personales y domicilio (modelo vigente)
     contacto = dict((k, v) for k, v in sql('select t.tico_tipo_comunicacion, c.comu_valor from comunicacion c join tipo_comunicacion t on '
                                              't.tico_id_tipo_comunicacion = c.comu_id_tipo_comunicacion where c.comu_id_persona = %s', persona))
     pagina = c.get('/mis-datos').text
-    prueba(3, 'Datos personales, correo, teléfonos, colonia, municipio y CP persistidos y recuperados en pantalla',
-           contacto.get('Correo electrónico') == correo and contacto.get('Teléfono particular') == '5511112222'
-           and contacto.get('Colonia del domicilio') == 'Colonia Ficticia' and contacto.get('Código postal del domicilio') == '04510'
-           and contacto.get('Alcaldía o municipio del domicilio') == 'Coyoacán' and 'Colonia Ficticia' in pagina and curp in pagina,
-           json.dumps(contacto, ensure_ascii=False))
+    prueba(3, 'Datos personales, correo y teléfonos persistidos; DOMICILIO con entidad derivada del código postal',
+           contacto == {'Correo electrónico': correo, 'Teléfono particular': '5511112222'} and curp in pagina
+           and domicilio and domicilio[0][3] == 'Ciudad de México', json.dumps(contacto, ensure_ascii=False))
+    geograficos = uno("select count(*) from tipo_comunicacion where tico_tipo_comunicacion ~* '(postal|colonia|municipio|alcald|entidad)'")
+    prueba(3, 'Código postal, colonia y municipio NO se guardan en COMUNICACION/TIPO_COMUNICACION ni en otro mecanismo',
+           geograficos == '0' and 'Universidad Nacional Autónoma de México' not in pagina and '04510' not in pagina)
+
+    # Validación de CAPTURA contra SEPOMEX (independiente de la persistencia): nada se guarda si no corresponde.
+    def alta_invalida(**cambios):
+        cx = Cliente()
+        curp_x = curp_ficticia()
+        datos = {'curp': curp_x, 'rfc': curp_x[:10] + 'AB1', 'nombres': 'Prueba', 'apellido_paterno': 'Captura', 'genero': 'Femenino',
+                 'password': clave, 'password_confirmation': clave, 'calle': 'Calle', 'numero_exterior': '1', 'codigo_postal': '44130',
+                 'entidad_federativa': 'Jalisco', 'colonia': 'Arcos Vallarta', 'municipio': 'Guadalajara',
+                 'correo_electronico': f'captura.{curp_x.lower()}@example.test', 'telefono_celular': '3300000000'}
+        datos.update(cambios)
+        r = cx.post('/registro/datos-personales', datos, desde='/registro/datos-personales')
+        return r, uno('select count(*) from persona where pers_curp = %s', curp_x)
+    casos = {'codigo_postal': {'codigo_postal': '99999'}, 'colonia': {'colonia': 'Colonia Inexistente'},
+             'municipio': {'municipio': 'Zapopan'}, 'entidad_federativa': {'entidad_federativa': 'Sonora'}}
+    rechazados = {campo: alta_invalida(**cambio) for campo, cambio in casos.items()}
+    prueba(3, 'Captura: CP inexistente, colonia, municipio o entidad que no corresponden al CP se rechazan sin crear cuenta',
+           all(r.status_code == 302 and '/registro/datos-personales' in r.headers.get('Location', '') and n == '0' for r, n in rechazados.values()),
+           str({k: (v[0].status_code, v[1]) for k, v in rechazados.items()}))
 
     # ------------------------------------------------------------------ 4 · Modificación restringida
     r = c.post('/mis-datos', {'_method': 'PUT', 'calle': 'Avenida Nueva', 'numero_exterior': '99', 'numero_interior': '',
-                              'codigo_postal': '01000', 'entidad_federativa': 'Jalisco', 'colonia': 'Centro', 'municipio': 'Guadalajara',
+                              'codigo_postal': '44100', 'entidad_federativa': 'Jalisco', 'colonia': 'Guadalajara Centro', 'municipio': 'Guadalajara',
                               'telefono_particular': '', 'telefono_celular': '3312345678',
                               'curp': 'XXXX000000HDFXXX00', 'nombres': 'Intruso', 'correo_electronico': 'otro@example.test'}, desde='/mis-datos')
     dom = sql('select d.domi_calle, d.domi_numero_ext, coalesce(d.domi_numero_int, \'\'), e.enfe_nombre from domicilio d join entidad_federativa e '
@@ -171,25 +190,30 @@ def principal():
     pers = sql('select pers_curp, pers_nombre from persona where pers_id_persona = %s', persona)[0]
     tels = dict(sql("select t.tico_tipo_comunicacion, c.comu_valor from comunicacion c join tipo_comunicacion t on t.tico_id_tipo_comunicacion = "
                     "c.comu_id_tipo_comunicacion where c.comu_id_persona = %s", persona))
-    sin_tel = c.post('/mis-datos', {'_method': 'PUT', 'calle': 'Avenida Nueva', 'numero_exterior': '99', 'codigo_postal': '01000',
-                                    'entidad_federativa': 'Jalisco', 'colonia': 'Centro', 'municipio': 'Guadalajara',
+    sin_tel = c.post('/mis-datos', {'_method': 'PUT', 'calle': 'Avenida Nueva', 'numero_exterior': '99', 'codigo_postal': '44100',
+                                    'entidad_federativa': 'Jalisco', 'colonia': 'Guadalajara Centro', 'municipio': 'Guadalajara',
                                     'telefono_particular': '', 'telefono_celular': ''}, desde='/mis-datos')
     tels2 = uno("select count(*) from comunicacion c join tipo_comunicacion t on t.tico_id_tipo_comunicacion = c.comu_id_tipo_comunicacion "
                 "where c.comu_id_persona = %s and t.tico_tipo_comunicacion like 'Teléfono%%'", persona)
-    prueba(4, 'Antes de autorizar solo cambian domicilio y teléfonos; identidad y correo bloqueados; se exige al menos un teléfono',
+    mal_cp = c.post('/mis-datos', {'_method': 'PUT', 'calle': 'Otra', 'numero_exterior': '1', 'codigo_postal': '44100',
+                                   'entidad_federativa': 'Jalisco', 'colonia': 'Arcos', 'municipio': 'Guadalajara', 'telefono_celular': '3312345678'},
+                    desde='/mis-datos')
+    prueba(4, 'Antes de autorizar solo cambian domicilio y teléfonos (entidad del CP 44100 = Jalisco); identidad y correo bloqueados; '
+              'al menos un teléfono; colonia de otro CP rechazada',
            r.status_code == 302 and dom == ['Avenida Nueva', '99', '', 'Jalisco'] and pers == [curp, 'Ana Prueba']
            and tels.get('Correo electrónico') == correo and tels.get('Teléfono celular') == '3312345678'
-           and 'Teléfono particular' not in tels and sin_tel.status_code == 302 and tels2 == '1',
+           and 'Teléfono particular' not in tels and sin_tel.status_code == 302 and tels2 == '1'
+           and uno('select domi_calle from domicilio where domi_id_persona = %s', persona) == 'Avenida Nueva',
            f'domicilio={dom} identidad={pers}')
 
     # ------------------------------------------------------------------ 5 · Autorización
     r = c.post('/mis-datos/autorizar', {'confirmacion_datos': '1'}, desde='/mis-datos')
     estatus = uno('select usua_estatus from usuario where usua_id_persona = %s', persona)
-    r_bloq = c.post('/mis-datos', {'_method': 'PUT', 'calle': 'Calle Bloqueada', 'numero_exterior': '1', 'codigo_postal': '01000',
-                                   'entidad_federativa': 'Jalisco', 'colonia': 'Centro', 'municipio': 'Guadalajara', 'telefono_celular': '3312345678'},
+    r_bloq = c.post('/mis-datos', {'_method': 'PUT', 'calle': 'Calle Bloqueada', 'numero_exterior': '1', 'codigo_postal': '44100',
+                                   'entidad_federativa': 'Jalisco', 'colonia': 'Guadalajara Centro', 'municipio': 'Guadalajara', 'telefono_celular': '3312345678'},
                     desde='/mis-datos')
     calle = uno('select domi_calle from domicilio where domi_id_persona = %s', persona)
-    prueba(5, 'Autorización registrada (USUA_ESTATUS = DATOS_AUTORIZADOS) y sin modificaciones posteriores',
+    prueba(5, 'Autorización con los atributos exigibles del modelo (sin CP, colonia ni municipio guardados) y sin modificaciones posteriores',
            estatus == 'DATOS_AUTORIZADOS' and calle == 'Avenida Nueva' and '/registro/certificacion' in r.headers.get('Location', ''),
            f'estatus={estatus} calle={calle}')
 

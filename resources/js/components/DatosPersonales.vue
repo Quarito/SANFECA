@@ -1,6 +1,7 @@
 
 <script setup>
 import { reactive } from 'vue';
+import { usarCodigoPostal } from '../composables/codigoPostal.js';
 
 const props = defineProps({
     datos: {
@@ -31,6 +32,9 @@ const campos = reactive({
     telefono_particular: props.datos.telefono_particular ?? '',
     telefono_celular: props.datos.telefono_celular ?? ''
 });
+
+// Catálogo SEPOMEX: el código postal determina entidad, alcaldía/municipio y colonias posibles.
+const { colonias } = usarCodigoPostal(campos, () => document.getElementById('codigo_postal'));
 
 const personales = [
     { name: 'curp', label: 'CURP', required: true, maxlength: 18 },
@@ -150,9 +154,13 @@ const comunicacion = [
                             v-model="campos[campo.name]"
                             :maxlength="campo.maxlength"
                             :required="campo.required || false"
+                            :list="campo.name === 'colonia' ? 'colonias-codigo-postal' : undefined"
                             type="text"
                         >
                     </div>
+                    <datalist id="colonias-codigo-postal">
+                        <option v-for="nombre in colonias" :key="nombre" :value="nombre"></option>
+                    </datalist>
                 </div>
             </section>
 

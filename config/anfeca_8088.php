@@ -20,33 +20,6 @@ return [
     'disco' => env('ANFECA_DISCO_EXPEDIENTES', 'local'),
     'carpeta' => 'anfeca/expedientes',
 
-    // ENTIDAD_FEDERATIVA: clave INEGI = ENFE_ID_ENTIDAD_FEDERATIVA (Marco Geoestadístico).
-    'entidades_federativas' => [
-        1 => 'Aguascalientes', 2 => 'Baja California', 3 => 'Baja California Sur',
-        4 => 'Campeche', 5 => 'Coahuila de Zaragoza', 6 => 'Colima', 7 => 'Chiapas',
-        8 => 'Chihuahua', 9 => 'Ciudad de México', 10 => 'Durango', 11 => 'Guanajuato',
-        12 => 'Guerrero', 13 => 'Hidalgo', 14 => 'Jalisco', 15 => 'México',
-        16 => 'Michoacán de Ocampo', 17 => 'Morelos', 18 => 'Nayarit', 19 => 'Nuevo León',
-        20 => 'Oaxaca', 21 => 'Puebla', 22 => 'Querétaro', 23 => 'Quintana Roo',
-        24 => 'San Luis Potosí', 25 => 'Sinaloa', 26 => 'Sonora', 27 => 'Tabasco',
-        28 => 'Tamaulipas', 29 => 'Tlaxcala', 30 => 'Veracruz de Ignacio de la Llave',
-        31 => 'Yucatán', 32 => 'Zacatecas',
-    ],
-
-    // La pantalla captura la entidad como texto: se normaliza (sin mayúsculas, acentos ni espacios repetidos)
-    // al nombre oficial. Alias verificables de la misma entidad:
-    'alias_entidades' => [
-        'cdmx' => 'Ciudad de México',
-        'ciudad de mexico' => 'Ciudad de México',
-        'distrito federal' => 'Ciudad de México',
-        'df' => 'Ciudad de México',
-        'coahuila' => 'Coahuila de Zaragoza',
-        'michoacan' => 'Michoacán de Ocampo',
-        'veracruz' => 'Veracruz de Ignacio de la Llave',
-        'estado de mexico' => 'México',
-        'edomex' => 'México',
-    ],
-
     // USUARIO.USUA_ESTATUS (VARCHAR 20)
     'estatus_usuario' => [
         'ACTIVO' => 'ACTIVO',                       // cuenta registrada, datos sin autorizar
@@ -54,16 +27,12 @@ return [
         'INACTIVO' => 'INACTIVO',
     ],
 
-    // TIPO_COMUNICACION: clave interna => TICO_TIPO_COMUNICACION (VARCHAR 50)
-    // CODIGO_POSTAL, COLONIA y MUNICIPIO completan el domicilio: DOMICILIO no tiene esas columnas ni FK a COLONIA
-    // (ver INC-01 en la documentación).
+    // TIPO_COMUNICACION: clave interna => TICO_TIPO_COMUNICACION (VARCHAR 50). Solo medios de contacto.
+    // La información geográfica proviene exclusivamente de ENTIDAD_FEDERATIVA, ALCALDIA_MUNICIPIO y COLONIA (SEPOMEX).
     'tipos_comunicacion' => [
         'CORREO' => 'Correo electrónico',
         'TEL_PARTICULAR' => 'Teléfono particular',
         'TEL_CELULAR' => 'Teléfono celular',
-        'CODIGO_POSTAL' => 'Código postal del domicilio',
-        'COLONIA' => 'Colonia del domicilio',
-        'MUNICIPIO' => 'Alcaldía o municipio del domicilio',
     ],
 
     // C_ESTADO_SOLICITUD (VARCHAR 50) y siglas de ESTADO_SOLICITUD.ESSO_SIGLAS (VARCHAR 2)

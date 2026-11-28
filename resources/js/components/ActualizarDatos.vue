@@ -1,5 +1,6 @@
 <script setup>
 import { reactive, ref } from 'vue';
+import { usarCodigoPostal } from '../composables/codigoPostal.js';
 
 const props = defineProps({
     datos: {
@@ -38,6 +39,9 @@ autorizadoInicialmente: {
 const editando = ref(props.editarInicialmente && !props.autorizadoInicialmente);
 const confirmacionDatos = ref(false);
 const campos = reactive({ ...props.datos });
+
+// Catálogo SEPOMEX: el código postal determina entidad, alcaldía/municipio y colonias posibles.
+const { colonias } = usarCodigoPostal(campos, () => document.getElementById('actualizar-codigo_postal'));
 
 // Identificar los campos telefónicos.
 function esTelefono(nombre) {
@@ -207,12 +211,16 @@ function cancelar() {
                     'text'
                 "
                 :inputmode="esTelefono(nombre) ? 'numeric' : undefined"
+                :list="nombre === 'colonia' ? 'actualizar-colonias-codigo-postal' : undefined"
                 @input="esTelefono(nombre) && validarTelefono(nombre, $event)"
             >
 
             <span v-else>
                 {{ campos[nombre] || 'No registrado' }}
             </span>
+            <datalist v-if="nombre === 'colonia' && editando" id="actualizar-colonias-codigo-postal">
+                <option v-for="opcion in colonias" :key="opcion" :value="opcion"></option>
+            </datalist>
 
                     </div>
                 </section>

@@ -21,10 +21,7 @@ class CargarCatalogosAnfeca extends Command
     public function handle(): int
     {
         DB::transaction(function () {
-            foreach ((array) config('anfeca_8088.entidades_federativas') as $id => $nombre) {
-                $this->asegurar('entidad_federativa', ['enfe_nombre' => $nombre], ['enfe_id_entidad_federativa' => $id]);
-            }
-            DB::statement("select setval(pg_get_serial_sequence('entidad_federativa', 'enfe_id_entidad_federativa'), greatest((select max(enfe_id_entidad_federativa) from entidad_federativa), 1))");
+            // ENTIDAD_FEDERATIVA, ALCALDIA_MUNICIPIO y COLONIA se cargan del catálogo oficial con anfeca:sepomex.
 
             foreach ((array) config('anfeca_8088.tipos_comunicacion') as $descripcion) {
                 $this->asegurar('tipo_comunicacion', ['tico_tipo_comunicacion' => $descripcion], ['tico_estado' => 'ACT']);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Anfeca\ExpedienteSolicitante;
+use App\Services\Anfeca\Sepomex\ValidacionDomicilio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -22,8 +23,21 @@ class DatosSolicitanteController extends Controller
         'telefono_celular.digits' => 'El teléfono celular debe contener exactamente 10 dígitos.',
     ];
 
-    public function __construct(private readonly ExpedienteSolicitante $expediente)
+    public function __construct(
+        private readonly ExpedienteSolicitante $expediente,
+        private readonly ValidacionDomicilio $validacionDomicilio,
+    ) {
+    }
+
+    /**
+     * Validación de CAPTURA del domicilio contra SEPOMEX: el código postal existe y la colonia, la alcaldía o municipio
+     * y la entidad le corresponden. Devuelve los datos con la entidad que se GUARDA en DOMICILIO (derivada del CP).
+     */
+    private function validarDomicilioCapturado(array $datos): array
     {
+        $domicilio = $this->validacionDomicilio->validar($datos);
+
+        return $datos + ['entidad_federativa_id' => $domicilio['entidad_id']];
     }
 
     /** Reglas del domicilio y teléfonos (únicos campos editables antes de autorizar). */
@@ -91,6 +105,7 @@ class DatosSolicitanteController extends Controller
             return back()->withErrors($errores)->withInput($request->except(['password', 'password_confirmation']));
         }
 
+        $datos = $this->validarDomicilioCapturado($datos);
         $password = $datos['password'];
         unset($datos['password']);
         $cuenta = $this->expediente->registrar($datos, $password);
@@ -119,7 +134,7 @@ class DatosSolicitanteController extends Controller
             return redirect()->route('mis-datos.edit')->with('error', 'Los datos personales ya fueron autorizados y no pueden modificarse.');
         }
 
-        $datos = $request->validate($this->reglasDomicilio(), self::MENSAJES);
+        $datos = $this->validarDomicilioCapturado($request->validate($this->reglasDomicilio(), self::MENSAJES));
         $this->expediente->actualizarDomicilioYTelefonos($cuenta, $datos);
 
         return redirect()->route('mis-datos.edit')->with('success', 'Datos actualizados correctamente.');
@@ -139,6 +154,8 @@ class DatosSolicitanteController extends Controller
             'confirmacion_datos.accepted' => 'Debes aceptar la confirmación de tus datos.',
         ]);
 
+        // Validación de AUTORIZACIÓN: solo atributos que el modelo oficial guarda y permite recuperar. Código postal,
+        // colonia y municipio se validaron al capturar, pero DOMICILIO no los conserva y no pueden exigirse aquí.
         $datos = $this->expediente->datos($cuenta);
         $validador = Validator::make($datos?->toArray() ?? [], [
             'curp' => ['required', 'string', 'size:18', 'regex:/^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[A-Z0-9][0-9]$/'],
@@ -147,10 +164,7 @@ class DatosSolicitanteController extends Controller
             'apellido_paterno' => ['required', 'string'],
             'calle' => ['required', 'string'],
             'numero_exterior' => ['required', 'string'],
-            'colonia' => ['required', 'string'],
-            'municipio' => ['required', 'string'],
             'entidad_federativa' => ['required', 'string'],
-            'codigo_postal' => ['required', 'digits:5'],
             'correo_electronico' => ['required', 'email'],
             'telefono_particular' => ['nullable', 'required_without:telefono_celular', 'digits:10'],
             'telefono_celular' => ['nullable', 'required_without:telefono_particular', 'digits:10'],

@@ -1,0 +1,22 @@
+{
+ "modo": "aplicación",
+ "archivo": "CPdescarga.xls",
+ "sha256": "0a8e2611b92635f47c646816b3641354ab4a554f64b058447890d77e8a052821",
+ "version_sepomex": "21\/11\/2026",
+ "base": "sepomex_pruebas",
+ "filas_leidas": 159527,
+ "entidades": 32,
+ "municipios": 2478,
+ "colonias_distintas": 158507,
+ "repetidos_solo_por_tipo_de_asentamiento": 1020,
+ "nombres_con_variante_de_acentos_o_mayusculas": 14,
+ "entidades_nuevas": 32,
+ "entidades_ajenas_al_catalogo": [],
+ "municipios_nuevos": 2478,
+ "colonias_nuevas": 158507,
+ "totales_base": {
+ "entidad_federativa": 32,
+ "alcaldia_municipio": 2478,
+ "colonia": 158507
+ }
+}

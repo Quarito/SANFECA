@@ -30,6 +30,9 @@ PHP_FPM_BIN="${PHP_FPM_BIN:-/usr/sbin/php-fpm}"
 FPM_SERVICIO="php-fpm-anfeca8088"
 USUARIO_WEB="${USUARIO_WEB:-apache}"
 SQL_SHA256="5798ce839af01339018536155ab17698c7cb953c7f150e2b9c6b268aab978285"
+# Catálogo SEPOMEX oficial (no se versiona: su licencia prohíbe redistribuirlo). Ruta fuera de public/ y su huella.
+SEPOMEX_ARCHIVO="${SEPOMEX_ARCHIVO:-/var/lib/anfeca8088/sepomex/CPdescarga.xls}"
+SEPOMEX_SHA256="${SEPOMEX_SHA256:-}"
 
 paso() { printf '\n==> %s\n' "$*"; }
 run()  { printf '    $ %s\n' "$*"; [ "$EJECUTAR" = 1 ] && eval "$@" || true; }
@@ -93,6 +96,12 @@ run "semanage fcontext -a -t httpd_sys_content_t '$APP(/.*)?' && semanage fconte
 run "setsebool -P httpd_can_network_connect_db on"
 run "cd '$APP' && sudo -u $USUARIO_WEB '$PHP_BIN' artisan anfeca:catalogos && sudo -u $USUARIO_WEB '$PHP_BIN' artisan config:cache && sudo -u $USUARIO_WEB '$PHP_BIN' artisan view:cache"
 run "cd '$APP' && sudo -u $USUARIO_WEB '$PHP_BIN' artisan anfeca:verificar-esquema"
+
+paso "2d. Catálogo SEPOMEX → entidad_federativa, alcaldia_municipio y colonia (diagnóstico y carga aditiva)"
+[ -n "$SEPOMEX_SHA256" ] || echo "    Defina SEPOMEX_SHA256 con la huella verificada de $SEPOMEX_ARCHIVO (sha256sum)."
+run "cd '$APP' && sudo -u $USUARIO_WEB '$PHP_BIN' -d memory_limit=1024M artisan anfeca:sepomex '$SEPOMEX_ARCHIVO'"
+run "cd '$APP' && sudo -u $USUARIO_WEB '$PHP_BIN' -d memory_limit=1024M artisan anfeca:sepomex '$SEPOMEX_ARCHIVO' --aplicar --base=$BD --sha256=$SEPOMEX_SHA256"
+run "cd '$APP' && sudo -u $USUARIO_WEB '$PHP_BIN' -d memory_limit=1024M artisan anfeca:sepomex '$SEPOMEX_ARCHIVO' | grep -E 'nuev'"
 
 # ---------------------------------------------------------------- 3. PHP-FPM 8.5.12 exclusivo
 paso "3. PHP-FPM 8.5.12 exclusivo ($FPM_SERVICIO, socket /run/anfeca8088/php-fpm.sock)"
