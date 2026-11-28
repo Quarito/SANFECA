@@ -2,10 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Services\Anfeca\Sepomex\LectorSepomex;
+use App\Services\Anfeca\Sepomex\CatalogoSepomex;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -34,7 +33,15 @@ class ImportarSepomex extends Command
 
     private static function clave(string $s): string
     {
-        return Str::of($s)->ascii()->lower()->replaceMatches('/\s+/', ' ')->trim()->value();
+        return CatalogoSepomex::clave($s);
+    }
+
+    /** Lleva la secuencia SERIAL al máximo existente si quedó atrás (nunca la disminuye). */
+    public static function ajustarSecuencia(string $tabla, string $columna): void
+    {
+        $sec = DB::selectOne('select pg_get_serial_sequence(?, ?) as s', ["public.{$tabla}", $columna])->s;
+        DB::statement("select setval('{$sec}', x.m) from (select max({$columna}) as m from public.{$tabla}) x, {$sec} s
+            where x.m is not null and (x.m > s.last_value or (x.m = s.last_value and not s.is_called))");
     }
 
     public function handle(): int
@@ -48,19 +55,14 @@ class ImportarSepomex extends Command
         }
     }
 
-    /** CSV: entidad, municipio, código postal, colonia, tipos de asentamiento de origen y registros consolidados. */
-    private function reporte(string $ruta, array $consolidados, array $estados, array $municipios): void
+    /** CSV con los registros consolidados por tipo de asentamiento (fuera de public/ y de .git). */
+    private function reporte(string $ruta, CatalogoSepomex $catalogo): void
     {
-        if (str_starts_with(realpath(dirname($ruta)) ?: '', public_path()) || str_starts_with(realpath(dirname($ruta)) ?: '', base_path().'/.git')) {
+        $dir = realpath(dirname($ruta)) ?: '';
+        if (str_starts_with($dir, public_path()) || str_starts_with($dir, base_path().'/.git')) {
             throw new RuntimeException('El reporte no puede escribirse en public/ ni en .git.');
         }
-        $f = fopen($ruta, 'wb');
-        fputcsv($f, ['entidad_clave', 'entidad', 'municipio', 'codigo_postal', 'colonia', 'tipos_de_asentamiento', 'registros_consolidados']);
-        foreach ($consolidados as $k => $t) {
-            [$e, $cm, $cp, $nombre] = explode('|', $k, 4);
-            fputcsv($f, [$e, $estados[(int) $e], $municipios[$e.'|'.$cm], $cp, $nombre, implode(' / ', $t), count($t) - 1]);
-        }
-        fclose($f);
+        $catalogo->escribirConsolidados($ruta);
         $this->info("Reporte de consolidación: {$ruta}");
     }
 
@@ -89,43 +91,14 @@ class ImportarSepomex extends Command
             }
         }
 
-        // 1) Lectura y validación del archivo (sin base de datos).
-        $lector = new LectorSepomex();
-        $estados = $municipios = $nombresMunicipio = $colonias = $variantes = $tipos = [];
-        $filas = $repetidos = 0;
-        foreach ($lector->filas($archivo) as $f) {
-            $filas++;
-            $e = (int) $f['c_estado'];
-            if (isset($estados[$e]) && $estados[$e] !== $f['d_estado']) {
-                throw new RuntimeException("La clave de entidad {$f['c_estado']} tiene dos nombres ({$f['fila']}).");
-            }
-            $estados[$e] = $f['d_estado'];
-            $m = $e.'|'.$f['c_mnpio'];
-            if (isset($municipios[$m]) && $municipios[$m] !== $f['D_mnpio']) {
-                throw new RuntimeException("La clave de municipio {$m} tiene dos nombres ({$f['fila']}).");
-            }
-            $municipios[$m] = $f['D_mnpio'];
-            $nm = $e.'|'.self::clave($f['D_mnpio']);
-            if (isset($nombresMunicipio[$nm]) && $nombresMunicipio[$nm] !== $m) {
-                throw new RuntimeException("Dos municipios de la entidad {$e} solo se distinguen por su clave: {$f['D_mnpio']} ({$f['fila']}).");
-            }
-            $nombresMunicipio[$nm] = $m;
-            $k = $m.'|'.$f['d_codigo'].'|'.$f['d_asenta'];
-            $tipos[$k][] = $f['d_tipo_asenta'];
-            if (isset($colonias[$k])) {
-                $repetidos++;               // mismo nombre, CP y municipio; solo difiere el tipo de asentamiento
-                continue;
-            }
-            $colonias[$k] = [$m, $f['d_codigo'], $f['d_asenta']];
-            $variantes[$m.'|'.$f['d_codigo'].'|'.self::clave($f['d_asenta'])][$f['d_asenta']] = true;
-        }
-        if (count($estados) !== 32) {
-            throw new RuntimeException('El archivo no contiene las 32 entidades: se requiere el catálogo nacional completo.');
-        }
-        $grafias = count(array_filter($variantes, fn ($v) => count($v) > 1));
-        $consolidados = array_filter($tipos, fn ($t) => count($t) > 1);
+        // 1) Lectura y validación del archivo (sin base de datos), compartida con el generador de scripts SQL.
+        $catalogo = CatalogoSepomex::leer($archivo);
+        $estados = $catalogo->estados;
+        $municipios = $catalogo->municipios;
+        $colonias = $catalogo->colonias;
+        $consolidados = $catalogo->consolidados();
         if ($ruta = $this->option('reporte')) {
-            $this->reporte((string) $ruta, $consolidados, $estados, $municipios);
+            $this->reporte((string) $ruta, $catalogo);
         }
 
         // 2) Conciliación con PostgreSQL (lectura en instantánea) y, con --aplicar, inserción de faltantes.
@@ -137,22 +110,49 @@ class ImportarSepomex extends Command
                 DB::statement('set transaction isolation level repeatable read read only');
             }
 
+            if ($aplicar) {
+                DB::select("select pg_advisory_xact_lock(hashtext('anfeca:sepomex'))");
+            }
+            // Entidades: se concilian por nombre (sin acentos ni mayúsculas) y se reutiliza su identificador real.
+            // Una entidad nueva toma la clave oficial c_estado si está libre; si esa clave la ocupa otra entidad del
+            // catálogo, toma el siguiente valor de la secuencia; si la ocupa un nombre ajeno al catálogo, se detiene.
             $entidades = DB::table('public.entidad_federativa')->pluck('enfe_nombre', 'enfe_id_entidad_federativa')->all();
+            $clavesCatalogo = array_map(self::clave(...), $estados);
             $nuevasEntidades = [];
+            $secuenciaAjustada = false;
             foreach ($estados as $id => $nombre) {
-                if (!array_key_exists($id, $entidades)) {
-                    $nuevasEntidades[$id] = $nombre;
-                } elseif (self::clave($entidades[$id]) !== self::clave($nombre)) {
+                $coincidencias = array_keys(array_filter($entidades, fn ($n) => self::clave($n) === self::clave($nombre)));
+                if (count($coincidencias) > 1) {
+                    throw new RuntimeException("ENTIDAD_FEDERATIVA «{$nombre}» está registrada más de una vez (".implode(', ', $coincidencias).'): se requiere revisión.');
+                }
+                if ($coincidencias) {
+                    continue;
+                }
+                if (array_key_exists($id, $entidades) && !in_array(self::clave($entidades[$id]), $clavesCatalogo, true)) {
                     throw new RuntimeException("ENTIDAD_FEDERATIVA {$id} es «{$entidades[$id]}» y SEPOMEX indica «{$nombre}»: se requiere revisión.");
                 }
-            }
-            $ajenas = array_diff_key($entidades, $estados);
-            if ($aplicar && $nuevasEntidades) {
-                foreach ($nuevasEntidades as $id => $nombre) {
-                    DB::table('public.entidad_federativa')->insert(['enfe_id_entidad_federativa' => $id, 'enfe_nombre' => $nombre]);
+                $nuevasEntidades[$id] = $nombre;
+                if ($aplicar) {
+                    if (array_key_exists($id, $entidades)) {
+                        if (!$secuenciaAjustada) {
+                            self::ajustarSecuencia('entidad_federativa', 'enfe_id_entidad_federativa');
+                            $secuenciaAjustada = true;
+                        }
+                        $nuevo = (int) DB::table('public.entidad_federativa')->insertGetId(['enfe_nombre' => $nombre], 'enfe_id_entidad_federativa');
+                    } else {
+                        DB::table('public.entidad_federativa')->insert(['enfe_id_entidad_federativa' => $id, 'enfe_nombre' => $nombre]);
+                        $nuevo = $id;
+                    }
+                    $entidades[$nuevo] = $nombre;
                 }
-                DB::statement("select setval(pg_get_serial_sequence('public.entidad_federativa', 'enfe_id_entidad_federativa'),
-                    greatest((select max(enfe_id_entidad_federativa) from public.entidad_federativa), 1))");
+            }
+            $ajenas = array_values(array_filter($entidades, fn ($n) => !in_array(self::clave($n), $clavesCatalogo, true)));
+            if ($aplicar && $nuevasEntidades) {
+                self::ajustarSecuencia('entidad_federativa', 'enfe_id_entidad_federativa');
+            }
+            $idEntidad = [];
+            foreach ($entidades as $idReal => $n) {
+                $idEntidad[self::clave($n)] = (int) $idReal;
             }
 
             $existentes = $porClave = [];
@@ -166,8 +166,8 @@ class ImportarSepomex extends Command
             $idMunicipio = [];
             $nuevosMunicipios = 0;
             foreach ($municipios as $m => $nombre) {
-                $entidad = (int) explode('|', $m)[0];
-                $actual = $porClave[$entidad.'|'.self::clave($nombre)] ?? null;
+                $entidad = $idEntidad[self::clave($estados[(int) explode('|', $m)[0]])] ?? null;
+                $actual = $entidad === null ? null : ($porClave[$entidad.'|'.self::clave($nombre)] ?? null);
                 if ($actual && $actual->almu_nombre !== $nombre) {
                     throw new RuntimeException("ALCALDIA_MUNICIPIO «{$actual->almu_nombre}» difiere de SEPOMEX «{$nombre}»: se requiere revisión.");
                 }
@@ -176,6 +176,9 @@ class ImportarSepomex extends Command
                     continue;
                 }
                 $nuevosMunicipios++;
+                if ($aplicar && $nuevosMunicipios === 1) {
+                    self::ajustarSecuencia('alcaldia_municipio', 'almu_id_alcaldia');
+                }
                 $idMunicipio[$m] = $aplicar
                     ? (int) DB::table('public.alcaldia_municipio')->insertGetId(['almu_id_entidad_federativa' => $entidad, 'almu_nombre' => $nombre], 'almu_id_alcaldia')
                     : null;
@@ -193,6 +196,9 @@ class ImportarSepomex extends Command
                 }
                 $nuevasColonias++;
                 if ($aplicar) {
+                    if ($nuevasColonias === 1) {
+                        self::ajustarSecuencia('colonia', 'colo_id_colonia');
+                    }
                     $lote[] = ['colo_id_alcaldia' => $id, 'colo_nombre' => $nombre, 'colo_codigo_postal' => $cp];
                     if (count($lote) === 1000) {
                         DB::table('public.colonia')->insert($lote);
@@ -204,7 +210,7 @@ class ImportarSepomex extends Command
                 DB::table('public.colonia')->insert($lote);
             }
 
-            return ['entidades_nuevas' => count($nuevasEntidades), 'entidades_ajenas_al_catalogo' => array_values($ajenas),
+            return ['entidades_nuevas' => count($nuevasEntidades), 'entidades_ajenas_al_catalogo' => $ajenas,
                 'municipios_nuevos' => $nuevosMunicipios, 'colonias_nuevas' => $nuevasColonias,
                 'totales_base' => [
                     'entidad_federativa' => DB::table('public.entidad_federativa')->count(),
@@ -215,11 +221,11 @@ class ImportarSepomex extends Command
 
         $resumen = [
             'modo' => $aplicar ? 'aplicación' : 'diagnóstico (solo lectura)',
-            'archivo' => basename($archivo), 'sha256' => $huella, 'version_sepomex' => $lector->version, 'base' => $base,
-            'filas_leidas' => $filas, 'entidades' => count($estados), 'municipios' => count($municipios),
-            'colonias_distintas' => count($colonias), 'repetidos_solo_por_tipo_de_asentamiento' => $repetidos,
+            'archivo' => basename($archivo), 'sha256' => $huella, 'version_sepomex' => $catalogo->version, 'base' => $base,
+            'filas_leidas' => $catalogo->filas, 'entidades' => count($estados), 'municipios' => count($municipios),
+            'colonias_distintas' => count($colonias), 'repetidos_solo_por_tipo_de_asentamiento' => $catalogo->repetidos,
             'colonias_con_registros_consolidados' => count($consolidados),
-            'nombres_con_variante_de_acentos_o_mayusculas' => $grafias,
+            'nombres_con_variante_de_acentos_o_mayusculas' => $catalogo->grafias,
         ] + $resultado + [
             'segundos' => round(microtime(true) - $inicio, 1),
             'memoria_pico_mb' => round(memory_get_peak_usage(true) / 1048576),

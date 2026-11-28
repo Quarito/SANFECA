@@ -74,3 +74,12 @@ Thumbs.db
 # Python
 __pycache__/
 *.pyc
+
+# Catálogo SEPOMEX y scripts SQL derivados: uso interno, prohibida su distribución (nunca en Git)
+SEPOMEX_ANFECA/
+SEPOMEX_ANFECA*.zip*
+CPdescarga*.xls
+CPdescarga*.txt
+CPdescargaxls.zip
+*_insert_colonia.sql
+*_insert_alcaldia_municipio.sql
