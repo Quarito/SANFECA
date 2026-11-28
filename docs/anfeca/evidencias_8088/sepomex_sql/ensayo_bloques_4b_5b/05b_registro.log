@@ -1,0 +1,83 @@
+Registro: /tmp/claude-0/-home-user-SANFECA/e4e06b63-7bb8-577b-b19c-16c5216cab6f/scratchpad/ensayo_5b/registro.log
+Respaldo verificado: /tmp/claude-0/-home-user-SANFECA/e4e06b63-7bb8-577b-b19c-16c5216cab6f/scratchpad/respaldo_simulado
+
+==> Paquete SQL
+Paquete verificado: /tmp/claude-0/-home-user-SANFECA/e4e06b63-7bb8-577b-b19c-16c5216cab6f/scratchpad/entrega/SEPOMEX_ANFECA ("version_sepomex": "21/11/2026")
+
+==> Estructura oficial de sx3_bloques_8088 antes de la carga
+Tablas/atributos/FK: 36/173/35
+
+==> Carga (SEPOMEX_CATALOGO_COMPLETO.sql) en sx3_bloques_8088
+Insertados · entidades: 0 · municipios: 2478 · colonias: 158507
+Marcas de reversión (conserve esta línea): -v entidades=ninguna -v municipio_desde=0 -v municipio_hasta=2478 -v colonia_desde=0 -v colonia_hasta=158507
+######## Transacción confirmada en 8.0 s
+
+==> Idempotencia: una segunda ejecución no debe insertar nada
+Insertados · entidades: 0 · municipios: 0 · colonias: 0
+
+==> Verificación (04): cobertura por entidad e integridad
+######## 5/5 · Verificación final (solo lectura)
+SET
+BEGIN
+== 1. Totales (esperado del archivo oficial: 32 entidades, 2478 municipios, 158507 colonias, 31860 códigos postales)
+ entidades | municipios | colonias | codigos_postales | total_tres_tablas 
+-----------+------------+----------+------------------+-------------------
+        32 |       2478 |   158507 |            31860 |            161017
+
+== 2. Cobertura por entidad: conteos y huella exacta del catálogo (coincide = la entidad contiene exactamente el catálogo)
+ clave |             nombre              | id_base | mun_catalogo | mun_base | col_catalogo | col_base | cps_catalogo | cps_base | resultado 
+-------+---------------------------------+---------+--------------+----------+--------------+----------+--------------+----------+-----------
+ 01    | Aguascalientes                  |       1 |           11 |       11 |         1501 |     1501 |          360 |      360 | coincide
+ 02    | Baja California                 |       2 |            7 |        7 |         2677 |     2677 |          488 |      488 | coincide
+ 03    | Baja California Sur             |       3 |            5 |        5 |         1075 |     1075 |          286 |      286 | coincide
+ 04    | Campeche                        |       4 |           13 |       13 |         1303 |     1303 |          263 |      263 | coincide
+ 05    | Coahuila de Zaragoza            |       5 |           38 |       38 |         4462 |     4462 |         1031 |     1031 | coincide
+ 06    | Colima                          |       6 |           10 |       10 |          922 |      922 |          227 |      227 | coincide
+ 07    | Chiapas                         |       7 |          124 |      124 |         9691 |     9691 |         1156 |     1156 | coincide
+ 08    | Chihuahua                       |       8 |           67 |       67 |         9856 |     9856 |         1095 |     1095 | coincide
+ 09    | Ciudad de México                |       9 |           16 |       16 |         1527 |     1527 |         1110 |     1110 | coincide
+ 10    | Durango                         |      10 |           39 |       39 |         7066 |     7066 |         1031 |     1031 | coincide
+ 11    | Guanajuato                      |      11 |           46 |       46 |        10300 |    10300 |         1373 |     1373 | coincide
+ 12    | Guerrero                        |      12 |           85 |       85 |         5456 |     5456 |         1348 |     1348 | coincide
+ 13    | Hidalgo                         |      13 |           84 |       84 |         6208 |     6208 |         1101 |     1101 | coincide
+ 14    | Jalisco                         |      14 |          125 |      125 |         6529 |     6529 |         1993 |     1993 | coincide
+ 15    | México                          |      15 |          125 |      125 |         8333 |     8333 |         2285 |     2285 | coincide
+ 16    | Michoacán de Ocampo             |      16 |          113 |      113 |        10370 |    10370 |         1926 |     1926 | coincide
+ 17    | Morelos                         |      17 |           36 |       36 |         1877 |     1877 |          404 |      404 | coincide
+ 18    | Nayarit                         |      18 |           20 |       20 |         2059 |     2059 |          437 |      437 | coincide
+ 19    | Nuevo León                      |      19 |           51 |       51 |         5463 |     5463 |         1086 |     1086 | coincide
+ 20    | Oaxaca                          |      20 |          570 |      570 |         7343 |     7343 |         1878 |     1878 | coincide
+ 21    | Puebla                          |      21 |          217 |      217 |         6377 |     6377 |         1566 |     1566 | coincide
+ 22    | Querétaro                       |      22 |           18 |       18 |         3265 |     3265 |          504 |      504 | coincide
+ 23    | Quintana Roo                    |      23 |           11 |       11 |         1220 |     1220 |          300 |      300 | coincide
+ 24    | San Luis Potosí                 |      24 |           59 |       59 |         6343 |     6343 |          974 |      974 | coincide
+ 25    | Sinaloa                         |      25 |           20 |       20 |         4559 |     4559 |         1142 |     1142 | coincide
+ 26    | Sonora                          |      26 |           72 |       72 |         8679 |     8679 |          981 |      981 | coincide
+ 27    | Tabasco                         |      27 |           17 |       17 |         2886 |     2886 |          454 |      454 | coincide
+ 28    | Tamaulipas                      |      28 |           43 |       43 |         3622 |     3622 |         1005 |     1005 | coincide
+ 29    | Tlaxcala                        |      29 |           60 |       60 |         1424 |     1424 |          349 |      349 | coincide
+ 30    | Veracruz de Ignacio de la Llave |      30 |          212 |      212 |        11549 |    11549 |         2483 |     2483 | coincide
+ 31    | Yucatán                         |      31 |          106 |      106 |         1773 |     1773 |          475 |      475 | coincide
+ 32    | Zacatecas                       |      32 |           58 |       58 |         2792 |     2792 |          749 |      749 | coincide
+
+== 3. Integridad (todas deben ser 0)
+                       revision                       | casos 
+------------------------------------------------------+-------
+ secuencias por debajo del máximo                     |     0
+ llaves foráneas del catálogo no validadas o ausentes |     0
+ entidades duplicadas                                 |     0
+ domicilios con entidad inexistente                   |     0
+ municipios duplicados en su entidad                  |     0
+ municipios huérfanos                                 |     0
+ códigos postales inválidos                           |     0
+ colonias huérfanas                                   |     0
+ colonias duplicadas (municipio, CP, nombre)          |     0
+ códigos postales en más de una entidad               |     0
+
+== 4. Estructura: tablas del esquema public (el modelo oficial tiene 36)
+ tablas 
+
+==> Estructura y expedientes sin cambios
+Tablas/atributos/FK: 36/173/35
+
+Catálogo cargado con SQL. Conserve /tmp/claude-0/-home-user-SANFECA/e4e06b63-7bb8-577b-b19c-16c5216cab6f/scratchpad/ensayo_5b/marcas_reversion.txt (copiado también al respaldo).
