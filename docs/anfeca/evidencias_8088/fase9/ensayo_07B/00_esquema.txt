@@ -1,0 +1,3 @@
+SQL oficial anfeca_modelo_powerdesigner_certificacion_anfeca_sin_esquema.sql (sha256 5798ce839af01339018536155ab17698c7cb953c7f150e2b9c6b268aab978285) contra la base certificacion_anfeca_pruebas_fase9 (127.0.0.1/32:55499, PostgreSQL 18.6).
+Tablas 36/36 · atributos 173 · FK 35/35 · índices 96 (60 explícitos + 36 de PK) · secuencias 36
+Sin diferencias: el esquema físico coincide exactamente con el SQL oficial.
