@@ -1,5 +1,6 @@
 <script setup>
 import { reactive, ref } from 'vue';
+import { usarCodigoPostal } from '../composables/codigoPostal.js';
 
 const props = defineProps({
     datos: {
@@ -38,6 +39,9 @@ autorizadoInicialmente: {
 const editando = ref(props.editarInicialmente && !props.autorizadoInicialmente);
 const confirmacionDatos = ref(false);
 const campos = reactive({ ...props.datos });
+
+// Catálogo SEPOMEX: el código postal determina entidad, alcaldía/municipio y colonias posibles.
+const { colonias } = usarCodigoPostal(campos, () => document.getElementById('actualizar-codigo_postal'), () => document.getElementById('actualizar-colonia'));
 
 // Identificar los campos telefónicos.
 function esTelefono(nombre) {
@@ -130,6 +134,14 @@ const obligatorios = [
     'codigo_postal', 'correo_electronico'
 ];
 
+// Modelo vigente: DOMICILIO no conserva código postal, colonia ni municipio. En consulta y autorización se muestran
+// solo los datos guardados; en modificación se capturan de nuevo para validar el domicilio contra SEPOMEX.
+const soloCaptura = ['codigo_postal', 'colonia', 'municipio'];
+
+function camposVisibles(grupo) {
+    return editando.value ? grupo.campos : grupo.campos.filter(([nombre]) => !soloCaptura.includes(nombre));
+}
+
 function cancelar() {
     Object.assign(campos, props.datos);
     editando.value = false;
@@ -168,7 +180,7 @@ function cancelar() {
                     <h3>{{ grupo.titulo }}</h3>
 
                     <div
-                        v-for="[nombre, etiqueta] in grupo.campos"
+                        v-for="[nombre, etiqueta] in camposVisibles(grupo)"
                         :key="nombre"
                         class="campo-actualizacion"
                     >
@@ -207,12 +219,23 @@ function cancelar() {
                     'text'
                 "
                 :inputmode="esTelefono(nombre) ? 'numeric' : undefined"
+                :list="nombre === 'colonia' ? 'actualizar-colonias-codigo-postal' : undefined"
                 @input="esTelefono(nombre) && validarTelefono(nombre, $event)"
             >
 
             <span v-else>
                 {{ campos[nombre] || 'No registrado' }}
             </span>
+            <small
+                v-if="editando && nombre === 'codigo_postal'"
+                class="indicacion-codigo-postal"
+                style="display:block; margin-top:4px; font-size:11px; line-height:1.3; color:#6b6b6b;"
+            >
+                Ingrese nuevamente su código postal para validar los datos de su domicilio.
+            </small>
+            <datalist v-if="nombre === 'colonia' && editando" id="actualizar-colonias-codigo-postal">
+                <option v-for="opcion in colonias" :key="opcion" :value="opcion"></option>
+            </datalist>
 
                     </div>
                 </section>

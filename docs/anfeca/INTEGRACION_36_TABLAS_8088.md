@@ -45,8 +45,8 @@ PostgreSQL 18.6 · certificacion_anfeca · public · 36 tablas
 | CURP, RFC, nombre(s), apellidos | `PERSONA.PERS_CURP/RFC/NOMBRE/APELLIDO_PATERNO/APELLIDO_MATERNO` | Unicidad de CURP/RFC/correo validada en la aplicación |
 | Género | `PERSONA.PERS_GENERO` (`F`/`M`) | |
 | Calle, núm. exterior, núm. interior | `DOMICILIO.DOMI_CALLE/NUMERO_EXT/NUMERO_INT` | Longitudes del modelo: 170 / 6 / 4 |
-| Entidad federativa | `DOMICILIO.DOMI_ID_ENTIDAD_FEDERATIVA → ENTIDAD_FEDERATIVA` (32 claves INEGI) | Texto capturado normalizado («cdmx» → Ciudad de México) |
-| Colonia, alcaldía/municipio, CP | `COMUNICACION` tipos «Colonia/Alcaldía o municipio/Código postal del domicilio» | **INC-01** |
+| Entidad federativa | `DOMICILIO.DOMI_ID_ENTIDAD_FEDERATIVA → ENTIDAD_FEDERATIVA` (catálogo SEPOMEX) | Derivada del código postal validado |
+| Colonia, alcaldía/municipio, CP | Se validan al capturar contra `COLONIA → ALCALDIA_MUNICIPIO → ENTIDAD_FEDERATIVA` (SEPOMEX) | No se guardan: `DOMICILIO` no tiene esos atributos ni relación con `COLONIA` (ver `FASE_9_SEPOMEX.md`) |
 | Teléfono particular / celular | `COMUNICACION` tipos «Teléfono particular/celular» | Al menos uno |
 | Institución de afiliación | `PERSONA.PERS_ID_INSTITUCION → INSTITUCION` y `PERS_NUM_AFILIACION_INSTITUCION` | Se captura en Formación |
 | Cédula profesional (dato opcional) | — | **INC-02** (la pantalla no la captura) |
@@ -97,7 +97,7 @@ Bandeja, expediente, visor PDF/JPG/PNG, indicadores y seguimiento leen las proye
 
 | ID | Situación | Solución aplicada dentro de las 36 tablas | Requiere decisión |
 |---|---|---|---|
-| INC-01 | `DOMICILIO` no tiene colonia, municipio ni CP, ni FK a `COLONIA` | Valores en `COMUNICACION` con tipos de catálogo propios, asociados por FK a la persona | Sí: aprobar o incorporar `DOMI_ID_COLONIA` en PowerDesigner |
+| INC-01 | `DOMICILIO` no tiene colonia, municipio ni CP, ni relación con `COLONIA` | Se validan durante la captura contra el catálogo SEPOMEX y no se almacenan; la autorización exige solo los atributos que el modelo guarda. Decisión definitiva: el modelo físico no cambia | No |
 | INC-02 | `PERS…` no tiene cédula; `PEES_CEDULA` existe por estudio | La pantalla actual no captura el número de cédula; `PEES_CEDULA` queda disponible | No |
 | INC-03 | `SOLICITUD_DOCUMENTO` no tiene ruta de archivo | La ruta se deriva de la PK (`SOCU_ID`); la asociación está en la base | Sí, si se desea la ruta como atributo |
 | INC-04 | Sin atributo de «datos autorizados» ni su fecha | `USUA_ESTATUS = DATOS_AUTORIZADOS`; la fecha de autorización no se conserva (ninguna pantalla la muestra) | Opcional |
@@ -114,7 +114,7 @@ El SQL oficial **se ejecutó sin errores y sin modificaciones**. Observaciones i
 
 | ID | Pendiente |
 |---|---|
-| DEF-01 | Decisiones INC-01, INC-03, INC-05 e INC-07 (aprobación o ajuste del modelo en PowerDesigner). |
+| DEF-01 | Decisiones INC-03, INC-05 e INC-07. |
 | DEF-02 | Revisión documental de Coordinación (desactivada también en 8086): su versión anterior usaba `revisiones_documentales`. Debe reimplementarse sobre `ESTADO_SOLICITUD_DOCUMENTO` (estados ya catalogados); sin el coordinador que revisa, porque el modelo no lo registra. |
 | DEF-03 | Despliegue real en 192.168.7.130:8088 con `scripts/anfeca_8088/servidor/instalar_8088.sh` y repetición de las pruebas en el servidor. |
 | DEF-04 | Catálogo oficial de instituciones (con `INST_ZONA` en forma «Zona N - Nombre»), convocatorias oficiales (montos y fechas) y carga de `HISTORICO_CERTIFICADO` desde el Excel histórico (el importador sigue en modo vista previa). |

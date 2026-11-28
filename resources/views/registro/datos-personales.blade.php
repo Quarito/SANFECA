@@ -144,5 +144,6 @@
         </div>
     </footer>
 </div>
+@include('partials.control-sesion')
 </body>
 </html>

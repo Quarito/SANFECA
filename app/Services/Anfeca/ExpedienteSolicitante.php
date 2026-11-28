@@ -10,7 +10,10 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Datos personales, domicilio y contacto sobre PERSONA, USUARIO, DOMICILIO, ENTIDAD_FEDERATIVA,
- * COMUNICACION y TIPO_COMUNICACION. Expone los mismos nombres de campo que ya usan las pantallas
+ * COMUNICACION y TIPO_COMUNICACION (esta última pareja solo para correo y teléfonos).
+ * DOMICILIO guarda únicamente sus atributos oficiales: calle, número exterior, número interior y entidad federativa.
+ * Código postal, colonia y alcaldía o municipio se validan al capturar (SEPOMEX) pero no se guardan: el modelo
+ * vigente no relaciona DOMICILIO con COLONIA ni con ALCALDIA_MUNICIPIO, y no se usa ningún mecanismo alternativo. Expone los mismos nombres de campo que ya usan las pantallas
  * (curp, nombres, calle, colonia, telefono_celular…), de modo que Blade y Vue no cambian.
  */
 final class ExpedienteSolicitante
@@ -49,9 +52,10 @@ final class ExpedienteSolicitante
             'numero_exterior' => $domicilio?->domi_numero_ext,
             'numero_interior' => $domicilio?->domi_numero_int,
             'entidad_federativa' => $domicilio?->enfe_nombre,
-            'codigo_postal' => $contacto['CODIGO_POSTAL'] ?? null,
-            'colonia' => $contacto['COLONIA'] ?? null,
-            'municipio' => $contacto['MUNICIPIO'] ?? null,
+            // No recuperables tras guardar: DOMICILIO no tiene relación con COLONIA ni ALCALDIA_MUNICIPIO.
+            'codigo_postal' => null,
+            'colonia' => null,
+            'municipio' => null,
             'correo_electronico' => $contacto['CORREO'] ?? $usuario->usua_nombre,
             'telefono_particular' => $contacto['TEL_PARTICULAR'] ?? null,
             'telefono_celular' => $contacto['TEL_CELULAR'] ?? null,
@@ -176,14 +180,11 @@ final class ExpedienteSolicitante
         ]);
     }
 
+    /** @param array $datos datos validados; entidad_federativa_id proviene de ValidacionDomicilio (código postal) */
     private function guardarDomicilio(int $personaId, array $datos): void
     {
-        $entidad = Catalogo::entidadPorNombre((string) $datos['entidad_federativa']);
-        if ($entidad === null) {
-            throw ValidationException::withMessages(['entidad_federativa' => 'Escriba el nombre oficial de la entidad federativa (por ejemplo, Ciudad de México o Jalisco).']);
-        }
         $fila = [
-            'domi_id_entidad_federativa' => $entidad,
+            'domi_id_entidad_federativa' => (int) $datos['entidad_federativa_id'],
             'domi_calle' => $datos['calle'],
             'domi_numero_ext' => $datos['numero_exterior'],
             'domi_numero_int' => filled($datos['numero_interior'] ?? null) ? $datos['numero_interior'] : null,
@@ -192,10 +193,6 @@ final class ExpedienteSolicitante
         $actual
             ? DB::table('domicilio')->where('domi_id_domicilio', $actual)->update($fila)
             : DB::table('domicilio')->insert($fila + ['domi_id_persona' => $personaId]);
-
-        $this->guardarComunicacion($personaId, 'CODIGO_POSTAL', $datos['codigo_postal']);
-        $this->guardarComunicacion($personaId, 'COLONIA', $datos['colonia']);
-        $this->guardarComunicacion($personaId, 'MUNICIPIO', $datos['municipio']);
     }
 
     /** Un valor vigente por tipo: actualiza el existente, lo crea o lo elimina si quedó vacío. */
@@ -220,7 +217,7 @@ final class ExpedienteSolicitante
             'comu_id_persona' => $personaId,
             'comu_id_tipo_comunicacion' => $tico,
             'comu_valor' => $valor,
-            'comu_visible' => in_array($tipo, ['CORREO', 'TEL_PARTICULAR', 'TEL_CELULAR'], true),
+            'comu_visible' => true,
         ]);
     }
 }

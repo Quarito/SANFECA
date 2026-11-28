@@ -41,7 +41,7 @@ final class Catalogo
 
     // ---------------------------------------------------------------- comunicaciones y domicilio
 
-    /** Clave interna (CORREO, TEL_PARTICULAR, TEL_CELULAR, CODIGO_POSTAL, COLONIA, MUNICIPIO) → TICO_ID. */
+    /** Clave interna de medio de contacto (CORREO, TEL_PARTICULAR, TEL_CELULAR) → TICO_ID. */
     public static function tipoComunicacion(string $clave): int
     {
         $descripcion = (string) config("anfeca_8088.tipos_comunicacion.{$clave}");
@@ -68,26 +68,6 @@ final class Catalogo
     public static function clave(?string $texto): string
     {
         return \Illuminate\Support\Str::of((string) $texto)->ascii()->lower()->replaceMatches('/[^a-z0-9]+/', ' ')->trim()->value();
-    }
-
-    /** Nombre oficial de la entidad a partir del texto capturado, o null si no se reconoce. */
-    public static function nombreEntidad(?string $texto): ?string
-    {
-        $clave = self::clave($texto);
-        foreach ((array) config('anfeca_8088.entidades_federativas') as $nombre) {
-            if (self::clave($nombre) === $clave) {
-                return $nombre;
-            }
-        }
-
-        return config('anfeca_8088.alias_entidades.'.$clave);
-    }
-
-    public static function entidadPorNombre(string $nombre): ?int
-    {
-        $nombre = self::nombreEntidad($nombre) ?? $nombre;
-        return self::recordar("enfe:{$nombre}", fn () => DB::table('entidad_federativa')
-            ->where('enfe_nombre', $nombre)->value('enfe_id_entidad_federativa'));
     }
 
     // ---------------------------------------------------------------- solicitud

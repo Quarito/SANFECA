@@ -70,3 +70,7 @@ Thumbs.db
 !/storage/logs/.gitignore
 /storage/framework/testing/*
 !/storage/framework/testing/.gitignore
+
+# Python
+__pycache__/
+*.pyc
