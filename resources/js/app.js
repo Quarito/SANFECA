@@ -53,10 +53,6 @@ if (contenedorCertificacion) {
 const contenedorFormacion = document.getElementById('vue-formacion-academica');
 
 if (contenedorFormacion) {
-    const instituciones = JSON.parse(
-        contenedorFormacion.dataset.instituciones || '[]'
-    );
-
     const formacion = JSON.parse(
         contenedorFormacion.dataset.formacion || '{}'
     );
@@ -83,7 +79,9 @@ const posgradoObligatorio =
     contenedorFormacion.dataset.posgradoObligatorio === 'true';
 
      createApp(FormacionAcademica, {
-        instituciones,
+        institucionGuardada: JSON.parse(contenedorFormacion.dataset.institucionGuardada || 'null'),
+        numeroAfiliacion: contenedorFormacion.dataset.numeroAfiliacion || '',
+        urlInstitucion: contenedorFormacion.dataset.urlInstitucion || '',
         formacion,
         areaCertificacion,
         titulosPermitidos,

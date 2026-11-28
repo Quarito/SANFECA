@@ -7,6 +7,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Fluent;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
@@ -46,6 +47,28 @@ final class DocumentosPdm
         }
 
         return null;
+    }
+
+    public function verificarCatalogo(array $campos): void
+    {
+        foreach ($campos as $campo) {
+            try {
+                Catalogo::documento($campo);
+            } catch (RuntimeException $e) {
+                report($e);
+                throw ValidationException::withMessages([$campo => 'El tipo de documento no está disponible. Solicite a Coordinación verificar su catálogo.']);
+            }
+        }
+        if ($campos !== []) {
+            foreach (['CARGADO', 'SUSTITUIDO'] as $estado) {
+                try {
+                    Catalogo::estadoDocumento($estado);
+                } catch (RuntimeException $e) {
+                    report($e);
+                    throw ValidationException::withMessages([$campos[0] => 'El catálogo de estados documentales está incompleto. Solicite apoyo a Coordinación.']);
+                }
+            }
+        }
     }
 
     /** Guarda una nueva versión de un documento. Debe llamarse dentro de una transacción. @return string ruta */

@@ -152,10 +152,19 @@ final class Catalogo
     {
         $descripcion = (string) config("anfeca_8088.documentos.{$campo}");
 
-        return self::recordar("docu:{$campo}", fn () => self::obligatorio(
-            DB::table('documento')->where('docu_descripcion', $descripcion)->value('docu_id_documento'),
-            'DOCUMENTO', $descripcion
+        return self::recordar("docu:{$campo}", fn () => self::documentalActivo(
+            'documento', 'docu_id_documento', 'docu_descripcion', 'docu_estatus', $descripcion
         ));
+    }
+
+    private static function documentalActivo(string $tabla, string $id, string $campo, string $estado, string $descripcion): int
+    {
+        $ids = DB::table($tabla)->where($campo, $descripcion)->where($estado, 'ACT')->limit(2)->pluck($id);
+        if ($ids->count() > 1) {
+            throw new RuntimeException("Catálogo {$tabla} con más de una fila activa para «{$descripcion}».");
+        }
+
+        return self::obligatorio($ids->first(), strtoupper($tabla), $descripcion);
     }
 
     /** @return array<int, string> DOCU_ID → campo */
@@ -175,9 +184,8 @@ final class Catalogo
     {
         $descripcion = (string) config("anfeca_8088.estados_documento.{$clave}");
 
-        return self::recordar("esdo:{$clave}", fn () => self::obligatorio(
-            DB::table('estado_documento')->where('esdo_estado_documento', $descripcion)->value('esdo_id_estado_documento'),
-            'ESTADO_DOCUMENTO', $descripcion
+        return self::recordar("esdo:{$clave}", fn () => self::documentalActivo(
+            'estado_documento', 'esdo_id_estado_documento', 'esdo_estado_documento', 'esdo_estado', $descripcion
         ));
     }
 
